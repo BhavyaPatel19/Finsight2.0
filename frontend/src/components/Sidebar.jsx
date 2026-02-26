@@ -1,12 +1,13 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, MessageSquare,
-  BarChart2, ShieldCheck, LogOut, TrendingUp
+  BarChart2, ShieldCheck, LogOut, TrendingUp, Activity
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const NAV = [
   { to: '/',            icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/market',      icon: Activity,         label: 'Live Market' },
   { to: '/documents',   icon: FileText,         label: 'Documents' },
   { to: '/chat',        icon: MessageSquare,    label: 'RAG Chat' },
   { to: '/sentiment',   icon: TrendingUp,       label: 'Sentiment' },

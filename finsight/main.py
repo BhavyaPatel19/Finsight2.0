@@ -12,6 +12,8 @@ from finsight.ingestion.router import router as ingestion_router
 from finsight.rag.router import router as rag_router
 from finsight.sentiment.router import router as sentiment_router
 from finsight.credibility.router import router as credibility_router
+from finsight.market.router import router as market_router
+from finsight.scraper.router import router as scraper_router
 
 
 @asynccontextmanager
@@ -19,7 +21,6 @@ async def lifespan(app: FastAPI):
     init_db()
     start_scheduler()
     yield
-    # Shutdown: stop scheduler if needed
     from finsight.ingestion.scheduler import get_scheduler
     s = get_scheduler()
     if s.running:
@@ -49,3 +50,5 @@ app.include_router(ingestion_router, prefix="/ingestion", tags=["ingestion"])
 app.include_router(rag_router, prefix="/rag", tags=["rag"])
 app.include_router(sentiment_router, prefix="/sentiment", tags=["sentiment"])
 app.include_router(credibility_router, prefix="/credibility", tags=["credibility"])
+app.include_router(market_router, prefix="/market", tags=["market"])
+app.include_router(scraper_router, prefix="/scraper", tags=["scraper"])

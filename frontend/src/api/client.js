@@ -49,6 +49,14 @@ export const portfolioApi = {
   insights: () => client.get('/portfolio/insights'),
 }
 
+// ── Market Data ───────────────────────────────────────
+export const marketApi = {
+  quotes: (symbols) => client.get('/market/quotes', { params: { symbols } }),
+  ltp: (symbols) => client.get('/market/ltp', { params: { symbols } }),
+  history: (symbol, interval = 'day', from_date, to_date) =>
+    client.get(`/market/history/${symbol}`, { params: { interval, from_date, to_date } }),
+}
+
 // ── Ingestion ─────────────────────────────────────────
 export const ingestionApi = {
   list: (symbol, docType) =>
@@ -86,6 +94,17 @@ export const credibilityApi = {
     client.post(`/credibility/recompute/${symbol}/${period}`),
   extractClaims: (documentId) =>
     client.post(`/credibility/extract-claims/${documentId}`),
+}
+
+// ── Scraper ───────────────────────────────────────────
+export const scraperApi = {
+  searchCompany: (query) =>
+    client.get('/scraper/search-company', { params: { query } }),
+  filings: (symbol, scrip_code, category) =>
+    client.get('/scraper/filings', { params: { symbol, scrip_code, category } }),
+  download: (url, symbol, doc_type) =>
+    client.post('/scraper/download', null, { params: { url, symbol, doc_type } }),
+  autoFetch: () => client.post('/scraper/auto-fetch'),
 }
 
 export default client

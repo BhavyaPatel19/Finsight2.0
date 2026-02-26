@@ -1,8 +1,9 @@
 """
-Zerodha Kite Connect API: OAuth login, token exchange, and portfolio holdings.
+Zerodha Kite Connect API: OAuth login, token exchange, portfolio holdings, and market data.
 """
 import hashlib
 from typing import Any
+from datetime import datetime
 
 import httpx
 
@@ -11,6 +12,11 @@ from finsight.config import ZERODHA_API_KEY, ZERODHA_API_SECRET
 KITE_SESSION_URL = "https://api.kite.trade/session/token"
 KITE_HOLDINGS_URL = "https://api.kite.trade/portfolio/holdings"
 KITE_LOGIN_BASE = "https://kite.zerodha.com/connect/login"
+KITE_QUOTE_URL = "https://api.kite.trade/quote"
+KITE_LTP_URL = "https://api.kite.trade/quote/ltp"
+KITE_OHLC_URL = "https://api.kite.trade/quote/ohlc"
+KITE_HISTORICAL_URL = "https://api.kite.trade/instruments/historical"
+KITE_INSTRUMENTS_URL = "https://api.kite.trade/instruments"
 
 
 def get_oauth_login_url() -> str:
@@ -127,3 +133,125 @@ def fetch_margins(access_token: str) -> dict[str, Any]:
             return r.json() or {}
     except Exception:
         return {}
+
+
+def _kite_headers(access_token: str) -> dict:
+    return {
+        "Authorization": f"token {ZERODHA_API_KEY}:{access_token}",
+        "X-Kite-Version": "3",
+    }
+
+
+def fetch_quotes(access_token: str, symbols: list[str]) -> dict[str, Any]:
+    """
+    Fetch full market quotes for up to 500 instruments.
+    symbols: list of 'NSE:INFY', 'BSE:RELIANCE' etc.
+    Returns dict keyed by 'NSE:INFY' with full quote data.
+    """
+    if not access_token or not symbols:
+        return {}
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            r = client.get(
+                KITE_QUOTE_URL,
+                params=[("i", s) for s in symbols[:500]],
+                headers=_kite_headers(access_token),
+            )
+            r.raise_for_status()
+            out = r.json()
+            return out.get("data", {}) if out.get("status") == "success" else {}
+    except Exception:
+        return {}
+
+
+def fetch_ltp(access_token: str, symbols: list[str]) -> dict[str, float]:
+    """
+    Fetch LTP for up to 1000 instruments.
+    Returns dict like {'NSE:INFY': 1412.95, ...}
+    """
+    if not access_token or not symbols:
+        return {}
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            r = client.get(
+                KITE_LTP_URL,
+                params=[("i", s) for s in symbols[:1000]],
+                headers=_kite_headers(access_token),
+            )
+            r.raise_for_status()
+            out = r.json()
+            if out.get("status") != "success":
+                return {}
+            return {
+                key: val.get("last_price", 0)
+                for key, val in out.get("data", {}).items()
+            }
+    except Exception:
+        return {}
+
+
+def fetch_historical(
+    access_token: str,
+    instrument_token: int,
+    interval: str = "day",
+    from_date: str | None = None,
+    to_date: str | None = None,
+) -> list[dict]:
+    """
+    Fetch historical candle data for a single instrument.
+    interval: minute, 3minute, 5minute, 15minute, 30minute, 60minute, day
+    Returns list of {timestamp, open, high, low, close, volume}
+    """
+    if not access_token or not instrument_token:
+        return []
+    if not to_date:
+        to_date = datetime.now().strftime("%Y-%m-%d")
+    if not from_date:
+        from_date = "2024-01-01"
+    url = f"{KITE_HISTORICAL_URL}/{instrument_token}/{interval}"
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            r = client.get(
+                url,
+                params={"from": from_date, "to": to_date},
+                headers=_kite_headers(access_token),
+            )
+            r.raise_for_status()
+            out = r.json()
+            if out.get("status") != "success":
+                return []
+            candles = out.get("data", {}).get("candles", [])
+            return [
+                {
+                    "timestamp": c[0],
+                    "open": c[1],
+                    "high": c[2],
+                    "low": c[3],
+                    "close": c[4],
+                    "volume": c[5],
+                }
+                for c in candles
+            ]
+    except Exception:
+        return []
+
+
+def fetch_instruments(access_token: str, exchange: str = "NSE") -> list[dict]:
+    """
+    Download the full instrument list CSV for an exchange.
+    Returns list of dicts with instrument_token, tradingsymbol, name, etc.
+    """
+    if not access_token:
+        return []
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            r = client.get(
+                f"{KITE_INSTRUMENTS_URL}/{exchange}",
+                headers=_kite_headers(access_token),
+            )
+            r.raise_for_status()
+            import csv, io
+            reader = csv.DictReader(io.StringIO(r.text))
+            return list(reader)
+    except Exception:
+        return []
