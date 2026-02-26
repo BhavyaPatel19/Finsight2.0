@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+sqlmodel
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+email-validator
+apscheduler
+chromadb
+sentence-transformers
+pymupdf
+pdfplumber
+httpx
+transformers
+torch

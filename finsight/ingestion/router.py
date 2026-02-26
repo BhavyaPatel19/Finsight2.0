@@ -1,0 +1,74 @@
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+
+from sqlmodel import Session
+
+from finsight.database.session import get_session
+from finsight.deps import get_current_user
+from finsight.models import User, Document
+from finsight.config import DOCUMENTS_DIR
+from finsight.ingestion.service import (
+    list_documents,
+    register_document,
+    extract_and_chunk_document,
+    ensure_dirs,
+)
+from finsight.ingestion.scheduler import scheduled_fetch_documents
+from finsight.rag.service import index_chunks_for_document
+
+router = APIRouter()
+
+
+@router.get("/documents")
+def documents_list(
+    symbol: str | None = None,
+    doc_type: str | None = None,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    return list_documents(session, symbol=symbol, doc_type=doc_type)
+
+
+@router.post("/documents/upload")
+async def upload_and_index(
+    file: UploadFile = File(...),
+    symbol: str = "",
+    doc_type: str = "quarterly",
+    fiscal_quarter: str = "",
+    fiscal_year: str = "",
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a PDF; save to documents dir, register, extract text, chunk, and index to Chroma."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="PDF file required")
+    if not symbol.strip():
+        raise HTTPException(status_code=400, detail="symbol required")
+    ensure_dirs()
+    import uuid
+    path = DOCUMENTS_DIR / f"{symbol}_{fiscal_year or 'na'}_{fiscal_quarter or 'na'}_{uuid.uuid4().hex[:8]}_{file.filename}"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = await file.read()
+    path.write_bytes(content)
+    doc = register_document(
+        session,
+        symbol=symbol.strip(),
+        doc_type=doc_type.strip() or "quarterly",
+        fiscal_quarter=fiscal_quarter.strip() or None,
+        fiscal_year=fiscal_year.strip() or None,
+        pdf_path=str(path),
+    )
+    chunks = extract_and_chunk_document(session, doc.id)
+    if chunks:
+        index_chunks_for_document(session, doc.id)
+    return {"document_id": doc.id, "chunks": len(chunks), "indexed": len(chunks)}
+
+
+@router.post("/run")
+def run_ingestion(
+    current_user: User = Depends(get_current_user),
+):
+    """Trigger scheduled fetch manually (admin/convenience)."""
+    scheduled_fetch_documents()
+    return {"status": "triggered"}
