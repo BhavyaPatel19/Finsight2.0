@@ -1,52 +1,19 @@
 import { useEffect, useState } from 'react'
 import { portfolioApi, zerodhaApi } from '../api/client'
 import {
-  DollarSign, TrendingUp, ShieldCheck, BarChart2, RefreshCw,
-  Link2, Download
+  DollarSign, TrendingUp, TrendingDown, BarChart2, RefreshCw,
+  Link2, Download, Briefcase
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid
+  ResponsiveContainer, CartesianGrid, BarChart, Bar
 } from 'recharts'
-
-const fmt = (n) =>
-  n == null ? '—' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n)
 
 const fmtCcy = (n) =>
   n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n)
 
-function ScoreGauge({ score, label, color }) {
-  const pct = score ?? 0
-  const stroke = color ?? '#6366f1'
-  const r = 40, cx = 50, cy = 50
-  const circ = 2 * Math.PI * r
-  const dash = (pct / 100) * circ
-
-  return (
-    <div className="score-ring-wrap">
-      <svg width={100} height={100} viewBox="0 0 100 100">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={10} />
-        <circle
-          cx={cx} cy={cy} r={r} fill="none"
-          stroke={stroke} strokeWidth={10}
-          strokeDasharray={`${dash} ${circ}`}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${cx} ${cy})`}
-          style={{ transition: 'stroke-dasharray 0.8s ease' }}
-        />
-        <text x={cx} y={cy + 6} textAnchor="middle" fill="#f1f5f9"
-          fontSize={16} fontWeight={700} fontFamily="Inter">
-          {score != null ? Math.round(score) : '—'}
-        </text>
-      </svg>
-      <span className="score-ring-label">{label}</span>
-    </div>
-  )
-}
-
 export default function Dashboard() {
   const [holdings, setHoldings] = useState([])
-  const [insights, setInsights] = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
@@ -57,11 +24,10 @@ export default function Dashboard() {
   const load = async () => {
     setLoading(true)
     try {
-      const [h, i] = await Promise.all([portfolioApi.holdings(), portfolioApi.insights()])
+      const h = await portfolioApi.holdings()
       setHoldings(h.data.holdings ?? [])
-      setInsights(i.data)
     } catch {
-      setHoldings([]); setInsights(null)
+      setHoldings([])
     } finally { setLoading(false) }
   }
 
@@ -113,6 +79,20 @@ export default function Dashboard() {
   const pnl = totalValue - totalCost
   const pnlPct = totalCost ? (pnl / totalCost) * 100 : 0
 
+  // Top gainers & losers by day change %
+  const sorted = [...holdings].filter(h => h.day_change_pct != null)
+  const topGainers = [...sorted].sort((a, b) => (b.day_change_pct ?? 0) - (a.day_change_pct ?? 0)).slice(0, 5)
+  const topLosers = [...sorted].sort((a, b) => (a.day_change_pct ?? 0) - (b.day_change_pct ?? 0)).slice(0, 5).filter(h => (h.day_change_pct ?? 0) < 0)
+
+  // P&L bar chart data
+  const pnlData = holdings
+    .map(h => ({
+      name: h.symbol,
+      pnl: h.pnl ?? ((h.current_price ?? h.avg_price) - h.avg_price) * h.quantity,
+    }))
+    .sort((a, b) => b.pnl - a.pnl)
+
+  // Value distribution
   const chartData = holdings.map(h => ({
     name: h.symbol,
     value: Math.round((h.current_price ?? h.avg_price) * h.quantity),
@@ -123,7 +103,7 @@ export default function Dashboard() {
       <div className="flex-between mb-6">
         <div className="page-header" style={{ marginBottom: 0 }}>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-sub">Your portfolio overview, credibility & sentiment at a glance</p>
+          <p className="page-sub">Quick overview of your portfolio performance</p>
         </div>
         <div className="flex gap-2">
           <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={load}>
@@ -169,11 +149,11 @@ export default function Dashboard() {
         <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>
       ) : (
         <>
-          {/* ── Stat cards ── */}
+          {/* ── Summary Cards ── */}
           <div className="card-grid">
             <div className="stat-card">
               <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.15)' }}>
-                <DollarSign size={20} color="#6366f1" />
+                <Briefcase size={20} color="#6366f1" />
               </div>
               <div className="stat-label">Portfolio Value</div>
               <div className="stat-value" style={{ fontSize: 22 }}>{fmtCcy(totalValue)}</div>
@@ -192,57 +172,104 @@ export default function Dashboard() {
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.15)' }}>
-                <ShieldCheck size={20} color="#818cf8" />
+              <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.12)' }}>
+                <DollarSign size={20} color="#f59e0b" />
               </div>
-              <div className="stat-label">Portfolio Credibility</div>
-              <div className="stat-value">
-                {insights?.portfolio_credibility_score != null
-                  ? Math.round(insights.portfolio_credibility_score) + '/100'
-                  : '—'}
-              </div>
-              <div className="stat-sub text-muted">Weighted avg score</div>
+              <div className="stat-label">Total Invested</div>
+              <div className="stat-value">{fmtCcy(totalCost)}</div>
+              <div className="stat-sub text-muted">Cost basis</div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-icon" style={{ background: 'rgba(244,63,94,0.12)' }}>
-                <TrendingUp size={20} color="#f43f5e" />
+              <div className="stat-icon" style={{ background: pnl >= 0 ? 'rgba(34,211,165,0.12)' : 'rgba(244,63,94,0.12)' }}>
+                {pnl >= 0 ? <TrendingUp size={20} color="#22d3a5" /> : <TrendingDown size={20} color="#f43f5e" />}
               </div>
-              <div className="stat-label">Low Credibility Exposure</div>
-              <div className="stat-value" style={{ color: insights?.low_credibility_exposure_pct > 20 ? '#f43f5e' : '#22d3a5' }}>
-                {insights?.low_credibility_exposure_pct != null
-                  ? insights.low_credibility_exposure_pct.toFixed(1) + '%'
-                  : '—'}
+              <div className="stat-label">Overall P&L</div>
+              <div className="stat-value" style={{ color: pnl >= 0 ? '#22d3a5' : '#f43f5e' }}>
+                {pnl >= 0 ? '+' : ''}{fmtCcy(pnl)}
               </div>
-              <div className="stat-sub text-muted">Of portfolio value</div>
+              <div className="stat-sub text-muted">{pnlPct.toFixed(2)}% return</div>
             </div>
           </div>
 
-          {/* ── Score gauges ── */}
-          <div className="card mb-6" style={{ display: 'flex', gap: 40, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-            <ScoreGauge score={insights?.portfolio_credibility_score} label="Credibility" color="#6366f1" />
-            <div style={{ width: 1, height: 80, background: 'rgba(255,255,255,0.06)' }} />
-            <ScoreGauge
-              score={insights?.low_credibility_exposure_pct != null
-                ? 100 - insights.low_credibility_exposure_pct : null}
-              label="Portfolio Health"
-              color="#22d3a5"
-            />
-            <div style={{ width: 1, height: 80, background: 'rgba(255,255,255,0.06)' }} />
-            <ScoreGauge
-              score={pnlPct > 0 ? Math.min(100, 50 + pnlPct * 2) : Math.max(0, 50 + pnlPct * 2)}
-              label="P&L Score"
-              color="#f59e0b"
-            />
-          </div>
+          {/* ── Top Gainers & Losers ── */}
+          {sorted.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+              <div className="card">
+                <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingUp size={16} color="#22d3a5" /> Today's Gainers
+                </h3>
+                {topGainers.length === 0 ? (
+                  <p className="text-muted text-sm">No gainers today</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topGainers.map(h => (
+                      <div key={h.symbol} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'rgba(34,211,165,0.06)' }}>
+                        <span className="badge badge-accent">{h.symbol}</span>
+                        <span style={{ color: '#22d3a5', fontWeight: 600, fontSize: 14 }}>
+                          +{h.day_change_pct?.toFixed(2)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          {/* ── Holdings chart ── */}
+              <div className="card">
+                <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingDown size={16} color="#f43f5e" /> Today's Losers
+                </h3>
+                {topLosers.length === 0 ? (
+                  <p className="text-muted text-sm">No losers today 🎉</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topLosers.map(h => (
+                      <div key={h.symbol} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'rgba(244,63,94,0.06)' }}>
+                        <span className="badge badge-accent">{h.symbol}</span>
+                        <span style={{ color: '#f43f5e', fontWeight: 600, fontSize: 14 }}>
+                          {h.day_change_pct?.toFixed(2)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── P&L by Stock (bar chart) ── */}
+          {pnlData.length > 0 && (
+            <div className="card mb-6">
+              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
+                P&L by Stock
+              </h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={pnlData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false}
+                    tickFormatter={v => '₹' + (Math.abs(v) >= 1000 ? (v/1000).toFixed(1)+'k' : v)} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
+                  <Tooltip
+                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
+                    formatter={val => [fmtCcy(val), 'P&L']}
+                  />
+                  <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
+                    {pnlData.map((entry, i) => (
+                      <rect key={i} fill={entry.pnl >= 0 ? '#22d3a5' : '#f43f5e'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* ── Value Distribution ── */}
           {chartData.length > 0 && (
             <div className="card mb-6">
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
                 Holdings Value Distribution
               </h3>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="gradV" x1="0" y1="0" x2="0" y2="1">
@@ -263,48 +290,6 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
-
-          {/* ── Holdings table ── */}
-          <div className="card">
-            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Holdings</h3>
-            {holdings.length === 0 ? (
-              <div className="empty-state">
-                <BarChart2 size={40} />
-                <p>No holdings yet.<br />Sync your Zerodha account or add holdings manually.</p>
-              </div>
-            ) : (
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Symbol</th><th>Qty</th><th>Avg Price</th>
-                      <th>Current</th><th>Value</th><th>P&L</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {holdings.map(h => {
-                      const cur = h.current_price ?? h.avg_price
-                      const val = cur * h.quantity
-                      const pl = (cur - h.avg_price) * h.quantity
-                      const plPct = ((cur - h.avg_price) / h.avg_price) * 100
-                      return (
-                        <tr key={h.symbol}>
-                          <td><span className="badge badge-accent">{h.symbol}</span></td>
-                          <td>{h.quantity}</td>
-                          <td>{fmtCcy(h.avg_price)}</td>
-                          <td>{fmtCcy(cur)}</td>
-                          <td className="font-bold">{fmtCcy(val)}</td>
-                          <td className={pl >= 0 ? 'text-success' : 'text-danger'}>
-                            {pl >= 0 ? '+' : ''}{fmtCcy(pl)} ({plPct.toFixed(1)}%)
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
         </>
       )}
     </div>

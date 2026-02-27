@@ -1,36 +1,36 @@
 from sqlmodel import Session, select
 
-from finsight.models import Holding, Portfolio, FinancialMetric
+from finsight.models import Holding, Portfolio
 from finsight.zerodha.service import get_or_create_default_portfolio, get_holdings
 
 
 def get_holdings_with_metrics(session: Session, user_id: int) -> list[dict]:
-    """Holdings joined with financial metrics (P/E, ROCE, revenue_growth) where available."""
+    """Holdings with market data from Zerodha (day change, P&L, close price)."""
     holdings_list = get_holdings(session, user_id)
     out = []
     for h in holdings_list:
-        stmt = (
-            select(FinancialMetric)
-            .where(FinancialMetric.symbol == h.symbol)
-            .order_by(FinancialMetric.created_at.desc())
-            .limit(1)
-        )
-        metric = session.exec(stmt).first()
         out.append({
             "symbol": h.symbol,
+            "exchange": h.exchange,
             "quantity": h.quantity,
             "avg_price": h.avg_price,
             "current_price": h.current_price,
-            "pe": metric.pe if metric else None,
-            "roce": metric.roce if metric else None,
-            "revenue_growth": metric.revenue_growth if metric else None,
+            "close_price": h.close_price,
+            "pnl": h.pnl,
+            "day_change": h.day_change,
+            "day_change_pct": h.day_change_pct,
         })
     return out
 
 
 def get_portfolio_insights(session: Session, user_id: int) -> dict:
-    """Placeholder: portfolio-weighted credibility, low-credibility exposure, summary."""
-    from finsight.models import CredibilityScore
+    """Compute portfolio credibility from live financial fundamentals (P/E, ROCE, D/E, etc.)."""
+    import logging
+    import time
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from finsight.credibility.fundamentals import fetch_and_score, _score_cache
+
+    logger = logging.getLogger(__name__)
 
     holdings_list = get_holdings(session, user_id)
     if not holdings_list:
@@ -40,27 +40,48 @@ def get_portfolio_insights(session: Session, user_id: int) -> dict:
             "sentiment_weighted_exposure": None,
             "summary": "No holdings.",
         }
+
     total_value = sum((h.current_price or h.avg_price) * h.quantity for h in holdings_list)
     if total_value == 0:
         total_value = 1
+
+    # Fetch scores in parallel with a short timeout per symbol
+    results = {}
+
+    def _fetch(symbol):
+        try:
+            return symbol, fetch_and_score(symbol)
+        except Exception as e:
+            logger.warning("Could not score %s: %s", symbol, e)
+            return symbol, {"symbol": symbol, "score": None}
+
+    symbols = [h.symbol for h in holdings_list]
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = {executor.submit(_fetch, s): s for s in symbols}
+        for future in as_completed(futures, timeout=20):
+            try:
+                sym, res = future.result()
+                results[sym] = res
+            except Exception:
+                pass
+
     weighted_cred = 0.0
     low_cred_value = 0.0
+    scored_count = 0
+
     for h in holdings_list:
         w = (h.current_price or h.avg_price) * h.quantity / total_value
-        stmt = (
-            select(CredibilityScore)
-            .where(CredibilityScore.symbol == h.symbol)
-            .order_by(CredibilityScore.computed_at.desc())
-            .limit(1)
-        )
-        cred = session.exec(stmt).first()
-        if cred:
-            weighted_cred += w * cred.score_0_100
-            if cred.score_0_100 < 50:
+        result = results.get(h.symbol, {})
+        score = result.get("score")
+        if score is not None:
+            weighted_cred += w * score
+            scored_count += 1
+            if score < 50:
                 low_cred_value += (h.current_price or h.avg_price) * h.quantity
+
     return {
-        "portfolio_credibility_score": weighted_cred if weighted_cred else None,
-        "low_credibility_exposure_pct": (low_cred_value / total_value) * 100 if total_value else None,
+        "portfolio_credibility_score": round(weighted_cred, 1) if scored_count > 0 else None,
+        "low_credibility_exposure_pct": round((low_cred_value / total_value) * 100, 1) if total_value else None,
         "sentiment_weighted_exposure": None,
-        "summary": None,
+        "summary": f"Scored {scored_count}/{len(holdings_list)} holdings from live fundamentals.",
     }

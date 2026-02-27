@@ -63,9 +63,14 @@ def sync_holdings_from_zerodha(
         h = Holding(
             portfolio_id=portfolio_id,
             symbol=r.get("symbol", ""),
+            exchange=r.get("exchange", ""),
             quantity=float(r.get("quantity", 0)),
             avg_price=float(r.get("avg_price", 0)),
             current_price=r.get("current_price"),
+            close_price=r.get("close_price"),
+            pnl=r.get("pnl"),
+            day_change=r.get("day_change"),
+            day_change_pct=r.get("day_change_pct"),
             last_updated_at=now,
         )
         session.add(h)

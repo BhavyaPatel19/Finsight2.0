@@ -5,14 +5,38 @@ from sqlmodel import Session
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
-from finsight.credibility.schemas import CredibilityScoreResponse
+from finsight.credibility.schemas import CredibilityScoreResponse, FundamentalsScoreResponse
 from finsight.credibility.service import (
     get_credibility_history,
     compute_credibility_for_symbol_period,
     extract_claims_for_document,
 )
+from finsight.credibility.fundamentals import fetch_and_score
 
 router = APIRouter()
+
+
+@router.get("/score/{symbol}", response_model=FundamentalsScoreResponse)
+def fundamentals_score(
+    symbol: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Get credibility score for a symbol based on live financial fundamentals."""
+    result = fetch_and_score(symbol.upper())
+    fundamentals = result.get("fundamentals") or {}
+    return FundamentalsScoreResponse(
+        symbol=result["symbol"],
+        score=result["score"],
+        pe=fundamentals.get("pe"),
+        roce=fundamentals.get("roce"),
+        debt_to_equity=fundamentals.get("debt_to_equity"),
+        revenue_growth=fundamentals.get("revenue_growth"),
+        promoter_holding=fundamentals.get("promoter_holding"),
+        market_cap=fundamentals.get("market_cap"),
+        book_value=fundamentals.get("book_value"),
+        dividend_yield=fundamentals.get("dividend_yield"),
+        source=fundamentals.get("source", "screener.in"),
+    )
 
 
 @router.get("/{symbol}", response_model=list[CredibilityScoreResponse])
@@ -48,3 +72,4 @@ def extract_claims(
 ):
     claims = extract_claims_for_document(session, document_id)
     return {"count": len(claims)}
+

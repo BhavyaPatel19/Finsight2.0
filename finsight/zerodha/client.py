@@ -36,7 +36,12 @@ def exchange_request_token(request_token: str) -> dict[str, Any] | None:
     Exchange request_token (from Zerodha redirect) for access_token.
     Returns {"access_token": "...", "user_id": "..."} or None on failure.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     if not ZERODHA_API_KEY or not ZERODHA_API_SECRET or not request_token:
+        logger.error("exchange_request_token: missing API_KEY=%s, API_SECRET=%s, request_token=%s",
+                      bool(ZERODHA_API_KEY), bool(ZERODHA_API_SECRET), bool(request_token))
         return None
     checksum = _checksum(request_token)
     data = {
@@ -44,6 +49,8 @@ def exchange_request_token(request_token: str) -> dict[str, Any] | None:
         "request_token": request_token,
         "checksum": checksum,
     }
+    logger.info("exchange_request_token: posting to %s with api_key=%s, request_token=%s",
+                KITE_SESSION_URL, ZERODHA_API_KEY, request_token)
     try:
         with httpx.Client(timeout=15.0) as client:
             r = client.post(
@@ -51,15 +58,18 @@ def exchange_request_token(request_token: str) -> dict[str, Any] | None:
                 data=data,
                 headers={"X-Kite-Version": "3"},
             )
+            logger.info("exchange_request_token: status_code=%s, body=%s", r.status_code, r.text[:500])
             r.raise_for_status()
             out = r.json()
             if out.get("status") != "success":
+                logger.error("exchange_request_token: Zerodha returned non-success: %s", out)
                 return None
             return {
                 "access_token": out.get("data", {}).get("access_token"),
                 "user_id": out.get("data", {}).get("user_id"),
             }
-    except Exception:
+    except Exception as e:
+        logger.exception("exchange_request_token: exception during token exchange: %s", e)
         return None
 
 
@@ -87,10 +97,15 @@ def fetch_holdings(access_token: str) -> list[dict[str, Any]]:
             return [
                 {
                     "symbol": item.get("tradingsymbol", ""),
+                    "exchange": item.get("exchange", ""),
+                    "isin": item.get("isin", ""),
                     "quantity": float(item.get("quantity", 0)),
                     "avg_price": float(item.get("average_price", 0)),
                     "current_price": item.get("last_price"),
+                    "close_price": item.get("close_price"),
                     "pnl": item.get("pnl"),
+                    "day_change": item.get("day_change"),
+                    "day_change_pct": item.get("day_change_percentage"),
                 }
                 for item in data
             ]

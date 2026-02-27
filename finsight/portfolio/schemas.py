@@ -3,12 +3,14 @@ from pydantic import BaseModel
 
 class HoldingMetric(BaseModel):
     symbol: str
+    exchange: str | None = None
     quantity: float
     avg_price: float
     current_price: float | None
-    pe: float | None = None
-    roce: float | None = None
-    revenue_growth: float | None = None
+    close_price: float | None = None
+    pnl: float | None = None
+    day_change: float | None = None
+    day_change_pct: float | None = None
 
 
 class PortfolioMetrics(BaseModel):

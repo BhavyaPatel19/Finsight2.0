@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { portfolioApi } from '../api/client'
 import { BarChart2, RefreshCw } from 'lucide-react'
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer
 } from 'recharts'
 
 const COLORS = ['#6366f1','#22d3a5','#f59e0b','#f43f5e','#38bdf8','#c084fc','#fb7185','#34d399']
@@ -12,16 +12,14 @@ const fmtCcy = (n) => n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN',
 
 export default function Portfolio() {
   const [holdings, setHoldings] = useState([])
-  const [insights, setInsights] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
     setLoading(true)
     try {
-      const [h, i] = await Promise.all([portfolioApi.holdings(), portfolioApi.insights()])
+      const h = await portfolioApi.holdings()
       setHoldings(h.data.holdings ?? [])
-      setInsights(i.data)
-    } catch { setHoldings([]); setInsights(null) }
+    } catch { setHoldings([]) }
     finally { setLoading(false) }
   }
 
@@ -33,6 +31,9 @@ export default function Portfolio() {
   }))
 
   const totalValue = holdings.reduce((s, h) => s + (h.current_price ?? h.avg_price) * h.quantity, 0)
+  const totalCost = holdings.reduce((s, h) => s + h.avg_price * h.quantity, 0)
+  const pnl = totalValue - totalCost
+  const pnlPct = totalCost ? (pnl / totalCost) * 100 : 0
 
   return (
     <div>
@@ -41,7 +42,7 @@ export default function Portfolio() {
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <BarChart2 size={24} color="#f59e0b" /> Portfolio Details
           </h1>
-          <p className="page-sub">Holdings with financial metrics and allocation breakdown</p>
+          <p className="page-sub">Holdings with market data and allocation breakdown</p>
         </div>
         <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={load}>
           <RefreshCw size={14} /> Refresh
@@ -53,7 +54,7 @@ export default function Portfolio() {
       ) : holdings.length === 0 ? (
         <div className="empty-state card">
           <BarChart2 size={48} />
-          <p>No holdings found.<br />Sync Zerodha via <code style={{ background:'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 4 }}>POST /zerodha/sync</code></p>
+          <p>No holdings found.<br />Sync Zerodha via the Dashboard.</p>
         </div>
       ) : (
         <>
@@ -64,15 +65,13 @@ export default function Portfolio() {
               <div className="stat-value" style={{ fontSize: 22 }}>{fmtCcy(totalValue)}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Portfolio Credibility</div>
-              <div className="stat-value">
-                {insights?.portfolio_credibility_score != null ? insights.portfolio_credibility_score.toFixed(1) + '/100' : '—'}
-              </div>
+              <div className="stat-label">Total Invested</div>
+              <div className="stat-value">{fmtCcy(totalCost)}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Low Cred Exposure</div>
-              <div className="stat-value" style={{ color: insights?.low_credibility_exposure_pct > 20 ? 'var(--danger)' : 'var(--success)' }}>
-                {insights?.low_credibility_exposure_pct != null ? insights.low_credibility_exposure_pct.toFixed(1) + '%' : '—'}
+              <div className="stat-label">Total P&L</div>
+              <div className="stat-value" style={{ color: pnl >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                {pnl >= 0 ? '+' : ''}{fmtCcy(pnl)} ({pnlPct.toFixed(1)}%)
               </div>
             </div>
           </div>
@@ -96,26 +95,47 @@ export default function Portfolio() {
               </ResponsiveContainer>
             </div>
 
-            {/* Holdings with metrics table */}
+            {/* Holdings table */}
             <div className="card">
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Holdings + Metrics</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Holdings</h3>
               <div className="table-wrap" style={{ borderRadius: 8 }}>
                 <table>
                   <thead>
-                    <tr><th>Symbol</th><th>Value</th><th>P/E</th><th>ROCE</th><th>Rev Growth</th></tr>
+                    <tr>
+                      <th>Symbol</th>
+                      <th>Qty</th>
+                      <th>Avg Price</th>
+                      <th>LTP</th>
+                      <th>Day Chg</th>
+                      <th>P&L</th>
+                      <th>Value</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {holdings.map(h => {
-                      const val = (h.current_price ?? h.avg_price) * h.quantity
+                      const cur = h.current_price ?? h.avg_price
+                      const val = cur * h.quantity
+                      const pl = h.pnl ?? ((cur - h.avg_price) * h.quantity)
+                      const plPct = h.avg_price ? ((cur - h.avg_price) / h.avg_price) * 100 : 0
                       return (
                         <tr key={h.symbol}>
-                          <td><span className="badge badge-accent">{h.symbol}</span></td>
-                          <td className="font-bold">{fmtCcy(val)}</td>
-                          <td>{h.pe != null ? fmt(h.pe) : <span className="text-muted">—</span>}</td>
-                          <td>{h.roce != null ? fmt(h.roce) + '%' : <span className="text-muted">—</span>}</td>
-                          <td style={{ color: h.revenue_growth > 0 ? 'var(--success)' : h.revenue_growth < 0 ? 'var(--danger)' : undefined }}>
-                            {h.revenue_growth != null ? (h.revenue_growth > 0 ? '+' : '') + fmt(h.revenue_growth) + '%' : <span className="text-muted">—</span>}
+                          <td>
+                            <span className="badge badge-accent">{h.symbol}</span>
+                            {h.exchange && <span className="text-xs text-muted" style={{ marginLeft: 4 }}>{h.exchange}</span>}
                           </td>
+                          <td>{h.quantity}</td>
+                          <td>{fmtCcy(h.avg_price)}</td>
+                          <td>{fmtCcy(cur)}</td>
+                          <td className={h.day_change_pct >= 0 ? 'text-success' : 'text-danger'}>
+                            {h.day_change_pct != null
+                              ? `${h.day_change_pct >= 0 ? '+' : ''}${h.day_change_pct.toFixed(2)}%`
+                              : '—'}
+                          </td>
+                          <td className={pl >= 0 ? 'text-success' : 'text-danger'}>
+                            {pl >= 0 ? '+' : ''}{fmtCcy(pl)}
+                            <span className="text-xs" style={{ marginLeft: 4 }}>({plPct.toFixed(1)}%)</span>
+                          </td>
+                          <td className="font-bold">{fmtCcy(val)}</td>
                         </tr>
                       )
                     })}
