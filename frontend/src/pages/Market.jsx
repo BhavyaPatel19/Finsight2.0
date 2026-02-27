@@ -1,15 +1,20 @@
-import { useEffect, useState, useCallback } from 'react'
-import { marketApi, portfolioApi } from '../api/client'
-import { Activity, RefreshCw, TrendingUp, TrendingDown, Clock } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { marketApi } from '../api/client'
+import {
+  Activity, RefreshCw, TrendingUp, TrendingDown, Clock,
+  Search, X, Star
+} from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid
+  ResponsiveContainer, CartesianGrid,
+  ComposedChart, Bar, Line
 } from 'recharts'
 
 const fmtCcy = (n) =>
   n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n)
 
 const fmtVol = (n) => {
+  if (n == null) return '—'
   if (n >= 10000000) return (n / 10000000).toFixed(2) + 'Cr'
   if (n >= 100000) return (n / 100000).toFixed(2) + 'L'
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
@@ -22,11 +27,50 @@ function isMarketOpen() {
   const day = now.getDay()
   if (day === 0 || day === 6) return false
   const mins = h * 60 + m
-  return mins >= 555 && mins <= 930 // 9:15 AM to 3:30 PM IST
+  return mins >= 555 && mins <= 930
+}
+
+function QuoteCard({ symKey, quote, isSelected, onClick }) {
+  const sym = symKey.split(':').pop()
+  const change = quote.last_price - (quote.ohlc?.close ?? quote.last_price)
+  const changePct = quote.ohlc?.close ? (change / quote.ohlc.close) * 100 : 0
+  const up = change >= 0
+
+  return (
+    <div
+      className="card"
+      style={{
+        padding: '14px 16px', cursor: 'pointer',
+        border: isSelected ? '1px solid #6366f1' : '1px solid transparent',
+        transition: 'all 0.2s',
+        background: isSelected ? 'rgba(99,102,241,0.06)' : undefined,
+      }}
+      onClick={() => onClick(sym)}
+    >
+      <div className="flex-between" style={{ marginBottom: 6 }}>
+        <span className="badge badge-accent" style={{ fontSize: 12 }}>{sym}</span>
+        {up ? <TrendingUp size={14} color="#22d3a5" /> : <TrendingDown size={14} color="#f43f5e" />}
+      </div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+        {fmtCcy(quote.last_price)}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: up ? '#22d3a5' : '#f43f5e', marginTop: 3 }}>
+        {up ? '+' : ''}{fmtCcy(change)} ({changePct.toFixed(2)}%)
+      </div>
+      <div className="text-xs text-muted" style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px' }}>
+        <span>H: {fmtCcy(quote.ohlc?.high)}</span>
+        <span>L: {fmtCcy(quote.ohlc?.low)}</span>
+        <span>O: {fmtCcy(quote.ohlc?.open)}</span>
+        <span>V: {fmtVol(quote.volume)}</span>
+      </div>
+    </div>
+  )
 }
 
 export default function Market() {
-  const [quotes, setQuotes] = useState({})
+  const [watchlistQuotes, setWatchlistQuotes] = useState({})
+  const [customSymbols, setCustomSymbols] = useState([])
+  const [customQuotes, setCustomQuotes] = useState({})
   const [loading, setLoading] = useState(true)
   const [selectedSymbol, setSelectedSymbol] = useState(null)
   const [history, setHistory] = useState([])
@@ -35,26 +79,98 @@ export default function Market() {
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
 
-  const load = useCallback(async () => {
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const searchRef = useRef(null)
+  const debounceRef = useRef(null)
+
+  // Load default watchlist
+  const loadWatchlist = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await marketApi.quotes()
-      setQuotes(r.data.quotes ?? {})
+      const r = await marketApi.watchlist()
+      setWatchlistQuotes(r.data.quotes ?? {})
       setLastUpdated(new Date())
-    } catch { setQuotes({}) }
+    } catch { setWatchlistQuotes({}) }
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  // Load custom symbols quotes
+  const loadCustom = useCallback(async () => {
+    if (customSymbols.length === 0) { setCustomQuotes({}); return }
+    try {
+      const r = await marketApi.quotes(customSymbols.join(','))
+      setCustomQuotes(r.data.quotes ?? {})
+    } catch { /* keep old data */ }
+  }, [customSymbols])
 
-  // Auto-refresh every 15s during market hours
+  useEffect(() => { loadWatchlist() }, [loadWatchlist])
+  useEffect(() => { loadCustom() }, [loadCustom])
+
+  // Auto-refresh
   useEffect(() => {
     if (!autoRefresh) return
     const id = setInterval(() => {
-      if (isMarketOpen()) load()
+      if (isMarketOpen()) {
+        loadWatchlist()
+        loadCustom()
+      }
     }, 15000)
     return () => clearInterval(id)
-  }, [autoRefresh, load])
+  }, [autoRefresh, loadWatchlist, loadCustom])
+
+  // Search debounce
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([])
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const r = await marketApi.searchInstruments(searchQuery.trim())
+        setSearchResults(r.data.results ?? [])
+        setSearchOpen(true)
+      } catch { setSearchResults([]) }
+      finally { setSearching(false) }
+    }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [searchQuery])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const addSymbol = (symbol) => {
+    if (!customSymbols.includes(symbol)) {
+      setCustomSymbols(prev => [...prev, symbol])
+    }
+    setSearchQuery('')
+    setSearchOpen(false)
+    setSelectedSymbol(symbol)
+  }
+
+  const removeSymbol = (symbol) => {
+    setCustomSymbols(prev => prev.filter(s => s !== symbol))
+    const key = `NSE:${symbol}`
+    setCustomQuotes(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+    if (selectedSymbol === symbol) setSelectedSymbol(null)
+  }
 
   const loadHistory = async (sym) => {
     setSelectedSymbol(sym)
@@ -70,17 +186,24 @@ export default function Market() {
     if (selectedSymbol) loadHistory(selectedSymbol)
   }, [interval])
 
-  const sortedSymbols = Object.keys(quotes).sort()
+  const refreshAll = () => {
+    loadWatchlist()
+    loadCustom()
+  }
+
   const marketOpen = isMarketOpen()
+  const watchlistKeys = Object.keys(watchlistQuotes).sort()
+  const customKeys = Object.keys(customQuotes).sort()
 
   return (
     <div>
+      {/* Header */}
       <div className="flex-between mb-6">
         <div className="page-header" style={{ marginBottom: 0 }}>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Activity size={24} color="#6366f1" /> Live Market
           </h1>
-          <p className="page-sub">Real-time quotes from Zerodha Kite Connect</p>
+          <p className="page-sub">Real-time quotes & charts from Zerodha Kite Connect</p>
         </div>
         <div className="flex gap-2" style={{ alignItems: 'center' }}>
           <div style={{
@@ -100,10 +223,70 @@ export default function Market() {
               style={{ accentColor: '#6366f1' }} />
             Auto (15s)
           </label>
-          <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={load}>
+          <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={refreshAll}>
             <RefreshCw size={14} /> Refresh
           </button>
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div ref={searchRef} style={{ position: 'relative', marginBottom: 20 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12, padding: '10px 16px',
+        }}>
+          <Search size={18} color="#94a3b8" />
+          <input
+            type="text"
+            placeholder="Search any stock by name or symbol (e.g. Reliance, TCS, HDFC)..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onFocus={() => searchResults.length > 0 && setSearchOpen(true)}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              color: 'var(--text-primary)', fontSize: 14, fontFamily: 'inherit',
+            }}
+          />
+          {searchQuery && (
+            <button onClick={() => { setSearchQuery(''); setSearchOpen(false) }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <X size={16} color="#94a3b8" />
+            </button>
+          )}
+          {searching && <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />}
+        </div>
+
+        {/* Dropdown */}
+        {searchOpen && searchResults.length > 0 && (
+          <div style={{
+            position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+            background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 12, maxHeight: 320, overflowY: 'auto', zIndex: 50,
+            boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+          }}>
+            {searchResults.map((inst, i) => (
+              <div
+                key={i}
+                onClick={() => addSymbol(inst.symbol)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 16px', cursor: 'pointer',
+                  borderBottom: i < searchResults.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.08)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <div>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }}>{inst.symbol}</span>
+                  <span className="text-xs text-muted" style={{ marginLeft: 8 }}>{inst.name}</span>
+                </div>
+                <span className="text-xs text-muted">{inst.exchange}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {lastUpdated && (
@@ -112,57 +295,70 @@ export default function Market() {
         </div>
       )}
 
-      {loading && Object.keys(quotes).length === 0 ? (
+      {loading && watchlistKeys.length === 0 ? (
         <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>
-      ) : sortedSymbols.length === 0 ? (
+      ) : watchlistKeys.length === 0 && customKeys.length === 0 ? (
         <div className="empty-state card">
           <Activity size={48} />
           <p>No market data available.<br />Link Zerodha and sync holdings first.</p>
         </div>
       ) : (
         <>
-          {/* Quote cards grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14, marginBottom: 24 }}>
-            {sortedSymbols.map(key => {
-              const q = quotes[key]
-              const sym = key.split(':').pop()
-              const change = q.last_price - (q.ohlc?.close ?? q.last_price)
-              const changePct = q.ohlc?.close ? (change / q.ohlc.close) * 100 : 0
-              const up = change >= 0
+          {/* Watchlist */}
+          {watchlistKeys.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                <Star size={16} color="#f59e0b" /> Blue-Chip Watchlist
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                {watchlistKeys.map(key => (
+                  <QuoteCard
+                    key={key}
+                    symKey={key}
+                    quote={watchlistQuotes[key]}
+                    isSelected={selectedSymbol === key.split(':').pop()}
+                    onClick={loadHistory}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-              return (
-                <div
-                  key={key}
-                  className="card"
-                  style={{
-                    padding: '16px 18px', cursor: 'pointer',
-                    border: selectedSymbol === sym ? '1px solid #6366f1' : '1px solid transparent',
-                    transition: 'border 0.2s'
-                  }}
-                  onClick={() => loadHistory(sym)}
-                >
-                  <div className="flex-between" style={{ marginBottom: 8 }}>
-                    <span className="badge badge-accent" style={{ fontSize: 13 }}>{sym}</span>
-                    {up ? <TrendingUp size={16} color="#22d3a5" /> : <TrendingDown size={16} color="#f43f5e" />}
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {fmtCcy(q.last_price)}
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: up ? '#22d3a5' : '#f43f5e', marginTop: 4 }}>
-                    {up ? '+' : ''}{fmtCcy(change)} ({changePct.toFixed(2)}%)
-                  </div>
-                  <div className="text-xs text-muted" style={{ marginTop: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 10px' }}>
-                    <span>O: {fmtCcy(q.ohlc?.open)}</span>
-                    <span>H: {fmtCcy(q.ohlc?.high)}</span>
-                    <span>L: {fmtCcy(q.ohlc?.low)}</span>
-                    <span>V: {fmtVol(q.volume)}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          {/* Custom symbols */}
+          {customKeys.length > 0 && (
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)' }}>
+                <Search size={16} color="#6366f1" /> Searched Stocks
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+                {customKeys.map(key => {
+                  const sym = key.split(':').pop()
+                  return (
+                    <div key={key} style={{ position: 'relative' }}>
+                      <QuoteCard
+                        symKey={key}
+                        quote={customQuotes[key]}
+                        isSelected={selectedSymbol === sym}
+                        onClick={loadHistory}
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeSymbol(sym) }}
+                        style={{
+                          position: 'absolute', top: 8, right: 8, background: 'rgba(244,63,94,0.15)',
+                          border: 'none', borderRadius: '50%', width: 22, height: 22,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                        }}
+                      >
+                        <X size={12} color="#f43f5e" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
-          {/* Historical chart */}
+          {/* Chart */}
           {selectedSymbol && (
             <div className="card">
               <div className="flex-between" style={{ marginBottom: 16 }}>
@@ -170,14 +366,19 @@ export default function Market() {
                   {selectedSymbol} — Price History
                 </h3>
                 <div className="flex gap-2">
-                  {['day', '15minute', '5minute', 'minute'].map(iv => (
+                  {[
+                    { key: 'day', label: '1D' },
+                    { key: '15minute', label: '15m' },
+                    { key: '5minute', label: '5m' },
+                    { key: 'minute', label: '1m' },
+                  ].map(({ key, label }) => (
                     <button
-                      key={iv}
-                      className={`btn btn-sm ${interval === iv ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => setInterval_(iv)}
+                      key={key}
+                      className={`btn btn-sm ${interval === key ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setInterval_(key)}
                       style={{ fontSize: 11, padding: '4px 10px' }}
                     >
-                      {iv === 'day' ? '1D' : iv === '15minute' ? '15m' : iv === '5minute' ? '5m' : '1m'}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -187,11 +388,11 @@ export default function Market() {
               ) : history.length === 0 ? (
                 <div className="empty-state text-muted">No historical data available</div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={history.slice(-100)}>
+                <ResponsiveContainer width="100%" height={350}>
+                  <ComposedChart data={history.slice(-100)}>
                     <defs>
                       <linearGradient id="gradClose" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
                         <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                       </linearGradient>
                     </defs>
@@ -203,23 +404,38 @@ export default function Market() {
                       tickFormatter={t => {
                         const d = new Date(t)
                         return interval === 'day'
-                          ? `${d.getDate()}/${d.getMonth()+1}`
-                          : `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`
+                          ? `${d.getDate()}/${d.getMonth() + 1}`
+                          : `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
                       }}
                     />
                     <YAxis
+                      yAxisId="price"
                       domain={['auto', 'auto']}
                       tick={{ fill: '#94a3b8', fontSize: 11 }}
                       axisLine={false} tickLine={false}
                       tickFormatter={v => '₹' + v}
                     />
+                    <YAxis
+                      yAxisId="volume"
+                      orientation="right"
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      axisLine={false} tickLine={false}
+                      tickFormatter={v => fmtVol(v)}
+                      hide
+                    />
                     <Tooltip
                       contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12 }}
-                      formatter={(v, name) => [fmtCcy(v), name.charAt(0).toUpperCase() + name.slice(1)]}
+                      formatter={(v, name) => {
+                        if (name === 'volume') return [fmtVol(v), 'Volume']
+                        return [fmtCcy(v), name.charAt(0).toUpperCase() + name.slice(1)]
+                      }}
                       labelFormatter={t => new Date(t).toLocaleString()}
                     />
-                    <Area type="monotone" dataKey="close" stroke="#6366f1" strokeWidth={2} fill="url(#gradClose)" name="close" />
-                  </AreaChart>
+                    <Bar yAxisId="volume" dataKey="volume" fill="rgba(99,102,241,0.12)" radius={[2, 2, 0, 0]} />
+                    <Area yAxisId="price" type="monotone" dataKey="close" stroke="#6366f1" strokeWidth={2} fill="url(#gradClose)" name="close" />
+                    <Line yAxisId="price" type="monotone" dataKey="high" stroke="rgba(34,211,165,0.3)" strokeWidth={1} dot={false} name="high" />
+                    <Line yAxisId="price" type="monotone" dataKey="low" stroke="rgba(244,63,94,0.3)" strokeWidth={1} dot={false} name="low" />
+                  </ComposedChart>
                 </ResponsiveContainer>
               )}
             </div>

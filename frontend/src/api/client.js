@@ -55,6 +55,8 @@ export const marketApi = {
   ltp: (symbols) => client.get('/market/ltp', { params: { symbols } }),
   history: (symbol, interval = 'day', from_date, to_date) =>
     client.get(`/market/history/${symbol}`, { params: { interval, from_date, to_date } }),
+  watchlist: () => client.get('/market/watchlist'),
+  searchInstruments: (q) => client.get('/market/instruments/search', { params: { q } }),
 }
 
 // ── Ingestion ─────────────────────────────────────────
