@@ -17,3 +17,10 @@ class Document(SQLModel, table=True):
     pdf_path: str | None = None
     text_path: str | None = None
     ingested_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # New fields for scraper workflow
+    status: str = Field(default="pending", index=True)  # pending|downloading|processing|indexed|error
+    error_message: str | None = None
+    chunk_count: int = Field(default=0)
+    file_size: int | None = None  # bytes
+    company_name: str | None = None

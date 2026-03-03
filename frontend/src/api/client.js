@@ -63,6 +63,14 @@ export const marketApi = {
 export const ingestionApi = {
   list: (symbol, docType) =>
     client.get('/ingestion/documents', { params: { symbol, doc_type: docType } }),
+  getDocument: (documentId) =>
+    client.get(`/ingestion/documents/${documentId}`),
+  getPdf: (documentId) =>
+    client.get(`/ingestion/documents/${documentId}/pdf`, { responseType: 'blob' }),
+  delete: (documentId) =>
+    client.delete(`/ingestion/documents/${documentId}`),
+  process: (documentId) =>
+    client.post(`/ingestion/documents/${documentId}/process`),
   upload: (file, symbol, docType, fiscalQuarter, fiscalYear) => {
     const fd = new FormData()
     fd.append('file', file)
@@ -98,15 +106,16 @@ export const credibilityApi = {
     client.post(`/credibility/extract-claims/${documentId}`),
 }
 
-// ── Scraper ───────────────────────────────────────────
+// ── Scraper (Screener.in) ─────────────────────────────
 export const scraperApi = {
   searchCompany: (query) =>
     client.get('/scraper/search-company', { params: { query } }),
-  filings: (symbol, scrip_code, category) =>
-    client.get('/scraper/filings', { params: { symbol, scrip_code, category } }),
-  download: (url, symbol, doc_type) =>
-    client.post('/scraper/download', null, { params: { url, symbol, doc_type } }),
-  autoFetch: () => client.post('/scraper/auto-fetch'),
+  companyDocuments: (symbol) =>
+    client.get('/scraper/company-documents', { params: { symbol } }),
+  downloadSelected: (symbol, companyName, documents) =>
+    client.post('/scraper/download-selected', { symbol, company_name: companyName, documents }),
+  jobStatus: (jobId) =>
+    client.get(`/scraper/status/${jobId}`),
 }
 
 export default client

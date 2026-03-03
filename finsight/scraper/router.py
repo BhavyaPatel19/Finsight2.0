@@ -1,159 +1,188 @@
 """
-Scraper API endpoints: search BSE filings, download documents, auto-fetch for portfolio.
+Scraper API endpoints — uses Screener.in for company search and document discovery.
+Flow: search company → view available docs → user picks → download selected → process → index.
 """
 import os
+import uuid
+import threading
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
-from finsight.models import User, Holding, Document
-from finsight.scraper.bse_scraper import (
+from finsight.models import User, Document
+from finsight.scraper.screener_scraper import (
     search_company,
-    search_filings,
-    download_filing,
-    nse_to_bse,
-    add_symbol_mapping,
+    get_company_documents,
+    download_document,
+)
+from finsight.ingestion.file_manager import (
+    download_and_register,
+    process_document,
 )
 
 router = APIRouter()
 
 UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
 
+# In-memory job tracker
+_jobs: dict[str, dict] = {}
+
+
+# ── Search ───────────────────────────────────────────
 
 @router.get("/search-company")
 def api_search_company(query: str = Query(..., min_length=1)):
-    """Search BSE for a company by name or scrip code."""
+    """Search Screener.in for companies by name or symbol."""
     results = search_company(query)
     return {"results": results}
 
 
-@router.get("/filings")
-def api_search_filings(
-    symbol: str = Query(None, description="NSE symbol like INFY"),
-    scrip_code: str = Query(None, description="BSE scrip code like 500209"),
-    category: str = Query("", description="Filing category filter"),
-    from_date: str = Query(None),
-    to_date: str = Query(None),
+@router.get("/company-documents")
+def api_company_documents(
+    symbol: str = Query(..., min_length=1, description="NSE symbol like TCS, INFY"),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Search BSE filings for a company.
-    Pass either NSE symbol or BSE scrip_code.
+    Get all available documents for a company from Screener.in.
+    Returns categorized lists of documents the user can choose to download.
     """
-    if not symbol and not scrip_code:
-        raise HTTPException(status_code=400, detail="Provide symbol or scrip_code")
-
-    if symbol and not scrip_code:
-        scrip_code = nse_to_bse(symbol)
-        if not scrip_code:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No BSE mapping for {symbol}. Use scrip_code directly or add mapping."
-            )
-
-    filings = search_filings(scrip_code, category, from_date, to_date)
-    return {"symbol": symbol, "scrip_code": scrip_code, "filings": filings}
+    docs = get_company_documents(symbol)
+    return docs
 
 
-@router.post("/download")
-def api_download_filing(
-    url: str = Query(..., description="Attachment URL from BSE"),
-    symbol: str = Query("UNKNOWN", description="NSE symbol"),
-    doc_type: str = Query("annual_report", description="Document type"),
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Download a filing PDF from BSE and register it as a Document.
-    """
-    filepath = download_filing(url, UPLOAD_DIR)
-    if not filepath:
-        raise HTTPException(status_code=500, detail="Failed to download filing")
+# ── Download Selected ────────────────────────────────
 
-    filename = os.path.basename(filepath)
-
-    # Check if already registered
-    existing = session.exec(
-        select(Document).where(Document.pdf_path == filepath)
-    ).first()
-    if existing:
-        return {"status": "already_exists", "document_id": existing.id, "filename": filename}
-
-    doc = Document(
-        symbol=symbol.upper(),
-        doc_type=doc_type,
-        pdf_path=filepath,
-    )
-    session.add(doc)
-    session.commit()
-    session.refresh(doc)
-
-    return {"status": "downloaded", "document_id": doc.id, "filename": filename, "path": filepath}
+class DownloadRequest(BaseModel):
+    symbol: str
+    company_name: str = ""
+    documents: list[dict]  # [{url, title, category, date}]
 
 
-@router.post("/auto-fetch")
-def api_auto_fetch(
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Auto-fetch filings for all portfolio holdings.
-    Searches BSE for each holding's symbol and downloads available filings.
-    """
-    holdings = session.exec(
-        select(Holding).where(Holding.user_id == current_user.id)
-    ).all()
+def _run_download_selected(job_id: str, req: DownloadRequest):
+    """Background worker: download and process selected documents."""
+    from finsight.database.session import get_session as _get_session_gen
 
-    if not holdings:
-        return {"status": "no_holdings", "fetched": 0}
+    job = _jobs[job_id]
+    job["status"] = "downloading"
 
-    results = []
-    for h in holdings:
-        bse_code = nse_to_bse(h.symbol)
-        if not bse_code:
-            results.append({"symbol": h.symbol, "status": "no_bse_mapping"})
-            continue
+    session_gen = _get_session_gen()
+    session = next(session_gen)
 
-        filings = search_filings(bse_code, category="Result")
-        downloaded = 0
-        for f in filings[:3]:  # Download up to 3 most recent filings per symbol
-            if not f.get("attachment_url"):
+    try:
+        total = len(req.documents)
+        for i, doc_info in enumerate(req.documents):
+            job["progress"] = i + 1
+            job["total"] = total
+
+            url = doc_info.get("url", "")
+            if not url:
                 continue
 
-            filepath = download_filing(f["attachment_url"], UPLOAD_DIR)
-            if not filepath:
-                continue
-
-            # Check if already registered
+            # Check for existing doc
             existing = session.exec(
-                select(Document).where(Document.pdf_path == filepath)
+                select(Document).where(Document.source_url == url)
             ).first()
             if existing:
+                job["documents"].append({
+                    "document_id": existing.id,
+                    "title": doc_info.get("title", ""),
+                    "status": "already_exists",
+                })
                 continue
 
+            # Download
+            filepath = download_document(url, UPLOAD_DIR)
+            if not filepath:
+                job["documents"].append({
+                    "title": doc_info.get("title", ""),
+                    "status": "download_failed",
+                })
+                continue
+
+            # Register in DB
             doc = Document(
-                symbol=h.symbol.upper(),
-                doc_type="quarterly_result",
+                symbol=req.symbol.upper(),
+                doc_type=doc_info.get("category", "filing"),
+                source_url=url,
                 pdf_path=filepath,
+                file_size=os.path.getsize(filepath) if os.path.exists(filepath) else None,
+                company_name=req.company_name or req.symbol,
+                fiscal_year=doc_info.get("date", ""),
+                status="pending",
             )
             session.add(doc)
-            downloaded += 1
+            session.commit()
+            session.refresh(doc)
 
-        session.commit()
-        results.append({"symbol": h.symbol, "status": "ok", "downloaded": downloaded})
+            # Process (extract, chunk, index)
+            job["status"] = "processing"
+            processed = process_document(session, doc.id)
+            job["documents"].append({
+                "document_id": doc.id,
+                "title": doc_info.get("title", ""),
+                "status": processed.status if processed else "error",
+            })
+            job["status"] = "downloading"
 
-    return {"status": "done", "results": results}
+        job["status"] = "done"
+        job["message"] = f"Processed {len([d for d in job['documents'] if d.get('status') == 'indexed'])} documents"
+    except Exception as e:
+        job["status"] = "error"
+        job["error"] = str(e)[:500]
+    finally:
+        try:
+            next(session_gen, None)
+        except StopIteration:
+            pass
 
 
-@router.post("/add-mapping")
-def api_add_mapping(
-    nse_symbol: str = Query(...),
-    bse_scrip: str = Query(...),
+@router.post("/download-selected")
+def api_download_selected(
+    req: DownloadRequest,
     current_user: User = Depends(get_current_user),
 ):
-    """Add or update an NSE → BSE symbol mapping."""
-    add_symbol_mapping(nse_symbol, bse_scrip)
-    return {"status": "ok", "nse_symbol": nse_symbol.upper(), "bse_scrip": bse_scrip}
+    """
+    Download user-selected documents. Runs in background.
+    Returns a job_id to poll for status.
+    """
+    if not req.documents:
+        raise HTTPException(status_code=400, detail="No documents selected")
+
+    job_id = uuid.uuid4().hex[:12]
+    _jobs[job_id] = {
+        "job_id": job_id,
+        "status": "queued",
+        "company_name": req.company_name or req.symbol,
+        "symbol": req.symbol,
+        "total": len(req.documents),
+        "progress": 0,
+        "documents": [],
+        "error": None,
+        "message": None,
+        "created_at": datetime.utcnow().isoformat(),
+    }
+
+    thread = threading.Thread(
+        target=_run_download_selected,
+        args=(job_id, req),
+        daemon=True,
+    )
+    thread.start()
+
+    return {"job_id": job_id, "status": "queued"}
+
+
+@router.get("/status/{job_id}")
+def api_job_status(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Poll job status."""
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job

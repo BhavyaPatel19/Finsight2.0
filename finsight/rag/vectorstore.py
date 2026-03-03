@@ -52,3 +52,18 @@ def query(
                 "distance": (res["distances"][0][i] if (res.get("distances") and res["distances"][0]) else None),
             })
     return out
+
+
+def delete_by_document_id(document_id: int) -> int:
+    """Delete all embeddings for a given document_id from ChromaDB.
+    Returns the number of items deleted."""
+    coll = get_collection()
+    # Get all IDs matching this document_id
+    results = coll.get(
+        where={"document_id": document_id},
+        include=[],
+    )
+    ids = results.get("ids", [])
+    if ids:
+        coll.delete(ids=ids)
+    return len(ids)

@@ -1,9 +1,71 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ingestionApi, scraperApi } from '../api/client'
-import { Upload, Play, FileText, RefreshCw, X, Search, Download, Zap } from 'lucide-react'
+import {
+  Search, FileText, Trash2, Eye, MessageSquare,
+  Download, RefreshCw, Loader, CheckCircle, AlertCircle,
+  Upload, X, Play, ChevronRight, Square, CheckSquare, BookOpen, Mic
+} from 'lucide-react'
 
-const DOC_TYPES = ['annual_report', 'quarterly_report', 'earnings_call', 'investor_presentation', 'other']
+const STATUS_CONFIG = {
+  pending: { label: 'Pending', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
+  downloading: { label: 'Downloading…', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', spin: true },
+  processing: { label: 'Processing…', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', spin: true },
+  indexed: { label: 'Indexed', color: '#22d3a5', bg: 'rgba(34,211,165,0.12)', icon: CheckCircle },
+  error: { label: 'Error', color: '#f43f5e', bg: 'rgba(244,63,94,0.12)', icon: AlertCircle },
+}
 
+const CATEGORY_ICONS = {
+  annual_report: BookOpen,
+  concall: Mic,
+  announcement: FileText,
+  credit_rating: FileText,
+}
+
+const CATEGORY_COLORS = {
+  annual_report: { color: '#818cf8', bg: 'rgba(129,140,248,0.12)' },
+  concall: { color: '#34d399', bg: 'rgba(52,211,153,0.12)' },
+  announcement: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  credit_rating: { color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending
+  const Icon = cfg.icon
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+      color: cfg.color, background: cfg.bg,
+    }}>
+      {cfg.spin && <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2, borderColor: `${cfg.color} transparent transparent transparent` }} />}
+      {Icon && <Icon size={12} />}
+      {cfg.label}
+    </span>
+  )
+}
+
+function CategoryBadge({ category }) {
+  const cfg = CATEGORY_COLORS[category] || CATEGORY_COLORS.announcement
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+      padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+      color: cfg.color, background: cfg.bg,
+    }}>
+      {category?.replace(/_/g, ' ')}
+    </span>
+  )
+}
+
+function formatSize(bytes) {
+  if (!bytes) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1048576).toFixed(1)} MB`
+}
+
+/* ─── Upload Modal ─────────────────────────────────── */
 function UploadModal({ onClose, onUploaded }) {
   const [file, setFile] = useState(null)
   const [symbol, setSymbol] = useState('')
@@ -37,41 +99,42 @@ function UploadModal({ onClose, onUploaded }) {
             <X size={16} />
           </button>
         </div>
-
         {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
-
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">PDF File *</label>
-            <input id="doc-file" className="form-control" type="file" accept=".pdf"
+            <input className="form-control" type="file" accept=".pdf"
               onChange={e => setFile(e.target.files[0])} required />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
               <label className="form-label">Symbol *</label>
-              <input id="doc-symbol" className="form-control" placeholder="e.g. INFY" value={symbol}
+              <input className="form-control" placeholder="e.g. INFY" value={symbol}
                 onChange={e => setSymbol(e.target.value)} required />
             </div>
             <div className="form-group">
-              <label className="form-label">Doc Type *</label>
-              <select id="doc-type" className="form-control" value={docType} onChange={e => setDocType(e.target.value)}>
-                {DOC_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+              <label className="form-label">Doc Type</label>
+              <select className="form-control" value={docType} onChange={e => setDocType(e.target.value)}>
+                <option value="annual_report">Annual Report</option>
+                <option value="quarterly_report">Quarterly Report</option>
+                <option value="concall">Concall Transcript</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div className="form-group">
               <label className="form-label">Fiscal Quarter</label>
-              <input id="doc-quarter" className="form-control" placeholder="e.g. Q3" value={quarter}
+              <input className="form-control" placeholder="e.g. Q3" value={quarter}
                 onChange={e => setQuarter(e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">Fiscal Year</label>
-              <input id="doc-year" className="form-control" placeholder="e.g. FY25" value={year}
+              <input className="form-control" placeholder="e.g. FY25" value={year}
                 onChange={e => setYear(e.target.value)} />
             </div>
           </div>
-          <button id="doc-upload-btn" className="btn btn-primary w-full" type="submit"
+          <button className="btn btn-primary w-full" type="submit"
             disabled={loading} style={{ justifyContent: 'center' }}>
-            {loading ? <><span className="spinner" /> Uploading…</> : <><Upload size={15} /> Upload & Register</>}
+            {loading ? <><span className="spinner" /> Uploading…</> : <><Upload size={15} /> Upload & Index</>}
           </button>
         </form>
       </div>
@@ -79,336 +142,549 @@ function UploadModal({ onClose, onUploaded }) {
   )
 }
 
+/* ─── Delete Confirmation ──────────────────────────── */
+function DeleteConfirm({ doc, onCancel, onConfirm, deleting }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999
+    }}>
+      <div className="card" style={{ width: 420, maxWidth: '95vw', textAlign: 'center' }}>
+        <Trash2 size={36} style={{ color: 'var(--danger)', marginBottom: 8 }} />
+        <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Delete Document</h3>
+        <p className="text-sm text-muted" style={{ margin: '0 0 16px' }}>
+          Permanently removes the PDF, text chunks, and ChromaDB embeddings.
+        </p>
+        <div style={{
+          padding: '10px 14px', borderRadius: 8, marginBottom: 16,
+          background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)',
+          fontSize: 13, textAlign: 'left',
+        }}>
+          <strong>{doc.company_name || doc.symbol}</strong>
+          <span className="text-muted" style={{ marginLeft: 8 }}>
+            #{doc.id} · {doc.doc_type?.replace(/_/g, ' ')}
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={deleting}>Cancel</button>
+          <button className="btn btn-sm" onClick={onConfirm} disabled={deleting}
+            style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}>
+            {deleting ? <><span className="spinner" /> Deleting…</> : <><Trash2 size={13} /> Delete</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Document Picker (available docs from Screener) ─ */
+function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
+  const [selected, setSelected] = useState(new Set())
+  const allDocs = [
+    ...(companyDocs.annual_reports || []),
+    ...(companyDocs.concalls || []),
+    ...(companyDocs.announcements || []),
+    ...(companyDocs.credit_ratings || []),
+  ]
+
+  const toggle = (idx) => {
+    const next = new Set(selected)
+    next.has(idx) ? next.delete(idx) : next.add(idx)
+    setSelected(next)
+  }
+
+  const toggleCategory = (cat) => {
+    const catDocs = allDocs
+      .map((d, i) => ({ ...d, _idx: i }))
+      .filter(d => d.category === cat)
+    const allSelected = catDocs.every(d => selected.has(d._idx))
+    const next = new Set(selected)
+    catDocs.forEach(d => allSelected ? next.delete(d._idx) : next.add(d._idx))
+    setSelected(next)
+  }
+
+  const handleDownload = () => {
+    const docs = allDocs.filter((_, i) => selected.has(i))
+    onDownload(docs)
+  }
+
+  const renderCategory = (title, docs, category) => {
+    if (!docs.length) return null
+    const catIdx = allDocs.map((d, i) => ({ d, i })).filter(x => x.d.category === category)
+    const allSel = catIdx.every(x => selected.has(x.i))
+    const CatIcon = CATEGORY_ICONS[category] || FileText
+    const catCfg = CATEGORY_COLORS[category] || CATEGORY_COLORS.announcement
+
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+          cursor: 'pointer', userSelect: 'none',
+        }} onClick={() => toggleCategory(category)}>
+          {allSel
+            ? <CheckSquare size={16} style={{ color: 'var(--primary)' }} />
+            : <Square size={16} style={{ color: 'var(--text-muted)' }} />
+          }
+          <CatIcon size={15} style={{ color: catCfg.color }} />
+          <span style={{ fontWeight: 600, fontSize: 13 }}>{title}</span>
+          <span className="text-xs text-muted">({docs.length})</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 28 }}>
+          {docs.map((doc) => {
+            const globalIdx = allDocs.indexOf(doc)
+            const isSel = selected.has(globalIdx)
+            return (
+              <div key={globalIdx}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                  borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                  background: isSel ? 'rgba(129,140,248,0.08)' : 'transparent',
+                  border: `1px solid ${isSel ? 'rgba(129,140,248,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                  transition: 'all 0.15s',
+                }}
+                onClick={() => toggle(globalIdx)}
+              >
+                {isSel
+                  ? <CheckSquare size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                  : <Square size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                }
+                <span style={{ flex: 1, lineHeight: 1.3 }}>{doc.title}</span>
+                {doc.date && <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>{doc.date}</span>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999
+    }}>
+      <div className="card" style={{ width: 640, maxWidth: '95vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-between" style={{ marginBottom: 12 }}>
+          <div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
+              {companyDocs.company_name}
+            </h3>
+            <p className="text-sm text-muted" style={{ margin: '2px 0 0' }}>
+              Select documents to download & index · {allDocs.length} available
+            </p>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: '4px 8px' }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 12, paddingRight: 4 }}>
+          {allDocs.length === 0 ? (
+            <div className="empty-state" style={{ padding: 32 }}>
+              <FileText size={36} />
+              <p>No downloadable documents found on Screener for this company.</p>
+            </div>
+          ) : (
+            <>
+              {renderCategory('Annual Reports', companyDocs.annual_reports || [], 'annual_report')}
+              {renderCategory('Concall Transcripts', companyDocs.concalls || [], 'concall')}
+              {renderCategory('Credit Ratings', companyDocs.credit_ratings || [], 'credit_rating')}
+              {renderCategory('Announcements', companyDocs.announcements || [], 'announcement')}
+            </>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="text-sm text-muted">
+            {selected.size} selected
+          </span>
+          <div className="flex gap-2">
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={handleDownload}
+              disabled={selected.size === 0 || downloading}>
+              {downloading
+                ? <><span className="spinner" /> Starting…</>
+                : <><Download size={14} /> Download {selected.size > 0 && `(${selected.size})`}</>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Main Documents Page ──────────────────────────── */
 export default function Documents() {
+  const navigate = useNavigate()
   const [docs, setDocs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showUpload, setShowUpload] = useState(false)
-  const [running, setRunning] = useState({})
-  const [statusMsg, setStatusMsg] = useState({})
   const [filterSymbol, setFilterSymbol] = useState('')
-  // BSE Search state
-  const [searchSymbol, setSearchSymbol] = useState('')
-  const [filings, setFilings] = useState([])
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [downloading, setDownloading] = useState({})
-  const [autoFetching, setAutoFetching] = useState(false)
-  const [autoFetchResult, setAutoFetchResult] = useState(null)
-  const [activeTab, setActiveTab] = useState('manual') // 'manual' | 'auto'
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
-  // Company Name Search state
-  const [companySearch, setCompanySearch] = useState('')
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
   const [companyResults, setCompanyResults] = useState([])
   const [companyLoading, setCompanyLoading] = useState(false)
+  const searchTimerRef = useRef(null)
 
-  const load = async () => {
+  // Document picker state
+  const [pickerData, setPickerData] = useState(null)
+  const [pickerLoading, setPickerLoading] = useState(false)
+  const [downloadStarting, setDownloadStarting] = useState(false)
+
+  // Job status state
+  const [activeJob, setActiveJob] = useState(null)
+  const pollRef = useRef(null)
+
+  // Load documents
+  const loadDocs = useCallback(async () => {
     setLoading(true)
     try {
       const r = await ingestionApi.list(filterSymbol || undefined)
       setDocs(r.data)
     } catch { setDocs([]) }
     finally { setLoading(false) }
-  }
+  }, [filterSymbol])
 
-  useEffect(() => { load() }, [filterSymbol])
+  useEffect(() => { loadDocs() }, [loadDocs])
 
-  const runIngestion = async (docId) => {
-    setRunning(p => ({ ...p, [docId]: true }))
-    setStatusMsg(p => ({ ...p, [docId]: '' }))
-    try {
-      const r = await ingestionApi.run(docId)
-      setStatusMsg(p => ({ ...p, [docId]: `✅ Indexed ${r.data.chunks_indexed ?? ''} chunks` }))
-    } catch (err) {
-      setStatusMsg(p => ({ ...p, [docId]: `❌ ${err.response?.data?.detail ?? 'Failed'}` }))
-    } finally { setRunning(p => ({ ...p, [docId]: false })) }
-  }
-
-  const handleUploaded = (doc) => {
-    setShowUpload(false)
-    setDocs(prev => [doc, ...prev])
-  }
-
-  const searchFilings = async (scripOverride) => {
-    const query = scripOverride || searchSymbol.trim()
-    if (!query) return
-    setSearchSymbol(query)
-    setSearchLoading(true); setFilings([])
-    try {
-      const r = await scraperApi.filings(query.toUpperCase())
-      setFilings(r.data.filings ?? [])
-    } catch (err) {
-      setFilings([])
-      alert(err.response?.data?.detail ?? 'Search failed')
-    } finally { setSearchLoading(false) }
-  }
-
-  const handleSearchCompany = async () => {
-    if (!companySearch.trim()) return
-    setCompanyLoading(true); setCompanyResults([])
-    try {
-      const r = await scraperApi.searchCompany(companySearch.trim())
-      setCompanyResults(r.data.results ?? [])
-    } catch (err) {
-       console.error(err)
-    } finally { setCompanyLoading(false) }
-  }
-
-  const downloadFiling = async (filing) => {
-    const key = filing.attachment_url
-    setDownloading(p => ({ ...p, [key]: true }))
-    try {
-      const r = await scraperApi.download(filing.attachment_url, searchSymbol.toUpperCase(), 'quarterly_result')
-      setDownloading(p => ({ ...p, [key]: `✅ Doc #${r.data.document_id}` }))
-      load() // Refresh doc list
-    } catch (err) {
-      setDownloading(p => ({ ...p, [key]: `❌ ${err.response?.data?.detail ?? 'Failed'}` }))
+  // Debounced search
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setCompanyResults([])
+      return
     }
+    searchTimerRef.current = setTimeout(async () => {
+      setCompanyLoading(true)
+      try {
+        const r = await scraperApi.searchCompany(searchQuery.trim())
+        setCompanyResults(r.data.results ?? [])
+      } catch { setCompanyResults([]) }
+      finally { setCompanyLoading(false) }
+    }, 400)
+    return () => clearTimeout(searchTimerRef.current)
+  }, [searchQuery])
+
+  // Poll active job
+  useEffect(() => {
+    if (!activeJob || activeJob.status === 'done' || activeJob.status === 'error') {
+      if (pollRef.current) clearInterval(pollRef.current)
+      return
+    }
+    pollRef.current = setInterval(async () => {
+      try {
+        const r = await scraperApi.jobStatus(activeJob.job_id)
+        setActiveJob(r.data)
+        if (r.data.status === 'done' || r.data.status === 'error') {
+          clearInterval(pollRef.current)
+          loadDocs()
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+    return () => clearInterval(pollRef.current)
+  }, [activeJob?.job_id, activeJob?.status, loadDocs])
+
+  // Open document picker for a company
+  const openPicker = async (company) => {
+    setCompanyResults([])
+    setSearchQuery(company.name || company.symbol)
+    setPickerLoading(true)
+    try {
+      const r = await scraperApi.companyDocuments(company.symbol)
+      setPickerData(r.data)
+    } catch {
+      setPickerData(null)
+    } finally { setPickerLoading(false) }
   }
 
-  const autoFetch = async () => {
-    setAutoFetching(true); setAutoFetchResult(null)
+  // Download selected documents
+  const handleDownloadSelected = async (selectedDocs) => {
+    if (!pickerData || !selectedDocs.length) return
+    setDownloadStarting(true)
     try {
-      const r = await scraperApi.autoFetch()
-      setAutoFetchResult(r.data)
-      load()
+      const r = await scraperApi.downloadSelected(
+        pickerData.symbol,
+        pickerData.company_name,
+        selectedDocs
+      )
+      setActiveJob({ ...r.data, company_name: pickerData.company_name })
+      setPickerData(null)
     } catch (err) {
-      setAutoFetchResult({ status: 'error', detail: err.response?.data?.detail ?? 'Failed' })
-    } finally { setAutoFetching(false) }
+      setActiveJob({
+        status: 'error',
+        error: err.response?.data?.detail ?? 'Failed to start download',
+        company_name: pickerData?.company_name,
+      })
+    } finally { setDownloadStarting(false) }
+  }
+
+  // Direct search on Enter
+  const handleSearchSubmit = async () => {
+    if (!searchQuery.trim()) return
+    setCompanyLoading(true)
+    try {
+      const r = await scraperApi.searchCompany(searchQuery.trim())
+      const results = r.data.results ?? []
+      if (results.length === 1) {
+        openPicker(results[0])
+      } else {
+        setCompanyResults(results)
+      }
+    } catch { setCompanyResults([]) }
+    finally { setCompanyLoading(false) }
+  }
+
+  // Delete
+  const handleDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await ingestionApi.delete(deleteTarget.id)
+      setDocs(prev => prev.filter(d => d.id !== deleteTarget.id))
+      setDeleteTarget(null)
+    } catch { /* keep modal open */ }
+    finally { setDeleting(false) }
+  }
+
+  // Process
+  const handleProcess = async (docId) => {
+    try {
+      await ingestionApi.process(docId)
+      loadDocs()
+    } catch { /* ignore */ }
+  }
+
+  const jobStatusLabel = (job) => {
+    if (!job) return null
+    const s = job.status
+    if (s === 'queued') return 'Queued…'
+    if (s === 'downloading') return `Downloading ${job.progress || 0}/${job.total || '?'}…`
+    if (s === 'processing') return `Processing documents…`
+    if (s === 'done') return `✓ Done — ${job.documents?.filter(d => d.status === 'indexed').length || 0} documents indexed`
+    if (s === 'error') return `✗ Error: ${job.error || 'Unknown'}`
+    return s
   }
 
   return (
     <div>
+      {/* Header */}
       <div className="flex-between mb-6">
         <div className="page-header" style={{ marginBottom: 0 }}>
           <h1 className="page-title">Documents</h1>
-          <p className="page-sub">Upload PDFs or auto-fetch from BSE India</p>
+          <p className="page-sub">Search companies on Screener.in, pick documents, and build your library</p>
         </div>
         <div className="flex gap-2">
-          <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={load}>
+          <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={loadDocs}>
             <RefreshCw size={14} />
           </button>
-          <button id="open-upload-modal" className="btn btn-primary btn-sm" onClick={() => setShowUpload(true)}>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowUpload(true)}>
             <Upload size={14} /> Upload PDF
           </button>
         </div>
       </div>
 
-      {/* Tab toggle */}
-      <div className="card mb-6" style={{ padding: '6px', display: 'flex', gap: 4 }}>
-        <button
-          className={`btn btn-sm ${activeTab === 'manual' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('manual')}
-          style={{ flex: 1 }}
-        >
-          <FileText size={14} /> My Documents
-        </button>
-        <button
-          className={`btn btn-sm ${activeTab === 'auto' ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setActiveTab('auto')}
-          style={{ flex: 1 }}
-        >
-          <Search size={14} /> Search BSE Filings
-        </button>
+      {/* ── Search Bar ──────────────────────────────── */}
+      <div className="card mb-6" style={{ position: 'relative', zIndex: 10 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
+          <Search size={15} style={{ display: 'inline', verticalAlign: -2, marginRight: 6 }} />
+          Search & Download Reports
+        </h3>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input
+              className="form-control"
+              style={{ marginBottom: 0, paddingRight: 40 }}
+              placeholder="Search any company… e.g. Tata Motors, Infosys, HDFC Bank"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+            />
+            {(companyLoading || pickerLoading) && (
+              <span className="spinner" style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                width: 16, height: 16, borderWidth: 2,
+              }} />
+            )}
+          </div>
+          <button className="btn btn-primary btn-sm flex-center gap-2"
+            onClick={handleSearchSubmit}
+            disabled={!searchQuery.trim() || companyLoading}>
+            <Search size={14} /> Search
+          </button>
+        </div>
+
+        {/* Company Dropdown */}
+        {companyResults.length > 0 && (
+          <div style={{
+            position: 'absolute', left: 16, right: 16, top: '100%', zIndex: 50,
+            background: 'var(--card-bg, #1a1a2e)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 10, boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            maxHeight: 300, overflowY: 'auto', marginTop: 4,
+          }}>
+            {companyResults.map((c, i) => (
+              <button key={i}
+                style={{
+                  display: 'flex', width: '100%', padding: '10px 16px',
+                  alignItems: 'center', justifyContent: 'space-between',
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  cursor: 'pointer', color: 'var(--text-primary)', textAlign: 'left',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                onClick={() => openPicker(c)}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.symbol}</div>
+                </div>
+                <div className="flex-center gap-1" style={{ color: 'var(--primary)', fontSize: 12, fontWeight: 600 }}>
+                  <ChevronRight size={14} /> View Docs
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Active Job Status */}
+        {activeJob && (
+          <div style={{
+            marginTop: 12, padding: '10px 14px', borderRadius: 8,
+            background: activeJob.status === 'done' ? 'rgba(34,211,165,0.08)'
+              : activeJob.status === 'error' ? 'rgba(244,63,94,0.08)'
+                : 'rgba(56,189,248,0.08)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            {activeJob.status !== 'done' && activeJob.status !== 'error' && (
+              <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+            )}
+            {activeJob.status === 'done' && <CheckCircle size={16} style={{ color: 'var(--success)' }} />}
+            {activeJob.status === 'error' && <AlertCircle size={16} style={{ color: 'var(--danger)' }} />}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{activeJob.company_name || 'Company'}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{jobStatusLabel(activeJob)}</div>
+            </div>
+            {activeJob.status === 'done' && (
+              <button className="btn btn-ghost btn-sm" onClick={() => setActiveJob(null)} style={{ padding: '2px 6px' }}>
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {activeTab === 'auto' && (
-        <>
-          {/* BSE Filing search */}
-          <div className="card mb-6">
-            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
-              🔍 Search BSE Corporate Filings
-            </h3>
+      {/* ── Library Section ─────────────────────────── */}
+      <div className="card mb-6" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <FileText size={15} style={{ color: 'var(--text-muted)' }} />
+        <span style={{ fontWeight: 600, fontSize: 14 }}>Document Library</span>
+        <div style={{ flex: 1 }} />
+        <input className="form-control" style={{ maxWidth: 200, marginBottom: 0, fontSize: 13 }}
+          placeholder="Filter by symbol…" value={filterSymbol}
+          onChange={e => setFilterSymbol(e.target.value)} />
+        <span className="text-sm text-muted">{docs.length} doc{docs.length !== 1 ? 's' : ''}</span>
+      </div>
 
-            {/* Step 1: Search by Name */}
-            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 16 }}>
-              <div style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-muted)' }}>
-                1. Find the company (by name or partial name)
-              </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <input className="form-control" style={{ maxWidth: 280, marginBottom: 0 }}
-                  placeholder="e.g. Tata Motors" value={companySearch}
-                  onChange={e => setCompanySearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearchCompany()} />
-                <button className="btn btn-secondary btn-sm flex-center gap-2" onClick={handleSearchCompany}
-                  disabled={companyLoading || !companySearch.trim()}>
-                  {companyLoading ? <span className="spinner" /> : <Search size={14} />}
-                  Find Company
-                </button>
-              </div>
-              
-              {companyResults.length > 0 && (
-                <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {companyResults.map((c, i) => (
-                    <button key={i} className="btn btn-ghost btn-sm" 
-                      style={{ border: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '6px 12px' }}
-                      onClick={() => searchFilings(c.scrip_code)}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.company_name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Scrip: {c.scrip_code} • {c.industry}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-muted)' }}>
-              2. Or search directly by NSE Symbol or BSE Scrip Code
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-              <input className="form-control" style={{ maxWidth: 200, marginBottom: 0 }}
-                placeholder="NSE Symbol or Scrip Code" value={searchSymbol}
-                onChange={e => setSearchSymbol(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && searchFilings()} />
-              <button className="btn btn-primary btn-sm flex-center gap-2" onClick={() => searchFilings()}
-                disabled={searchLoading || !searchSymbol.trim()}>
-                {searchLoading ? <span className="spinner" /> : <Search size={14} />}
-                {searchLoading ? 'Searching…' : 'Search Filings'}
-              </button>
-              <div style={{ flex: 1 }} />
-              <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={autoFetch} disabled={autoFetching}>
-                {autoFetching ? <span className="spinner" /> : <Zap size={14} />}
-                {autoFetching ? 'Fetching…' : 'Auto-Fetch All Portfolio Docs'}
-              </button>
-            </div>
-
-            {autoFetchResult && (
-              <div className="text-sm mb-4" style={{
-                padding: '8px 12px', borderRadius: 8,
-                background: autoFetchResult.status === 'done' ? 'rgba(34,211,165,0.08)' : 'rgba(244,63,94,0.08)'
-              }}>
-                {autoFetchResult.status === 'done' ? (
-                  autoFetchResult.results?.map((r, i) => (
-                    <div key={i} style={{ marginBottom: 2 }}>
-                      <strong>{r.symbol}</strong>: {r.status === 'ok' ? `${r.downloaded} new docs` : r.status}
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-danger">{autoFetchResult.detail ?? 'Error'}</span>
-                )}
-              </div>
-            )}
-
-            {filings.length > 0 && (
-              <div className="table-wrap" style={{ maxHeight: 400, overflow: 'auto' }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Date</th><th>Category</th><th>Title</th><th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filings.map((f, i) => (
-                      <tr key={i}>
-                        <td className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>{f.date}</td>
-                        <td><span className="badge badge-info">{f.category}</span></td>
-                        <td className="text-sm" style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {f.title}
-                        </td>
-                        <td>
-                          {f.attachment_url ? (
-                            typeof downloading[f.attachment_url] === 'string' ? (
-                              <span className="text-xs" style={{
-                                color: downloading[f.attachment_url].startsWith('✅') ? 'var(--success)' : 'var(--danger)'
-                              }}>
-                                {downloading[f.attachment_url]}
-                              </span>
-                            ) : (
-                              <button className="btn btn-ghost btn-sm flex-center gap-1"
-                                onClick={() => downloadFiling(f)}
-                                disabled={downloading[f.attachment_url] === true}>
-                                {downloading[f.attachment_url] === true
-                                  ? <span className="spinner" />
-                                  : <Download size={13} />}
-                                Download
-                              </button>
-                            )
-                          ) : (
-                            <span className="text-xs text-muted">No attachment</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {searchLoading === false && filings.length === 0 && searchSymbol && (
-              <div className="text-sm text-muted" style={{ textAlign: 'center', padding: 20 }}>
-                No filings found. Try a different symbol or check the BSE scrip code.
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {activeTab === 'manual' && (
-        <>
-          <div className="card mb-6" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <input className="form-control" style={{ maxWidth: 240, marginBottom: 0 }}
-              placeholder="Filter by symbol…" value={filterSymbol}
-              onChange={e => setFilterSymbol(e.target.value)} />
-            <span className="text-sm text-muted">{docs.length} document{docs.length !== 1 ? 's' : ''}</span>
-          </div>
-
-          {loading ? (
-            <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>
-          ) : docs.length === 0 ? (
-            <div className="empty-state card">
-              <FileText size={48} /><p>No documents yet.<br />Upload a PDF or search BSE filings.</p>
-            </div>
-          ) : (
-            <div className="table-wrap card" style={{ padding: 0 }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th><th>Symbol</th><th>Type</th><th>Period</th>
-                    <th>Uploaded</th><th>Status</th><th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {docs.map(doc => (
-                    <tr key={doc.id}>
-                      <td className="text-muted text-xs">#{doc.id}</td>
-                      <td><span className="badge badge-accent">{doc.symbol}</span></td>
-                      <td><span className="badge badge-info">{doc.doc_type?.replace(/_/g,' ')}</span></td>
-                      <td className="text-sm">
-                        {[doc.fiscal_quarter, doc.fiscal_year].filter(Boolean).join(' / ') || '—'}
-                      </td>
-                      <td className="text-sm text-muted">
-                        {doc.ingested_at ? new Date(doc.ingested_at).toLocaleDateString() : '—'}
-                      </td>
-                      <td>
-                        {doc.text_path
-                          ? <span className="badge badge-success">✓ Extracted</span>
-                          : <span className="badge badge-warning">Pending</span>}
-                      </td>
-                      <td>
-                        <div className="flex gap-2" style={{ alignItems: 'center' }}>
-                          <button
-                            id={`ingest-btn-${doc.id}`}
-                            className="btn btn-ghost btn-sm flex-center gap-2"
-                            disabled={running[doc.id]}
-                            onClick={() => runIngestion(doc.id)}
-                          >
-                            {running[doc.id] ? <span className="spinner" /> : <Play size={13} />}
-                            Ingest
-                          </button>
-                          {statusMsg[doc.id] && (
-                            <span className="text-xs" style={{ color: statusMsg[doc.id].startsWith('✅') ? 'var(--success)' : 'var(--danger)' }}>
-                              {statusMsg[doc.id]}
-                            </span>
-                          )}
+      {loading ? (
+        <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>
+      ) : docs.length === 0 ? (
+        <div className="empty-state card">
+          <FileText size={48} />
+          <p>No documents yet.<br />Search for a company above or upload a PDF.</p>
+        </div>
+      ) : (
+        <div className="table-wrap card" style={{ padding: 0 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Company / Symbol</th>
+                <th>Type</th>
+                <th>Period</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Size</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {docs.map(doc => (
+                <tr key={doc.id}>
+                  <td>
+                    <div>
+                      {doc.company_name && (
+                        <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3 }}>
+                          {doc.company_name}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+                      )}
+                      <span className="badge badge-accent">{doc.symbol}</span>
+                    </div>
+                  </td>
+                  <td><CategoryBadge category={doc.doc_type} /></td>
+                  <td className="text-sm">
+                    {[doc.fiscal_quarter, doc.fiscal_year].filter(Boolean).join(' / ') || '—'}
+                  </td>
+                  <td><StatusBadge status={doc.status || 'pending'} /></td>
+                  <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
+                    {doc.ingested_at ? new Date(doc.ingested_at).toLocaleDateString() : '—'}
+                  </td>
+                  <td className="text-sm text-muted">{formatSize(doc.file_size)}</td>
+                  <td>
+                    <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
+                      {doc.pdf_path && (
+                        <button className="btn btn-ghost btn-sm" title="View PDF"
+                          onClick={async () => {
+                            try {
+                              const resp = await ingestionApi.getPdf(doc.id)
+                              const blob = new Blob([resp.data], { type: 'application/pdf' })
+                              window.open(URL.createObjectURL(blob), '_blank')
+                            } catch { alert('Failed to load PDF') }
+                          }}
+                          style={{ padding: '4px 8px' }}>
+                          <Eye size={14} />
+                        </button>
+                      )}
+                      {doc.status === 'indexed' && (
+                        <button className="btn btn-ghost btn-sm" title="Analyze — Chat with RAG"
+                          onClick={() => navigate(`/chat?symbol=${doc.symbol}`)}
+                          style={{ padding: '4px 8px' }}>
+                          <MessageSquare size={14} />
+                        </button>
+                      )}
+                      {doc.status === 'pending' && doc.pdf_path && (
+                        <button className="btn btn-ghost btn-sm" title="Process — Extract & Index"
+                          onClick={() => handleProcess(doc.id)}
+                          style={{ padding: '4px 8px' }}>
+                          <Play size={14} />
+                        </button>
+                      )}
+                      <button className="btn btn-ghost btn-sm" title="Delete"
+                        onClick={() => setDeleteTarget(doc)}
+                        style={{ padding: '4px 8px', color: 'var(--danger)' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUploaded={handleUploaded} />}
+      {/* Modals */}
+      {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUploaded={() => { setShowUpload(false); loadDocs() }} />}
+      {deleteTarget && <DeleteConfirm doc={deleteTarget} deleting={deleting} onCancel={() => setDeleteTarget(null)} onConfirm={handleDelete} />}
+      {pickerData && (
+        <DocumentPicker
+          companyDocs={pickerData}
+          onDownload={handleDownloadSelected}
+          onClose={() => setPickerData(null)}
+          downloading={downloadStarting}
+        />
+      )}
     </div>
   )
 }
