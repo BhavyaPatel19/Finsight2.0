@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ragApi } from '../api/client'
 import {
   Send, Bot, Sparkles, FileText, CheckCircle, Loader,
-  ChevronDown, ChevronRight, Navigation, Brain, AlertCircle,
+  ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
 } from 'lucide-react'
 
 const MODELS = [
@@ -19,8 +19,18 @@ const WELCOME = {
   thinking: null,
 }
 
+const STORAGE_KEY = 'finsight_chat_messages'
+
+function loadMessages() {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return [WELCOME]
+}
+
 export default function Chat() {
-  const [messages, setMessages] = useState([WELCOME])
+  const [messages, setMessages] = useState(loadMessages)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusText, setStatusText] = useState('')
@@ -42,7 +52,13 @@ export default function Chat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages))
   }, [messages])
+
+  const clearChat = () => {
+    setMessages([WELCOME])
+    sessionStorage.removeItem(STORAGE_KEY)
+  }
 
   const loadDocuments = async () => {
     setDocsLoading(true)
@@ -266,6 +282,18 @@ export default function Chat() {
         {/* Right panel — Chat */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+            {/* Chat header with clear button */}
+            {messages.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
+                <button
+                  onClick={clearChat}
+                  className="btn btn-sm"
+                  style={{ fontSize: 11, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, color: '#991b1b' }}
+                >
+                  <Trash2 size={12} /> Clear Chat
+                </button>
+              </div>
+            )}
             {/* Messages */}
             <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
               {messages.map(msg => (
