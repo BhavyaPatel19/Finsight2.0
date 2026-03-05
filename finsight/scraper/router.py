@@ -19,10 +19,6 @@ from finsight.scraper.screener_scraper import (
     get_company_documents,
     download_document,
 )
-from finsight.ingestion.file_manager import (
-    download_and_register,
-    process_document,
-)
 
 router = APIRouter()
 
@@ -118,15 +114,11 @@ def _run_download_selected(job_id: str, req: DownloadRequest):
             session.commit()
             session.refresh(doc)
 
-            # Process (extract, chunk, index)
-            job["status"] = "processing"
-            processed = process_document(session, doc.id)
             job["documents"].append({
                 "document_id": doc.id,
                 "title": doc_info.get("title", ""),
-                "status": processed.status if processed else "error",
+                "status": "downloaded",
             })
-            job["status"] = "downloading"
 
         job["status"] = "done"
         job["message"] = f"Processed {len([d for d in job['documents'] if d.get('status') == 'indexed'])} documents"

@@ -8,6 +8,8 @@ from .financial_metric import FinancialMetric
 from .sentiment import SentimentScore
 from .credibility import ExtractedClaim, CredibilityScore
 from .zerodha_session import ZerodhaSession
+from .page_metadata import PageMetadata
+from .document_section import DocumentSection
 
 __all__ = [
     "User",
@@ -22,4 +24,6 @@ __all__ = [
     "ZerodhaSession",
     "DocType",
     "ClaimCategory",
+    "PageMetadata",
+    "DocumentSection",
 ]

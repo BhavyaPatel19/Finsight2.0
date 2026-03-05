@@ -24,6 +24,8 @@ def init_db() -> None:
         ExtractedClaim,
         CredibilityScore,
         ZerodhaSession,
+        PageMetadata,
+        DocumentSection,
     )  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)

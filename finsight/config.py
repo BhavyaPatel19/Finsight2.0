@@ -27,11 +27,18 @@ ZERODHA_REDIRECT_URI = os.getenv("ZERODHA_REDIRECT_URI", "")
 # Ollama
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_MODEL_PRIMARY = os.getenv("OLLAMA_MODEL_PRIMARY", "deepseek-r1:14b")
+OLLAMA_MODEL_FAST = os.getenv("OLLAMA_MODEL_FAST", "llama3.1:8b-instruct-q8_0")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 
 # ChromaDB
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", str(PROJECT_ROOT / "chroma_db"))
 DOCUMENTS_DIR = PROJECT_ROOT / "documents"  # raw PDFs and extracted text
 
-# Ingestion
+# Ingestion — legacy (used by old chunk_text)
 DEFAULT_CHUNK_SIZE = 512
 DEFAULT_CHUNK_OVERLAP = 64
+
+# RAG — page-aware chunking
+RAG_CHUNK_SIZE = 1500
+RAG_CHUNK_OVERLAP = 200

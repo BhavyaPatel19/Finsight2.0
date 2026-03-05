@@ -12,11 +12,9 @@ from finsight.config import DOCUMENTS_DIR
 from finsight.ingestion.service import (
     list_documents,
     register_document,
-    extract_and_chunk_document,
     ensure_dirs,
 )
 from finsight.ingestion.scheduler import scheduled_fetch_documents
-from finsight.rag.service import index_chunks_for_document
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
@@ -129,10 +127,7 @@ async def upload_and_index(
         fiscal_year=fiscal_year.strip() or None,
         pdf_path=str(path),
     )
-    chunks = extract_and_chunk_document(session, doc.id)
-    if chunks:
-        index_chunks_for_document(session, doc.id)
-    return {"document_id": doc.id, "chunks": len(chunks), "indexed": len(chunks)}
+    return {"document_id": doc.id, "status": "pending"}
 
 
 @router.post("/run")

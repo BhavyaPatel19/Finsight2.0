@@ -1,32 +1,102 @@
+"""
+RAG service — hybrid BM25 + dense retrieval, cross-encoder reranking,
+page-aware context, strict grounding prompt.
+"""
+import re
+
 from sqlmodel import Session, select
 
-from finsight.config import OLLAMA_BASE_URL, OLLAMA_MODEL
-from finsight.models import DocumentChunk, Document
-from finsight.rag.vectorstore import query as chroma_query, add_chunks, get_collection
+from finsight.config import (
+    OLLAMA_BASE_URL,
+    OLLAMA_MODEL_PRIMARY,
+    EMBEDDING_MODEL,
+    RAG_CHUNK_SIZE,
+    RAG_CHUNK_OVERLAP,
+)
+from finsight.models import DocumentChunk, Document, PageMetadata, DocumentSection
+from finsight.rag.vectorstore import (
+    query as chroma_query,
+    query_by_document_ids,
+    add_chunks,
+    delete_by_document_id,
+)
 
 _embedding_model = None
 
+# ---------------------------------------------------------------------------
+# Embeddings (BGE-base-en-v1.5)
+# ---------------------------------------------------------------------------
 
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
         from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
     return _embedding_model
 
 
-def embed(text: str) -> list[float]:
+def embed_query(text: str) -> list[float]:
+    """Embed a search query. BGE requires a query prefix for questions."""
     model = get_embedding_model()
-    return model.encode(text, convert_to_numpy=True).tolist()
+    prefixed = f"Represent this sentence for searching relevant passages: {text}"
+    return model.encode(prefixed, convert_to_numpy=True, normalize_embeddings=True).tolist()
 
+
+def embed_documents(texts: list[str]) -> list[list[float]]:
+    """Embed document chunks. BGE does NOT use a prefix for documents."""
+    model = get_embedding_model()
+    return model.encode(
+        texts, convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False
+    ).tolist()
+
+
+# Keep old name for backward compat with legacy indexing
+def embed(text: str) -> list[float]:
+    return embed_query(text)
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    model = get_embedding_model()
-    return model.encode(texts, convert_to_numpy=True).tolist()
+    return embed_documents(texts)
 
+
+# ---------------------------------------------------------------------------
+# Reciprocal Rank Fusion
+# ---------------------------------------------------------------------------
+
+def _reciprocal_rank_fusion(
+    dense_hits: list[dict],
+    bm25_hits: list[dict],
+    k: int = 60,
+) -> list[dict]:
+    """
+    Combine dense + BM25 results using Reciprocal Rank Fusion.
+    RRF score = 1/(k + rank_dense) + 1/(k + rank_bm25)
+    Deduplicates by chunk ID.
+    """
+    scores: dict[str, dict] = {}
+
+    for rank, hit in enumerate(dense_hits):
+        meta = hit.get("metadata", {})
+        cid = f"doc_{meta.get('document_id')}_chunk_{meta.get('chunk_index')}"
+        if cid not in scores:
+            scores[cid] = {"rrf_score": 0.0, "item": hit}
+        scores[cid]["rrf_score"] += 1.0 / (k + rank + 1)
+
+    for rank, hit in enumerate(bm25_hits):
+        meta = hit.get("metadata", {})
+        cid = f"doc_{meta.get('document_id')}_chunk_{meta.get('chunk_index')}"
+        if cid not in scores:
+            scores[cid] = {"rrf_score": 0.0, "item": hit}
+        scores[cid]["rrf_score"] += 1.0 / (k + rank + 1)
+
+    merged = sorted(scores.values(), key=lambda x: x["rrf_score"], reverse=True)
+    return [m["item"] for m in merged]
+
+
+# ---------------------------------------------------------------------------
+# Legacy index (kept for backward compat with old ingestion flow)
+# ---------------------------------------------------------------------------
 
 def index_chunks_for_document(session: Session, document_id: int) -> int:
-    """Load DocumentChunks for document_id, embed, add to Chroma. Returns count indexed."""
     doc = session.get(Document, document_id)
     if not doc:
         return 0
@@ -35,68 +105,348 @@ def index_chunks_for_document(session: Session, document_id: int) -> int:
     if not chunks:
         return 0
     texts = [c.text for c in chunks]
-    embeddings = embed_batch(texts)
-    ids = []
-    metadatas = []
-    for c in chunks:
-        ids.append(f"doc_{document_id}_chunk_{c.chunk_index}")
-        metadatas.append({
+    embeddings = embed_documents(texts)
+    ids = [f"doc_{document_id}_chunk_{c.chunk_index}" for c in chunks]
+    metadatas = [{
+        "symbol": doc.symbol or "",
+        "doc_type": doc.doc_type or "",
+        "fiscal_quarter": doc.fiscal_quarter or "",
+        "fiscal_year": doc.fiscal_year or "",
+        "document_id": document_id,
+        "chunk_index": c.chunk_index,
+        "page_number": 0,
+        "section": "",
+        "sub_section": "",
+    } for c in chunks]
+    add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
+    return len(chunks)
+
+
+# ---------------------------------------------------------------------------
+# On-demand RAG processing
+# ---------------------------------------------------------------------------
+
+def process_for_rag(session: Session, document_id: int) -> dict:
+    """
+    On-demand: extract structured text → page-aware chunks → embed → ChromaDB.
+    Uses smart chunking (concall-aware).
+    """
+    from finsight.ingestion.parsers import extract_structured_document, chunk_smart
+
+    doc = session.get(Document, document_id)
+    if not doc or not doc.pdf_path:
+        return {"status": "error", "message": "Document or PDF not found"}
+
+    if doc.status == "indexed":
+        return {"status": "already_indexed", "document_id": document_id}
+
+    doc.status = "processing"
+    session.add(doc)
+    session.commit()
+
+    try:
+        structured = extract_structured_document(doc.pdf_path)
+        pages = structured["pages"]
+        sections = structured["sections"]
+        total_pages = structured["total_pages"]
+
+        if not pages:
+            doc.status = "error"
+            doc.error_message = "No text extracted from PDF"
+            session.add(doc)
+            session.commit()
+            return {"status": "error", "message": "No text extracted"}
+
+        # Save PageMetadata rows
+        for page_data in pages:
+            if not page_data["text"]:
+                continue
+            pm = PageMetadata(
+                document_id=document_id,
+                page_number=page_data["page"],
+                section_title=page_data.get("section"),
+                sub_section_title=page_data.get("sub_section"),
+                text=page_data["text"],
+            )
+            session.add(pm)
+
+        # Save DocumentSection rows
+        _save_sections(session, document_id, sections, parent_id=None)
+
+        # Save full text
+        full_text = "\n\n".join(p["text"] for p in pages if p["text"])
+        from pathlib import Path
+        if doc.pdf_path:
+            text_path = Path(doc.pdf_path).with_suffix(".txt")
+            text_path.write_text(full_text, encoding="utf-8")
+            doc.text_path = str(text_path)
+
+        # Smart chunking (concall-aware)
+        chunks = chunk_smart(pages, chunk_size=RAG_CHUNK_SIZE, overlap=RAG_CHUNK_OVERLAP)
+
+        # Delete old chunks + ChromaDB entries
+        old_chunks = session.exec(
+            select(DocumentChunk).where(DocumentChunk.document_id == document_id)
+        ).all()
+        for oc in old_chunks:
+            session.delete(oc)
+        delete_by_document_id(document_id)
+
+        # Save new DocumentChunk rows
+        for chunk in chunks:
+            dc = DocumentChunk(
+                document_id=document_id,
+                chunk_index=chunk["chunk_index"],
+                text=chunk["text"],
+            )
+            session.add(dc)
+        session.commit()
+
+        # Embed and index to ChromaDB
+        texts = [c["text"] for c in chunks]
+        embeddings = embed_documents(texts)
+        ids = [f"doc_{document_id}_chunk_{c['chunk_index']}" for c in chunks]
+        metadatas = [{
             "symbol": doc.symbol or "",
             "doc_type": doc.doc_type or "",
             "fiscal_quarter": doc.fiscal_quarter or "",
             "fiscal_year": doc.fiscal_year or "",
             "document_id": document_id,
-            "chunk_index": c.chunk_index,
-        })
-    add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
-    return len(chunks)
+            "chunk_index": c["chunk_index"],
+            "page_number": c.get("page_number", 0),
+            "section": c.get("section") or "",
+            "sub_section": c.get("sub_section") or "",
+        } for c in chunks]
+        add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
+
+        # Invalidate BM25 index (will rebuild on next query)
+        from finsight.rag.bm25_store import invalidate_bm25
+        invalidate_bm25()
+
+        doc.status = "indexed"
+        doc.chunk_count = len(chunks)
+        doc.error_message = None
+        session.add(doc)
+        session.commit()
+
+        return {
+            "status": "indexed",
+            "document_id": document_id,
+            "total_pages": total_pages,
+            "chunks": len(chunks),
+            "sections": _count_sections(sections),
+        }
+
+    except Exception as e:
+        doc.status = "error"
+        doc.error_message = str(e)[:500]
+        session.add(doc)
+        session.commit()
+        return {"status": "error", "message": str(e)[:500]}
 
 
-def call_ollama(prompt: str, max_tokens: int = 1024) -> str:
+def _save_sections(session, document_id, sections, parent_id):
+    for sec in sections:
+        ds = DocumentSection(
+            document_id=document_id,
+            title=sec["title"],
+            level=sec["level"],
+            parent_id=parent_id,
+            start_page=sec["start_page"],
+            end_page=sec.get("end_page"),
+        )
+        session.add(ds)
+        session.flush()
+        if sec.get("children"):
+            _save_sections(session, document_id, sec["children"], parent_id=ds.id)
+
+
+def _count_sections(sections):
+    count = len(sections)
+    for s in sections:
+        if s.get("children"):
+            count += _count_sections(s["children"])
+    return count
+
+
+# ---------------------------------------------------------------------------
+# LLM
+# ---------------------------------------------------------------------------
+
+def call_ollama(prompt: str, model: str | None = None, max_tokens: int = 2048) -> str:
     import httpx
+    model_name = model or OLLAMA_MODEL_PRIMARY
     url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
     payload = {
-        "model": OLLAMA_MODEL,
+        "model": model_name,
         "prompt": prompt,
         "stream": False,
         "options": {"num_predict": max_tokens},
     }
     try:
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=120.0) as client:
             r = client.post(url, json=payload)
             r.raise_for_status()
-            data = r.json()
-            return data.get("response", "").strip()
+            return r.json().get("response", "").strip()
     except Exception as e:
         return f"[LLM error: {e}]"
 
 
+def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
+    """Extract <think>...</think> reasoning trace from DeepSeek-R1 output."""
+    think_match = re.search(r"<think>(.*?)</think>", response, re.DOTALL)
+    if think_match:
+        thinking = think_match.group(1).strip()
+        answer = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+        return answer, thinking
+    return response, None
+
+
+# ---------------------------------------------------------------------------
+# Strict grounding prompt
+# ---------------------------------------------------------------------------
+
+FINANCIAL_RAG_PROMPT = """You are a financial analyst assistant. Your ONLY job is to answer questions using the document excerpts provided below.
+
+STRICT RULES:
+1. Answer ONLY using information present in the context below. Do not use any external knowledge.
+2. Quote numbers EXACTLY as they appear in the source. Do not round or paraphrase figures.
+3. For every fact you state, cite the source using this format: [Section: <section> > Page <page>]
+4. If the information is not found in the context, respond with exactly: "Not found in the selected documents."
+5. State units exactly as written in the source (crores, millions, %, basis points, etc.).
+
+Context ({n} sections from {doc_count} document(s)):
+
+{context}
+
+Question: {question}
+
+Answer with citations:"""
+
+
+def _build_section_context(chunks: list[dict]) -> str:
+    """Build structured context string grouped by section."""
+    parts = []
+    for i, chunk in enumerate(chunks):
+        meta = chunk.get("metadata", {})
+        page = meta.get("page_number", "?")
+        section = meta.get("section", "")
+        sub_section = meta.get("sub_section", "")
+        symbol = meta.get("symbol", "")
+        doc_type = meta.get("doc_type", "")
+        fy = meta.get("fiscal_year", "")
+
+        header = f"[{i+1}]"
+        if symbol:
+            header += f" {symbol}"
+        if doc_type:
+            header += f" · {doc_type}"
+        if fy:
+            header += f" · {fy}"
+        if section:
+            header += f" | {section}"
+            if sub_section:
+                header += f" > {sub_section}"
+        header += f" | Page {page}"
+
+        parts.append(f"{header}\n{chunk.get('text', '')}")
+    return "\n\n---\n\n".join(parts) if parts else "No relevant context found."
+
+
+# ---------------------------------------------------------------------------
+# Main RAG query pipeline
+# ---------------------------------------------------------------------------
+
 def answer_question(
     session: Session,
     question: str,
+    document_ids: list[int] | None = None,
     symbol: str | None = None,
     period: str | None = None,
     top_k: int = 8,
-) -> tuple[str, list[dict]]:
-    """Retrieve chunks, build prompt, call Ollama, return answer and sources."""
-    q_emb = embed(question)
-    where = None
-    if symbol:
-        where = {"symbol": symbol}
-    if period:
-        if where is None:
-            where = {}
-        where["fiscal_year"] = period  # or fiscal_quarter depending on format
-    hits = chroma_query(q_emb, n_results=top_k, where=where)
+    model: str | None = None,
+) -> dict:
+    """
+    Hybrid RAG pipeline:
+    1. BGE query embedding
+    2. Dense retrieval (ChromaDB top-30)
+    3. BM25 keyword retrieval (top-30)
+    4. Reciprocal Rank Fusion → merged top-30
+    5. BGE-reranker cross-encoder → top-k
+    6. Strict grounded prompt
+    7. DeepSeek-R1 / Llama 3.1 inference
+    8. Parse thinking trace + navigation breadcrumbs
+    """
+    from finsight.rag.bm25_store import bm25_search, build_bm25_index, is_built
+    from finsight.rag.reranker import rerank
 
-    context_parts = []
+    # 1. Embed query
+    q_emb = embed_query(question)
+
+    # 2. Dense retrieval
+    if document_ids:
+        dense_hits = query_by_document_ids(q_emb, document_ids, n_results=30)
+    else:
+        where = None
+        if symbol:
+            where = {"symbol": symbol}
+        if period:
+            where = where or {}
+            where["fiscal_year"] = period
+        dense_hits = chroma_query(q_emb, n_results=30, where=where)
+
+    # 3. BM25 retrieval
+    if not is_built():
+        build_bm25_index(session)
+    bm25_hits = bm25_search(question, n_results=30, document_ids=document_ids)
+
+    # 4. Reciprocal Rank Fusion
+    merged = _reciprocal_rank_fusion(dense_hits, bm25_hits)[:30]
+
+    # 5. Rerank → top-k
+    top_chunks = rerank(question, merged, top_k=top_k) if merged else []
+
+    # 6. Build structured context
+    context = _build_section_context(top_chunks)
+
+    # 7. Format strict prompt
+    unique_doc_ids = len({c.get("metadata", {}).get("document_id") for c in top_chunks})
+    prompt = FINANCIAL_RAG_PROMPT.format(
+        n=len(top_chunks),
+        doc_count=unique_doc_ids,
+        context=context,
+        question=question,
+    )
+
+    # 8. Call LLM
+    model_name = model or OLLAMA_MODEL_PRIMARY
+    raw_response = call_ollama(prompt, model=model_name, max_tokens=2048)
+
+    # 9. Parse thinking trace
+    answer, thinking = _parse_deepseek_thinking(raw_response)
+
+    # 10. Build navigation breadcrumbs (deduplicated)
+    navigations = []
+    seen = set()
+    for chunk in top_chunks:
+        meta = chunk.get("metadata", {})
+        page_num = meta.get("page_number", 0)
+        section = meta.get("section", "")
+        sub_section = meta.get("sub_section", "")
+        nav_key = f"{section}|{sub_section}|{page_num}"
+        if nav_key not in seen:
+            seen.add(nav_key)
+            navigations.append({
+                "section": section or None,
+                "sub_section": sub_section or None,
+                "page_number": page_num if isinstance(page_num, int) else 0,
+                "snippet": chunk.get("text", "")[:200],
+            })
+
+    # 11. Build sources
     sources = []
-    for i, h in enumerate(hits):
-        meta = h.get("metadata") or {}
-        context_parts.append(
-            f"[{i+1}] (symbol={meta.get('symbol')}, doc_type={meta.get('doc_type')}, "
-            f"quarter={meta.get('fiscal_quarter')}, year={meta.get('fiscal_year')})\n{h.get('text', '')}"
-        )
+    for chunk in top_chunks:
+        meta = chunk.get("metadata", {})
         sources.append({
             "symbol": meta.get("symbol"),
             "doc_type": meta.get("doc_type"),
@@ -104,18 +454,16 @@ def answer_question(
             "fiscal_year": meta.get("fiscal_year"),
             "document_id": meta.get("document_id"),
             "chunk_index": meta.get("chunk_index"),
-            "snippet": (h.get("text", ""))[:300],
+            "page_number": meta.get("page_number"),
+            "section": meta.get("section"),
+            "sub_section": meta.get("sub_section"),
+            "snippet": chunk.get("text", "")[:300],
         })
 
-    context = "\n\n".join(context_parts) if context_parts else "No relevant context found."
-    prompt = f"""Answer the question using ONLY the following context. If the context does not contain the answer, say so. Cite which source number [1], [2], etc. you use.
-
-Context:
-{context}
-
-Question: {question}
-
-Answer:"""
-
-    answer = call_ollama(prompt)
-    return answer, sources
+    return {
+        "answer": answer,
+        "thinking": thinking,
+        "navigations": navigations,
+        "sources": sources,
+        "model_used": model_name,
+    }

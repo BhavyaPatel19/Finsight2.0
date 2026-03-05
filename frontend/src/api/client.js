@@ -86,8 +86,16 @@ export const ingestionApi = {
 
 // ── RAG ───────────────────────────────────────────────
 export const ragApi = {
-  query: (question, symbol, period, topK = 8) =>
-    client.post('/rag/query', { question, symbol, period, top_k: topK }),
+  availableDocuments: () => client.get('/rag/available-documents'),
+  prepare: (documentIds) =>
+    client.post('/rag/prepare', { document_ids: documentIds }),
+  query: (question, documentIds, model, topK = 8) =>
+    client.post('/rag/query', {
+      question,
+      document_ids: documentIds,
+      model,
+      top_k: topK,
+    }),
 }
 
 // ── Sentiment ─────────────────────────────────────────

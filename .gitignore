@@ -30,6 +30,10 @@ desktop.ini
 
 # ChromaDB data
 chroma_data/
+chroma_db/
+
+# Claude Code
+.claude/
 
 # Uploaded documents
 uploads/
