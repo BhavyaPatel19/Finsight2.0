@@ -57,6 +57,7 @@ export const marketApi = {
     client.get(`/market/history/${symbol}`, { params: { interval, from_date, to_date } }),
   watchlist: () => client.get('/market/watchlist'),
   searchInstruments: (q) => client.get('/market/instruments/search', { params: { q } }),
+  fundamentals: (symbol) => client.get(`/market/fundamentals/${symbol}`),
 }
 
 // ── Ingestion ─────────────────────────────────────────

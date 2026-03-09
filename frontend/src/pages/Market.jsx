@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { marketApi } from '../api/client'
 import {
   Activity, RefreshCw, TrendingUp, TrendingDown, Clock,
-  Search, X, Star
+  Search, X, Star, BarChart3, Loader
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
@@ -19,6 +19,83 @@ const fmtVol = (n) => {
   if (n >= 100000) return (n / 100000).toFixed(2) + 'L'
   if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
   return n
+}
+
+const fmtMcap = (n) => {
+  if (n == null) return '—'
+  if (n >= 1e12) return '₹' + (n / 1e12).toFixed(2) + 'T'
+  if (n >= 1e9) return '₹' + (n / 1e9).toFixed(2) + 'B'
+  if (n >= 1e7) return '₹' + (n / 1e7).toFixed(2) + 'Cr'
+  return fmtCcy(n)
+}
+
+const fmtPct = (n) => n == null ? '—' : n.toFixed(2) + '%'
+
+const TIME_RANGES = [
+  { key: '1D', label: '1 Day', interval: 'minute', days: 0 },
+  { key: '1W', label: '1 Week', interval: '15minute', days: 7 },
+  { key: '1M', label: '1 Month', interval: 'day', days: 30 },
+  { key: '3M', label: '3 Months', interval: 'day', days: 90 },
+  { key: '1Y', label: '1 Year', interval: 'day', days: 365 },
+]
+
+function MetricCard({ label, value, color }) {
+  return (
+    <div style={{
+      padding: '10px 14px', background: 'rgba(255,255,255,0.03)',
+      borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)',
+    }}>
+      <div className="text-xs text-muted" style={{ marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: color || 'var(--text-primary)' }}>
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function MetricsPanel({ data, loading }) {
+  if (loading) {
+    return (
+      <div className="card" style={{ marginBottom: 16, padding: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-muted)', fontSize: 13 }}>
+          <Loader size={16} className="spin" /> Loading fundamentals...
+        </div>
+      </div>
+    )
+  }
+  if (!data || data.error) return null
+
+  const deColor = data.debt_to_equity != null
+    ? (data.debt_to_equity > 1.5 ? '#f43f5e' : data.debt_to_equity < 0.5 ? '#22d3a5' : 'var(--text-primary)')
+    : undefined
+  const roeColor = data.roe != null
+    ? (data.roe > 15 ? '#22d3a5' : data.roe < 10 ? '#f43f5e' : 'var(--text-primary)')
+    : undefined
+  const roceColor = data.roce != null
+    ? (data.roce > 15 ? '#22d3a5' : data.roce < 10 ? '#f43f5e' : 'var(--text-primary)')
+    : undefined
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <BarChart3 size={16} color="#6366f1" /> Fundamentals
+        {data.sector && <span className="badge" style={{ fontSize: 10, marginLeft: 'auto' }}>{data.sector}</span>}
+      </h4>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
+        {data.pe_ratio != null && <MetricCard label="P/E Ratio" value={data.pe_ratio.toFixed(2)} />}
+        {data.pb_ratio != null && <MetricCard label="P/B Ratio" value={data.pb_ratio.toFixed(2)} />}
+        {data.roe != null && <MetricCard label="ROE" value={fmtPct(data.roe)} color={roeColor} />}
+        {data.roce != null && <MetricCard label="ROCE" value={fmtPct(data.roce)} color={roceColor} />}
+        {data.eps != null && <MetricCard label="EPS" value={'₹' + data.eps.toFixed(2)} />}
+        {data.debt_to_equity != null && <MetricCard label="D/E Ratio" value={data.debt_to_equity.toFixed(2)} color={deColor} />}
+        {data.dividend_yield != null && <MetricCard label="Div Yield" value={fmtPct(data.dividend_yield)} />}
+        {data.market_cap != null && <MetricCard label="Market Cap" value={fmtMcap(data.market_cap)} />}
+        {data.book_value != null && <MetricCard label="Book Value" value={'₹' + data.book_value.toFixed(2)} />}
+        {data.high_52w != null && <MetricCard label="52W High" value={fmtCcy(data.high_52w)} color="#22d3a5" />}
+        {data.low_52w != null && <MetricCard label="52W Low" value={fmtCcy(data.low_52w)} color="#f43f5e" />}
+      </div>
+    </div>
+  )
 }
 
 function isMarketOpen() {
@@ -75,8 +152,10 @@ export default function Market() {
   const [selectedSymbol, setSelectedSymbol] = useState(null)
   const [history, setHistory] = useState([])
   const [histLoading, setHistLoading] = useState(false)
-  const [interval, setInterval_] = useState('day')
+  const [timeRange, setTimeRange] = useState('1M')
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [fundamentals, setFundamentals] = useState(null)
+  const [fundLoading, setFundLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
 
   // Search state
@@ -158,7 +237,7 @@ export default function Market() {
     }
     setSearchQuery('')
     setSearchOpen(false)
-    setSelectedSymbol(symbol)
+    selectStock(symbol)
   }
 
   const removeSymbol = (symbol) => {
@@ -172,19 +251,45 @@ export default function Market() {
     if (selectedSymbol === symbol) setSelectedSymbol(null)
   }
 
-  const loadHistory = async (sym) => {
+  const loadHistory = async (sym, range) => {
+    const r_ = range || timeRange
+    const cfg = TIME_RANGES.find(t => t.key === r_) || TIME_RANGES[2]
     setSelectedSymbol(sym)
     setHistLoading(true)
     try {
-      const r = await marketApi.history(sym, interval)
+      let fromDate, toDate
+      const today = new Date()
+      toDate = today.toISOString().split('T')[0]
+      if (cfg.days === 0) {
+        fromDate = toDate // same day
+      } else {
+        const from = new Date(today)
+        from.setDate(from.getDate() - cfg.days)
+        fromDate = from.toISOString().split('T')[0]
+      }
+      const r = await marketApi.history(sym, cfg.interval, fromDate, toDate)
       setHistory(r.data.candles ?? [])
     } catch { setHistory([]) }
     finally { setHistLoading(false) }
   }
 
+  const loadFundamentals = async (sym) => {
+    setFundLoading(true)
+    try {
+      const r = await marketApi.fundamentals(sym)
+      setFundamentals(r.data)
+    } catch { setFundamentals(null) }
+    finally { setFundLoading(false) }
+  }
+
+  const selectStock = (sym) => {
+    loadHistory(sym)
+    loadFundamentals(sym)
+  }
+
   useEffect(() => {
-    if (selectedSymbol) loadHistory(selectedSymbol)
-  }, [interval])
+    if (selectedSymbol) loadHistory(selectedSymbol, timeRange)
+  }, [timeRange])
 
   const refreshAll = () => {
     loadWatchlist()
@@ -317,7 +422,7 @@ export default function Market() {
                     symKey={key}
                     quote={watchlistQuotes[key]}
                     isSelected={selectedSymbol === key.split(':').pop()}
-                    onClick={loadHistory}
+                    onClick={selectStock}
                   />
                 ))}
               </div>
@@ -339,7 +444,7 @@ export default function Market() {
                         symKey={key}
                         quote={customQuotes[key]}
                         isSelected={selectedSymbol === sym}
-                        onClick={loadHistory}
+                        onClick={selectStock}
                       />
                       <button
                         onClick={(e) => { e.stopPropagation(); removeSymbol(sym) }}
@@ -358,6 +463,11 @@ export default function Market() {
             </div>
           )}
 
+          {/* Fundamentals */}
+          {selectedSymbol && (
+            <MetricsPanel data={fundamentals} loading={fundLoading} />
+          )}
+
           {/* Chart */}
           {selectedSymbol && (
             <div className="card">
@@ -366,16 +476,11 @@ export default function Market() {
                   {selectedSymbol} — Price History
                 </h3>
                 <div className="flex gap-2">
-                  {[
-                    { key: 'day', label: '1D' },
-                    { key: '15minute', label: '15m' },
-                    { key: '5minute', label: '5m' },
-                    { key: 'minute', label: '1m' },
-                  ].map(({ key, label }) => (
+                  {TIME_RANGES.map(({ key, label }) => (
                     <button
                       key={key}
-                      className={`btn btn-sm ${interval === key ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => setInterval_(key)}
+                      className={`btn btn-sm ${timeRange === key ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setTimeRange(key)}
                       style={{ fontSize: 11, padding: '4px 10px' }}
                     >
                       {label}
@@ -389,7 +494,7 @@ export default function Market() {
                 <div className="empty-state text-muted">No historical data available</div>
               ) : (
                 <ResponsiveContainer width="100%" height={350}>
-                  <ComposedChart data={history.slice(-100)}>
+                  <ComposedChart data={history}>
                     <defs>
                       <linearGradient id="gradClose" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
@@ -403,7 +508,8 @@ export default function Market() {
                       axisLine={false} tickLine={false}
                       tickFormatter={t => {
                         const d = new Date(t)
-                        return interval === 'day'
+                        const cfg = TIME_RANGES.find(r => r.key === timeRange)
+                        return cfg && cfg.interval === 'day'
                           ? `${d.getDate()}/${d.getMonth() + 1}`
                           : `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
                       }}

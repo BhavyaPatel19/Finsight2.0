@@ -10,6 +10,7 @@ from .credibility import ExtractedClaim, CredibilityScore
 from .zerodha_session import ZerodhaSession
 from .page_metadata import PageMetadata
 from .document_section import DocumentSection
+from .stock_metrics import StockMetrics
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "ClaimCategory",
     "PageMetadata",
     "DocumentSection",
+    "StockMetrics",
 ]

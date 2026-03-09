@@ -212,3 +212,18 @@ def search_instruments(
                 break
 
     return {"results": results}
+
+
+@router.get("/fundamentals/{symbol}")
+def get_fundamentals_endpoint(
+    symbol: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get fundamental metrics for a stock (PE, ROE, ROCE, etc.).
+    Uses 24h SQLite cache to avoid excessive yfinance requests.
+    """
+    from finsight.market.fundamentals import get_fundamentals
+
+    return get_fundamentals(session, symbol.upper())

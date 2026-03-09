@@ -26,6 +26,7 @@ def init_db() -> None:
         ZerodhaSession,
         PageMetadata,
         DocumentSection,
+        StockMetrics,
     )  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)
