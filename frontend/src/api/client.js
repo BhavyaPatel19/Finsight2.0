@@ -126,4 +126,26 @@ export const scraperApi = {
     client.get(`/scraper/status/${jobId}`),
 }
 
+// ── Credibility Sentiment ─────────────────────────────
+export const credisentimentApi = {
+  availableDocuments: () =>
+    client.get('/credisentiment/available-documents'),
+  analyzeSentiment: (documentIds) =>
+    client.post('/credisentiment/analyze-sentiment', { document_ids: documentIds }),
+  walkTheTalk: (claimsDocId, actualsDocId) =>
+    client.post('/credisentiment/walk-the-talk', {
+      claims_document_id: claimsDocId,
+      actuals_document_id: actualsDocId,
+    }),
+  upload: (file, symbol, docType, fiscalQuarter, fiscalYear) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('symbol', symbol)
+    fd.append('doc_type', docType)
+    if (fiscalQuarter) fd.append('fiscal_quarter', fiscalQuarter)
+    if (fiscalYear) fd.append('fiscal_year', fiscalYear)
+    return client.post('/credisentiment/upload', fd)
+  },
+}
+
 export default client

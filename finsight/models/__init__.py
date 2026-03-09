@@ -10,6 +10,7 @@ from .credibility import ExtractedClaim, CredibilityScore
 from .zerodha_session import ZerodhaSession
 from .page_metadata import PageMetadata
 from .document_section import DocumentSection
+from .division_sentiment import DivisionSentiment, WalkTheTalkResult
 
 __all__ = [
     "User",
@@ -26,4 +27,6 @@ __all__ = [
     "ClaimCategory",
     "PageMetadata",
     "DocumentSection",
+    "DivisionSentiment",
+    "WalkTheTalkResult",
 ]

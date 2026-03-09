@@ -1,18 +1,19 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, MessageSquare,
-  BarChart2, ShieldCheck, LogOut, TrendingUp, Activity
+  BarChart2, ShieldCheck, LogOut, TrendingUp, Activity, Scale
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const NAV = [
-  { to: '/',            icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/market',      icon: Activity,         label: 'Live Market' },
-  { to: '/documents',   icon: FileText,         label: 'Documents' },
-  { to: '/chat',        icon: MessageSquare,    label: 'RAG Chat' },
-  { to: '/sentiment',   icon: TrendingUp,       label: 'Sentiment' },
-  { to: '/credibility', icon: ShieldCheck,      label: 'Credibility' },
-  { to: '/portfolio',   icon: BarChart2,        label: 'Portfolio' },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/market', icon: Activity, label: 'Live Market' },
+  { to: '/documents', icon: FileText, label: 'Documents' },
+  { to: '/chat', icon: MessageSquare, label: 'RAG Chat' },
+  { to: '/sentiment', icon: TrendingUp, label: 'Sentiment' },
+  { to: '/credibility', icon: ShieldCheck, label: 'Credibility' },
+  { to: '/credisentiment', icon: Scale, label: 'Credi-Sentiment' },
+  { to: '/portfolio', icon: BarChart2, label: 'Portfolio' },
 ]
 
 export default function Sidebar() {

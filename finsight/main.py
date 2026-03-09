@@ -14,6 +14,7 @@ from finsight.sentiment.router import router as sentiment_router
 from finsight.credibility.router import router as credibility_router
 from finsight.market.router import router as market_router
 from finsight.scraper.router import router as scraper_router
+from finsight.credisentiment.router import router as credisentiment_router
 
 
 @asynccontextmanager
@@ -52,3 +53,4 @@ app.include_router(sentiment_router, prefix="/sentiment", tags=["sentiment"])
 app.include_router(credibility_router, prefix="/credibility", tags=["credibility"])
 app.include_router(market_router, prefix="/market", tags=["market"])
 app.include_router(scraper_router, prefix="/scraper", tags=["scraper"])
+app.include_router(credisentiment_router, prefix="/credisentiment", tags=["credisentiment"])
