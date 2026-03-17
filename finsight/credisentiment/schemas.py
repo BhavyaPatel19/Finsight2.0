@@ -71,3 +71,12 @@ class AvailableDocumentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── Processing pipeline response ─────────────────────
+
+class ProcessResponse(BaseModel):
+    status: str          # "indexed" | "already_indexed" | "error"
+    document_id: int
+    chunks: int = 0
+    message: str | None = None

@@ -16,6 +16,7 @@ from finsight.credisentiment.schemas import (
     WalkTheTalkResponse,
     ClaimComparison,
     AvailableDocumentResponse,
+    ProcessResponse,
 )
 from finsight.credisentiment.service import (
     analyze_division_sentiment,
@@ -83,6 +84,30 @@ def upload_document(
     session.refresh(doc)
 
     return {"id": doc.id, "status": "uploaded", "symbol": doc.symbol}
+
+
+# ── Processing pipeline ──────────────────────────────
+
+@router.post("/process/{document_id}", response_model=ProcessResponse)
+def process_for_credisentiment_endpoint(
+    document_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Process a document for the CrediSentiment pipeline (separate from RAG)."""
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if not doc.pdf_path:
+        raise HTTPException(status_code=400, detail="Document has no PDF file")
+
+    from finsight.credisentiment.pipeline import process_for_credisentiment
+    result = process_for_credisentiment(session, document_id)
+
+    if result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=result.get("message", "Processing failed"))
+
+    return result
 
 
 # ── Feature 1: Division-level FinBERT ──────────────────
