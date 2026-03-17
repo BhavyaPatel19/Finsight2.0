@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { credisentimentApi } from '../api/client'
 import {
-    Scale, FileText, Upload, Loader, CheckCircle,
+    Scale, FileText, Loader, CheckCircle,
     AlertCircle, BarChart3, Crosshair, ChevronRight,
     RefreshCw, ArrowRight, Brain, ChevronDown, Info,
 } from 'lucide-react'
@@ -112,16 +112,6 @@ export default function CredibilitySentiment() {
     const [analyzingW, setAnalyzingW] = useState(false)
     const [wttError, setWttError] = useState('')
 
-    // Upload
-    const [showUpload, setShowUpload] = useState(false)
-    const [uploadFile, setUploadFile] = useState(null)
-    const [uploadSymbol, setUploadSymbol] = useState('')
-    const [uploadDocType, setUploadDocType] = useState('annual_report')
-    const [uploadFY, setUploadFY] = useState('')
-    const [uploading, setUploading] = useState(false)
-    const [uploadMsg, setUploadMsg] = useState('')
-    const fileRef = useRef(null)
-
     useEffect(() => { loadDocuments() }, [])
 
     const loadDocuments = async () => {
@@ -184,25 +174,6 @@ export default function CredibilitySentiment() {
         finally { setAnalyzingW(false) }
     }
 
-    /* ── Upload ──── */
-    const handleUpload = async () => {
-        if (!uploadFile || !uploadSymbol.trim()) {
-            setUploadMsg('File and symbol are required.')
-            return
-        }
-        setUploading(true); setUploadMsg('')
-        try {
-            await credisentimentApi.upload(uploadFile, uploadSymbol.toUpperCase(), uploadDocType, null, uploadFY || null)
-            setUploadMsg('✅ Uploaded successfully!')
-            setUploadFile(null); setUploadSymbol(''); setUploadFY('')
-            if (fileRef.current) fileRef.current.value = ''
-            await loadDocuments()
-        } catch (err) {
-            setUploadMsg(`❌ ${err.response?.data?.detail || 'Upload failed'}`)
-        }
-        finally { setUploading(false) }
-    }
-
     /* ── Derived ──── */
     const getDocLabel = (id) => {
         const d = documents.find(x => x.id === id)
@@ -234,62 +205,9 @@ export default function CredibilitySentiment() {
                                 <button className="btn btn-sm" onClick={selectAll} style={{ fontSize: 11, padding: '2px 8px' }}>
                                     {selectedIds.size === documents.length ? 'None' : 'All'}
                                 </button>
-                                <button className="btn btn-sm" onClick={() => setShowUpload(!showUpload)} style={{ fontSize: 11, padding: '2px 8px' }}>
-                                    <Upload size={10} style={{ marginRight: 3 }} />{showUpload ? 'Hide' : 'Upload'}
-                                </button>
                             </div>
                         </div>
                     </div>
-
-                    {/* Upload zone */}
-                    {showUpload && (
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'rgba(139,92,246,0.04)' }}>
-                            <input
-                                ref={fileRef}
-                                type="file" accept=".pdf"
-                                onChange={e => setUploadFile(e.target.files?.[0] || null)}
-                                style={{ fontSize: 11, marginBottom: 6, width: '100%' }}
-                            />
-                            <input
-                                className="form-control"
-                                placeholder="Symbol (e.g. INFY)"
-                                value={uploadSymbol}
-                                onChange={e => setUploadSymbol(e.target.value)}
-                                style={{ fontSize: 12, padding: '4px 8px', marginBottom: 6 }}
-                            />
-                            <select
-                                className="form-control"
-                                value={uploadDocType}
-                                onChange={e => setUploadDocType(e.target.value)}
-                                style={{ fontSize: 12, padding: '4px 8px', marginBottom: 6 }}
-                            >
-                                <option value="annual_report">Annual Report</option>
-                                <option value="concall">Concall Transcript</option>
-                                <option value="investor_presentation">Investor Presentation</option>
-                                <option value="credit_rating">Credit Rating</option>
-                            </select>
-                            <input
-                                className="form-control"
-                                placeholder="Fiscal Year (e.g. FY25)"
-                                value={uploadFY}
-                                onChange={e => setUploadFY(e.target.value)}
-                                style={{ fontSize: 12, padding: '4px 8px', marginBottom: 6 }}
-                            />
-                            <button
-                                className="btn btn-primary btn-sm"
-                                onClick={handleUpload}
-                                disabled={uploading}
-                                style={{ width: '100%', fontSize: 12 }}
-                            >
-                                {uploading ? <><Loader size={10} className="spin" /> Uploading...</> : 'Upload PDF'}
-                            </button>
-                            {uploadMsg && (
-                                <div style={{ fontSize: 11, marginTop: 4, color: uploadMsg.startsWith('✅') ? 'var(--success)' : 'var(--danger)' }}>
-                                    {uploadMsg}
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     {/* Document list */}
                     <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
