@@ -137,6 +137,8 @@ export const credisentimentApi = {
       claims_document_id: claimsDocId,
       actuals_document_id: actualsDocId,
     }),
+  process: (documentId) =>
+    client.post(`/credisentiment/process/${documentId}`),
   upload: (file, symbol, docType, fiscalQuarter, fiscalYear) => {
     const fd = new FormData()
     fd.append('file', file)
