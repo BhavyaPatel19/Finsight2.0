@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Data Model and Singleton Foundation** - Dual status fields on Document model, FinBERT singleton with batch inference, ComparisonChunk table
 - [x] **Phase 2: Navigation and Tab Structure** - Remove standalone Credibility/Sentiment tabs, create CrediSentiment tab with FinBERT Sentiment and Walking the Talk sub-tabs
-- [ ] **Phase 3: CrediSentiment Processing Pipeline** - Section-aware chunking (3500/500), separate ChromaDB collection, processing endpoint
+- [x] **Phase 3: CrediSentiment Processing Pipeline** - Section-aware chunking (3500/500), separate ChromaDB collection, processing endpoint (completed 2026-03-17)
 - [ ] **Phase 4: Document Processing UI** - RAG and CrediSentiment processing buttons on Documents tab with status indicators, remove processing controls from other tabs
 - [ ] **Phase 5: FinBERT Sentiment Analysis** - Batch inference (32 sentences), document picker filtered to RAG-processed docs, manual analyze trigger, division-level breakdown
 - [ ] **Phase 6: Walking the Talk Backend** - Two-stage DeepSeek R1 prompting, full chunked content, 10 claim categories, robust think-tag parsing, async Ollama calls
@@ -153,7 +153,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Data Model and Singleton Foundation | 0/TBD | Not started | - |
 | 2. Navigation and Tab Structure | 1/1 | Complete    | 2026-03-17 |
-| 3. CrediSentiment Processing Pipeline | 0/1 | Not started | - |
+| 3. CrediSentiment Processing Pipeline | 1/1 | Complete   | 2026-03-17 |
 | 4. Document Processing UI | 0/TBD | Not started | - |
 | 5. FinBERT Sentiment Analysis | 0/TBD | Not started | - |
 | 6. Walking the Talk Backend | 0/TBD | Not started | - |

@@ -14,8 +14,8 @@
 ### Document Processing
 
 - [ ] **PROC-01**: Document model has separate status fields for RAG (`status`) and CrediSentiment (`cs_status`) processing
-- [ ] **PROC-02**: CrediSentiment pipeline uses separate chunking parameters (3500 chars / 500 overlap, section-aware) from RAG pipeline (1500/200)
-- [ ] **PROC-03**: CrediSentiment embeddings stored in a separate ChromaDB collection (`credisentiment_docs`)
+- [x] **PROC-02**: CrediSentiment pipeline uses separate chunking parameters (3500 chars / 500 overlap, section-aware) from RAG pipeline (1500/200)
+- [x] **PROC-03**: CrediSentiment embeddings stored in a separate ChromaDB collection (`credisentiment_docs`)
 - [ ] **PROC-04**: Documents tab shows "Process for RAG" button per document with visual status indicator
 - [ ] **PROC-05**: Documents tab shows "Process for CrediSentiment" button per document with visual status indicator
 - [ ] **PROC-06**: Processing status indicators show distinct states: unprocessed / processing / processed / error
@@ -87,8 +87,8 @@
 | NAV-02 | Phase 2 | Complete |
 | NAV-03 | Phase 2 | Complete |
 | PROC-01 | Phase 1 | Pending |
-| PROC-02 | Phase 3 | Pending |
-| PROC-03 | Phase 3 | Pending |
+| PROC-02 | Phase 3 | Complete |
+| PROC-03 | Phase 3 | Complete |
 | PROC-04 | Phase 4 | Pending |
 | PROC-05 | Phase 4 | Pending |
 | PROC-06 | Phase 4 | Pending |
