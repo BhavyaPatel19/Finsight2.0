@@ -11,6 +11,7 @@ from .zerodha_session import ZerodhaSession
 from .page_metadata import PageMetadata
 from .document_section import DocumentSection
 from .division_sentiment import DivisionSentiment, WalkTheTalkResult
+from .comparison_chunk import ComparisonChunk
 
 __all__ = [
     "User",
@@ -29,4 +30,5 @@ __all__ = [
     "DocumentSection",
     "DivisionSentiment",
     "WalkTheTalkResult",
+    "ComparisonChunk",
 ]

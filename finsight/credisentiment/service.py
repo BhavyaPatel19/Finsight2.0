@@ -17,7 +17,7 @@ from finsight.models import (
     DocumentSection,
 )
 from finsight.rag.service import process_for_rag, call_ollama
-from finsight.sentiment.service import get_finbert_model
+from finsight.ml.finbert import get_finbert
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,10 @@ def _get_division_texts(session: Session, document_id: int) -> dict[str, str]:
 
 def _run_finbert_on_text(text: str) -> dict:
     """Run FinBERT sentence-by-sentence; return aggregated scores."""
-    tokenizer, model = get_finbert_model()
+    try:
+        tokenizer, model, device = get_finbert()
+    except Exception:
+        tokenizer, model, device = None, None, None
     if tokenizer is None or model is None:
         return {
             "positive": 0.0,
@@ -121,11 +124,10 @@ def _run_finbert_on_text(text: str) -> dict:
     if not sentences:
         sentences = [text[:512]]
 
-    model.eval()
     pos_sum, neg_sum, neu_sum, n = 0.0, 0.0, 0.0, 0
 
     for sent in sentences:
-        inputs = tokenizer(sent, return_tensors="pt", truncation=True, max_length=512)
+        inputs = tokenizer(sent, return_tensors="pt", truncation=True, max_length=512).to(device)
         with torch.no_grad():
             out = model(**inputs)
         probs = torch.softmax(out.logits, dim=1)[0]

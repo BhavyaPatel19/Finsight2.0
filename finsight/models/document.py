@@ -24,3 +24,8 @@ class Document(SQLModel, table=True):
     chunk_count: int = Field(default=0)
     file_size: int | None = None  # bytes
     company_name: str | None = None
+
+    # CrediSentiment pipeline status (independent of RAG status)
+    cs_status: str = Field(default="pending", index=True)  # pending|processing|indexed|error
+    cs_chunk_count: int = Field(default=0)
+    cs_error_message: str | None = None

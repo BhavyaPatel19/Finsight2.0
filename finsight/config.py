@@ -42,3 +42,11 @@ DEFAULT_CHUNK_OVERLAP = 64
 # RAG — page-aware chunking
 RAG_CHUNK_SIZE = 1500
 RAG_CHUNK_OVERLAP = 200
+
+# CrediSentiment — section-aware chunking (larger than RAG for claim context)
+CREDISENTIMENT_CHUNK_SIZE = int(os.getenv("CREDISENTIMENT_CHUNK_SIZE", "3500"))
+CREDISENTIMENT_CHUNK_OVERLAP = int(os.getenv("CREDISENTIMENT_CHUNK_OVERLAP", "500"))
+
+# FinBERT batch inference
+FINBERT_BATCH_SIZE = int(os.getenv("FINBERT_BATCH_SIZE", "32"))
+FINBERT_MAX_SENTENCES = int(os.getenv("FINBERT_MAX_SENTENCES", "500"))

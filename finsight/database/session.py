@@ -26,6 +26,9 @@ def init_db() -> None:
         ZerodhaSession,
         PageMetadata,
         DocumentSection,
+        DivisionSentiment,
+        WalkTheTalkResult,
+        ComparisonChunk,
     )  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)
