@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, MessageSquare,
-  BarChart2, ShieldCheck, LogOut, TrendingUp, Activity, Scale
+  BarChart2, LogOut, Activity, Scale
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -10,9 +10,7 @@ const NAV = [
   { to: '/market', icon: Activity, label: 'Live Market' },
   { to: '/documents', icon: FileText, label: 'Documents' },
   { to: '/chat', icon: MessageSquare, label: 'RAG Chat' },
-  { to: '/sentiment', icon: TrendingUp, label: 'Sentiment' },
-  { to: '/credibility', icon: ShieldCheck, label: 'Credibility' },
-  { to: '/credisentiment', icon: Scale, label: 'Credi-Sentiment' },
+  { to: '/credisentiment', icon: Scale, label: 'CrediSentiment' },
   { to: '/portfolio', icon: BarChart2, label: 'Portfolio' },
 ]
 
