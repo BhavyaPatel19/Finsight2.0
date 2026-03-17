@@ -350,7 +350,7 @@ export default function CredibilitySentiment() {
                             onClick={() => setTab('sentiment')}
                             style={{ flex: 1, borderRadius: '10px 10px 0 0', fontSize: 14, padding: '10px 0', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                         >
-                            <BarChart3 size={16} /> Division Sentiment
+                            <BarChart3 size={16} /> FinBERT Sentiment
                         </button>
                         <button
                             id="tab-walkthetalk"
@@ -365,9 +365,8 @@ export default function CredibilitySentiment() {
                     {/* Tab content */}
                     <div className="card" style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
-                        {/* ── TAB 1: Division Sentiment ── */}
-                        {tab === 'sentiment' && (
-                            <div>
+                        {/* ── TAB 1: FinBERT Sentiment ── */}
+                        <div style={{ display: tab === 'sentiment' ? 'block' : 'none' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                                     <div>
                                         <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Division-Level Sentiment</h2>
@@ -472,12 +471,10 @@ export default function CredibilitySentiment() {
                                         )}
                                     </div>
                                 ))}
-                            </div>
-                        )}
+                        </div>
 
                         {/* ── TAB 2: Walking the Talk ── */}
-                        {tab === 'wtt' && (
-                            <div>
+                        <div style={{ display: tab === 'wtt' ? 'block' : 'none' }}>
                                 <div style={{ marginBottom: 20 }}>
                                     <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Walking the Talk</h2>
                                     <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
@@ -677,8 +674,7 @@ export default function CredibilitySentiment() {
                                         )}
                                     </div>
                                 )}
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
