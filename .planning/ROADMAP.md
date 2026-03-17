@@ -62,11 +62,10 @@ Plans:
   2. CrediSentiment chunks use 3500-char size with 500-char overlap and section-aware boundaries
   3. CrediSentiment embeddings are stored in a separate ChromaDB collection (`credisentiment_docs`) from RAG embeddings
   4. Processing a document for CrediSentiment does not affect its RAG processing status or chunks
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
+- [ ] 03-01-PLAN.md — Vectorstore, section-aware chunking pipeline, process endpoint, and tests
 
 ### Phase 4: Document Processing UI
 **Goal**: Users initiate and monitor document processing for both RAG and CrediSentiment pipelines from the Documents tab
@@ -153,8 +152,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Model and Singleton Foundation | 0/TBD | Not started | - |
-| 2. Navigation and Tab Structure | 1/1 | Complete | 2026-03-17 |
-| 3. CrediSentiment Processing Pipeline | 0/TBD | Not started | - |
+| 2. Navigation and Tab Structure | 1/1 | Complete    | 2026-03-17 |
+| 3. CrediSentiment Processing Pipeline | 0/1 | Not started | - |
 | 4. Document Processing UI | 0/TBD | Not started | - |
 | 5. FinBERT Sentiment Analysis | 0/TBD | Not started | - |
 | 6. Walking the Talk Backend | 0/TBD | Not started | - |
