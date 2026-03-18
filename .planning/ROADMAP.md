@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: CrediSentiment Processing Pipeline** - Section-aware chunking (3500/500), separate ChromaDB collection, processing endpoint (completed 2026-03-17)
 - [ ] **Phase 4: Document Processing UI** - RAG and CrediSentiment processing buttons on Documents tab with status indicators, remove processing controls from other tabs
 - [x] **Phase 5: FinBERT Sentiment Analysis** - Batch inference (32 sentences), document picker filtered to RAG-processed docs, manual analyze trigger, division-level breakdown (completed 2026-03-18)
-- [x] **Phase 6: Walking the Talk Backend** - Two-stage DeepSeek R1 prompting, full chunked content, 10 claim categories, robust think-tag parsing, async Ollama calls (completed 2026-03-18)
+- [x] **Phase 6: Walking the Talk Backend** - Two-stage DeepSeek R1 prompting, full chunked content, 10 claim categories, robust think-tag parsing, async Ollama calls (completed 2026-03-18)
 - [ ] **Phase 7: Walking the Talk Display** - Structured comparison table, narrative report, category grouping, per-category summaries, summary statistics strip
 - [ ] **Phase 8: UX Polish and State Persistence** - CSS display toggle for tab persistence, clear results button, empty states
 
@@ -123,11 +123,10 @@ Plans:
   2. A narrative report section appears below the structured table
   3. Claims are grouped by category with a per-category summary
   4. A summary statistics strip shows total claims count with breakdowns: X met, Y missed, Z unclear
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md — Summary stats strip, category-grouped structured tables, narrative report section
 
 ### Phase 8: UX Polish and State Persistence
 **Goal**: CrediSentiment results survive tab switches and users can reset analysis state cleanly
@@ -155,5 +154,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Document Processing UI | 0/1 | Not started | - |
 | 5. FinBERT Sentiment Analysis | 1/1 | Complete   | 2026-03-18 |
 | 6. Walking the Talk Backend | 2/2 | Complete   | 2026-03-18 |
-| 7. Walking the Talk Display | 0/TBD | Not started | - |
+| 7. Walking the Talk Display | 0/1 | Not started | - |
 | 8. UX Polish and State Persistence | 0/TBD | Not started | - |
