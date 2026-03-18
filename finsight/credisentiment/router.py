@@ -164,19 +164,47 @@ def analyze_sentiment(
 
 # ── Feature 2: Walking the Talk ────────────────────────
 
+@router.get("/wtt-documents", response_model=list[AvailableDocumentResponse])
+def get_wtt_documents(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return only CrediSentiment-processed documents for WTT picker."""
+    stmt = (
+        select(Document)
+        .where(Document.cs_status == "indexed")
+        .order_by(Document.ingested_at.desc())
+    )
+    docs = list(session.exec(stmt).all())
+    return [
+        AvailableDocumentResponse(
+            id=d.id,
+            symbol=d.symbol,
+            doc_type=d.doc_type,
+            company_name=d.company_name,
+            fiscal_quarter=d.fiscal_quarter,
+            fiscal_year=d.fiscal_year,
+            status=d.cs_status or "pending",
+            chunk_count=d.cs_chunk_count or 0,
+            file_size=d.file_size,
+        )
+        for d in docs
+    ]
+
+
 @router.post("/walk-the-talk", response_model=WalkTheTalkResponse)
-def walk_the_talk_endpoint(
+async def walk_the_talk_endpoint(
     payload: WalkTheTalkRequest,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
     """
     Compare management claims from one document against actual results
-    in another using DeepSeek R1 LLM.
+    in another using DeepSeek R1 LLM (async two-stage pipeline).
     """
     import json
 
-    result = walk_the_talk(
+    result = await walk_the_talk(
         session,
         payload.claims_document_id,
         payload.actuals_document_id,

@@ -208,3 +208,25 @@ class TestWalkTheTalkPipeline:
 
         result = asyncio.run(walk_the_talk(mock_session, 1, 2))
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Router endpoint tests
+# ---------------------------------------------------------------------------
+
+from finsight.credisentiment.router import walk_the_talk_endpoint, get_wtt_documents
+
+
+class TestRouterEndpoints:
+    def test_walk_the_talk_endpoint_is_async(self):
+        assert inspect.iscoroutinefunction(walk_the_talk_endpoint)
+
+    def test_wtt_documents_endpoint_exists(self):
+        """Verify get_wtt_documents endpoint exists and is callable."""
+        assert callable(get_wtt_documents)
+
+    def test_wtt_documents_endpoint_filters_cs_status(self):
+        """Verify the endpoint source contains cs_status filtering logic."""
+        source = inspect.getsource(get_wtt_documents)
+        assert "cs_status" in source
+        assert '"indexed"' in source
