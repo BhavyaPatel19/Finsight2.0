@@ -32,9 +32,32 @@ const credBadge = (s) => {
 }
 
 const metBadge = (met) => {
-    if (met === true) return { label: '✅ Met', color: '#22d3a5' }
-    if (met === false) return { label: '❌ Missed', color: '#f43f5e' }
-    return { label: '❓ Unclear', color: '#94a3b8' }
+    if (met === true) return { label: 'Met', color: '#22d3a5' }
+    if (met === false) return { label: 'Missed', color: '#f43f5e' }
+    return { label: 'Unclear', color: '#94a3b8' }
+}
+
+const CATEGORY_LABELS = {
+    revenue_growth: 'Revenue Growth',
+    margin_expansion: 'Margin Expansion',
+    capex: 'Capital Expenditure',
+    debt_reduction: 'Debt Reduction',
+    market_share: 'Market Share',
+    new_products: 'New Products',
+    cost_optimization: 'Cost Optimization',
+    employee_growth: 'Employee Growth',
+    geographic_expansion: 'Geographic Expansion',
+    regulatory_compliance: 'Regulatory Compliance',
+}
+
+const groupClaimsByCategory = (claims) => {
+    const groups = {}
+    for (const c of claims) {
+        const cat = c.category || 'other'
+        if (!groups[cat]) groups[cat] = []
+        groups[cat].push(c)
+    }
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
 }
 
 /* ── Score Dial ─────────────────────────────────────────── */
@@ -87,6 +110,38 @@ function StatusBadge({ status, chunks }) {
         }}>
             {s.icon} {status}{chunks > 0 ? ` · ${chunks} chunks` : ''}
         </span>
+    )
+}
+
+/* ── Summary Strip ────────────────────────────────────── */
+
+function SummaryStrip({ claims }) {
+    const total = claims.length
+    const met = claims.filter(c => c.met === true).length
+    const missed = claims.filter(c => c.met === false).length
+    const unclear = claims.filter(c => c.met == null).length
+
+    const items = [
+        { label: 'Total Claims', value: total, color: '#8b5cf6' },
+        { label: 'Met', value: met, color: '#22d3a5' },
+        { label: 'Missed', value: missed, color: '#f43f5e' },
+        { label: 'Unclear', value: unclear, color: '#94a3b8' },
+    ]
+
+    return (
+        <div id="wtt-summary-strip" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24,
+        }}>
+            {items.map(({ label, value, color }) => (
+                <div key={label} style={{
+                    textAlign: 'center', padding: '14px 12px', borderRadius: 10,
+                    background: `${color}10`, border: `1px solid ${color}25`,
+                }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>{label}</div>
+                </div>
+            ))}
+        </div>
     )
 }
 
@@ -511,7 +566,7 @@ export default function CredibilitySentiment() {
 
                                 {!analyzingW && wttResult && (
                                     <div>
-                                        {/* Score + Summary */}
+                                        {/* Score + Credibility Overview */}
                                         <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 20, marginBottom: 24 }}>
                                             <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 16px' }}>
                                                 <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -523,76 +578,104 @@ export default function CredibilitySentiment() {
                                                 </span>
                                             </div>
 
-                                            <div className="card" style={{ padding: 20 }}>
+                                            <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                                     <Brain size={16} color="#8b5cf6" />
-                                                    <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>AI Assessment</h3>
+                                                    <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Credibility Overview</h3>
                                                 </div>
-                                                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0 }}>
-                                                    {wttResult.narrative_summary}
+                                                <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+                                                    Management credibility score based on {wttResult.claims.length} extracted claims compared between the claims document and actuals document.
                                                 </p>
-                                                <div style={{ marginTop: 12, display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
-                                                    <span>📄 Claims: {getDocLabel(wttResult.claims_document_id)}</span>
-                                                    <span>📊 Actuals: {getDocLabel(wttResult.actuals_document_id)}</span>
+                                                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
+                                                    <span>Claims: {getDocLabel(wttResult.claims_document_id)}</span>
+                                                    <span>Actuals: {getDocLabel(wttResult.actuals_document_id)}</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Claim comparison cards */}
+                                        {/* Summary Statistics Strip */}
+                                        <SummaryStrip claims={wttResult.claims} />
+
+                                        {/* Category-grouped structured comparison */}
                                         {wttResult.claims.length > 0 && (
                                             <div>
                                                 <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <Info size={14} color="#8b5cf6" /> Claim-by-Claim Comparison ({wttResult.claims.length})
+                                                    <Info size={14} color="#8b5cf6" /> Claim Comparison by Category
                                                 </h3>
-                                                <div style={{ display: 'grid', gap: 12 }}>
-                                                    {wttResult.claims.map((c, i) => {
-                                                        const { label: metLabel, color: metColor } = metBadge(c.met)
-                                                        return (
-                                                            <div key={i} style={{
-                                                                padding: '16px 20px', borderRadius: 12,
-                                                                background: 'rgba(255,255,255,0.02)',
-                                                                border: `1px solid ${c.met === true ? 'rgba(34,211,165,0.2)' : c.met === false ? 'rgba(244,63,94,0.2)' : 'rgba(148,163,184,0.15)'}`,
+
+                                                {groupClaimsByCategory(wttResult.claims).map(([category, catClaims]) => {
+                                                    const catMet = catClaims.filter(c => c.met === true).length
+                                                    const catTotal = catClaims.length
+                                                    return (
+                                                        <div key={category} style={{ marginBottom: 24 }}>
+                                                            {/* Category header with per-category summary */}
+                                                            <div style={{
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                                padding: '8px 12px', borderRadius: '8px 8px 0 0',
+                                                                background: 'rgba(139,92,246,0.08)', borderBottom: '2px solid rgba(139,92,246,0.2)',
                                                             }}>
-                                                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                                                                    <div style={{ flex: 1 }}>
-                                                                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 6, lineHeight: 1.4 }}>
-                                                                            {c.claim}
-                                                                        </div>
-                                                                        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, marginBottom: 6 }}>
-                                                                            {c.claimed_value && (
-                                                                                <span style={{ color: '#818cf8' }}>
-                                                                                    <strong>Claimed:</strong> {c.claimed_value}
-                                                                                </span>
-                                                                            )}
-                                                                            {c.actual_value && (
-                                                                                <span style={{ color: '#22d3a5' }}>
-                                                                                    <strong>Actual:</strong> {c.actual_value}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        {c.explanation && (
-                                                                            <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                                                                                {c.explanation}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                    <div style={{
-                                                                        flexShrink: 0, padding: '4px 12px', borderRadius: 8,
-                                                                        fontSize: 12, fontWeight: 600, color: metColor,
-                                                                        background: `${metColor}15`,
-                                                                    }}>
-                                                                        {metLabel}
-                                                                    </div>
-                                                                </div>
-                                                                <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-muted)' }}>
-                                                                    Category: <span style={{ textTransform: 'capitalize' }}>{c.category?.replace(/_/g, ' ')}</span>
-                                                                </div>
+                                                                <span style={{ fontSize: 13, fontWeight: 600, textTransform: 'capitalize' }}>
+                                                                    {CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}
+                                                                </span>
+                                                                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                                                    {catMet}/{catTotal} met
+                                                                </span>
                                                             </div>
-                                                        )
-                                                    })}
-                                                </div>
+
+                                                            {/* Structured table for this category */}
+                                                            <div className="table-wrap" style={{ borderRadius: '0 0 10px 10px', marginTop: 0 }}>
+                                                                <table>
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th style={{ width: '30%' }}>Claim</th>
+                                                                            <th style={{ width: '15%' }}>Claimed Value</th>
+                                                                            <th style={{ width: '15%' }}>Actual Value</th>
+                                                                            <th style={{ width: '10%' }}>Verdict</th>
+                                                                            <th style={{ width: '30%' }}>Evidence</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {catClaims.map((c, i) => {
+                                                                            const { label: metLabel, color: metColor } = metBadge(c.met)
+                                                                            return (
+                                                                                <tr key={i}>
+                                                                                    <td style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.4 }}>{c.claim}</td>
+                                                                                    <td style={{ color: '#818cf8', fontSize: 13 }}>{c.claimed_value || '\u2014'}</td>
+                                                                                    <td style={{ color: '#22d3a5', fontSize: 13 }}>{c.actual_value || '\u2014'}</td>
+                                                                                    <td>
+                                                                                        <span style={{
+                                                                                            display: 'inline-block', padding: '2px 8px', borderRadius: 6,
+                                                                                            fontSize: 11, fontWeight: 600, color: metColor,
+                                                                                            background: `${metColor}15`,
+                                                                                        }}>
+                                                                                            {metLabel}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                                                                                        {c.explanation || '\u2014'}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            )
+                                                                        })}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
                                             </div>
                                         )}
+
+                                        {/* Narrative Report */}
+                                        <div id="wtt-narrative-report" className="card" style={{ padding: 20, marginTop: 24 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                                                <Brain size={16} color="#8b5cf6" />
+                                                <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Narrative Report</h3>
+                                            </div>
+                                            <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0 }}>
+                                                {wttResult.narrative_summary}
+                                            </p>
+                                        </div>
                                     </div>
                                 )}
                         </div>
