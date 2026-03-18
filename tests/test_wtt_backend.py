@@ -1,5 +1,8 @@
 """Tests for Walking-the-Talk backend utilities (Phase 06, Plan 01)."""
 
+import asyncio
+import inspect
+
 import pytest
 
 from finsight.models.enums import ClaimCategory
@@ -122,3 +125,33 @@ class TestPromptTemplates:
     def test_stage2_contains_verdict_keywords(self):
         for keyword in ("MET", "MISSED", "PARTIAL"):
             assert keyword in STAGE2_VERIFY_CLAIMS_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# Async Ollama tests
+# ---------------------------------------------------------------------------
+
+from finsight.rag.service import call_ollama_async
+
+
+class TestCallOllamaAsync:
+    def test_is_coroutine_function(self):
+        assert inspect.iscoroutinefunction(call_ollama_async)
+
+    def test_uses_async_client(self):
+        """Verify call_ollama_async invokes httpx.AsyncClient (mocked)."""
+        from unittest.mock import AsyncMock, patch, MagicMock
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"response": "test reply"}
+        mock_response.raise_for_status = MagicMock()
+
+        mock_client_instance = AsyncMock()
+        mock_client_instance.post.return_value = mock_response
+        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
+        mock_client_instance.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("httpx.AsyncClient", return_value=mock_client_instance) as mock_cls:
+            result = asyncio.run(call_ollama_async("hello"))
+            mock_cls.assert_called_once_with(timeout=180.0)
+            assert result == "test reply"

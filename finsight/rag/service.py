@@ -292,6 +292,35 @@ def call_ollama(prompt: str, model: str | None = None, max_tokens: int = 2048) -
         return f"[LLM error: {e}]"
 
 
+async def call_ollama_async(
+    prompt: str,
+    model: str | None = None,
+    max_tokens: int = 2048,
+) -> str:
+    """Async version of call_ollama using httpx.AsyncClient.
+
+    Does not block the FastAPI event loop. Timeout raised to 180s
+    to accommodate longer two-stage WTT prompts.
+    """
+    import httpx
+
+    model_name = model or OLLAMA_MODEL_PRIMARY
+    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+    payload = {
+        "model": model_name,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"num_predict": max_tokens},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            r = await client.post(url, json=payload)
+            r.raise_for_status()
+            return r.json().get("response", "").strip()
+    except Exception as e:
+        return f"[LLM error: {e}]"
+
+
 def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
     """Extract <think>...</think> reasoning trace from DeepSeek-R1 output."""
     think_match = re.search(r"<think>(.*?)</think>", response, re.DOTALL)
