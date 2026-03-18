@@ -154,6 +154,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. CrediSentiment Processing Pipeline | 1/1 | Complete   | 2026-03-17 |
 | 4. Document Processing UI | 0/1 | Not started | - |
 | 5. FinBERT Sentiment Analysis | 1/1 | Complete   | 2026-03-18 |
-| 6. Walking the Talk Backend | 0/2 | Not started | - |
+| 6. Walking the Talk Backend | 1/2 | In Progress|  |
 | 7. Walking the Talk Display | 0/TBD | Not started | - |
 | 8. UX Polish and State Persistence | 0/TBD | Not started | - |

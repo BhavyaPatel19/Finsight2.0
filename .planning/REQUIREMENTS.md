@@ -38,10 +38,10 @@
 - [ ] **WTT-04**: Full chunked document content used (remove 8000-char truncation)
 - [ ] **WTT-05**: Output displays structured comparison table: Claim, Claimed Value, Actual Value, Verdict (Met/Missed/Partial), Evidence
 - [ ] **WTT-06**: Output displays narrative report below the structured table
-- [ ] **WTT-07**: 10 claim categories supported: revenue_growth, margin_expansion, capex, debt_reduction, market_share, new_products, cost_optimization, employee_growth, geographic_expansion, regulatory_compliance
+- [x] **WTT-07**: 10 claim categories supported: revenue_growth, margin_expansion, capex, debt_reduction, market_share, new_products, cost_optimization, employee_growth, geographic_expansion, regulatory_compliance
 - [ ] **WTT-08**: Claims grouped by category in display with per-category summary
 - [ ] **WTT-09**: Summary statistics strip showing total claims: X met, Y missed, Z unclear
-- [ ] **WTT-10**: Robust DeepSeek R1 `<think>` tag parsing with fallback for malformed/multiple think blocks
+- [x] **WTT-10**: Robust DeepSeek R1 `<think>` tag parsing with fallback for malformed/multiple think blocks
 
 ### UX / State
 
@@ -51,7 +51,7 @@
 
 ### Performance
 
-- [ ] **PERF-01**: Ollama calls for DeepSeek R1 use async (`httpx.AsyncClient` or `asyncio.to_thread`)
+- [x] **PERF-01**: Ollama calls for DeepSeek R1 use async (`httpx.AsyncClient` or `asyncio.to_thread`)
 - [ ] **PERF-02**: FinBERT singleton eliminates repeated ~500MB model loads
 
 ## v2 Requirements
@@ -105,14 +105,14 @@
 | WTT-04 | Phase 6 | Pending |
 | WTT-05 | Phase 7 | Pending |
 | WTT-06 | Phase 7 | Pending |
-| WTT-07 | Phase 6 | Pending |
+| WTT-07 | Phase 6 | Complete |
 | WTT-08 | Phase 7 | Pending |
 | WTT-09 | Phase 7 | Pending |
-| WTT-10 | Phase 6 | Pending |
+| WTT-10 | Phase 6 | Complete |
 | UX-01 | Phase 8 | Pending |
 | UX-02 | Phase 8 | Pending |
 | UX-03 | Phase 2 | Complete |
-| PERF-01 | Phase 6 | Pending |
+| PERF-01 | Phase 6 | Complete |
 | PERF-02 | Phase 1 | Pending |
 
 **Coverage:**

@@ -2,31 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-18T05:28:58.191Z"
-last_activity: 2026-03-17 -- Completed 03-01-PLAN.md (credisentiment processing pipeline)
+status: in-progress
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-03-18T05:51:34Z"
+last_activity: 2026-03-18 -- Completed 06-01-PLAN.md (WTT backend utilities)
 progress:
   total_phases: 8
-  completed_phases: 4
-  total_plans: 5
-  completed_plans: 4
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: completed
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-17T09:59:45Z"
-last_activity: 2026-03-17 -- Completed 03-01-PLAN.md (credisentiment processing pipeline)
-progress:
-  total_phases: 8
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 2
-  percent: 25
+  completed_phases: 5
+  total_plans: 7
+  completed_plans: 5
 ---
 
 # Project State
@@ -36,23 +20,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Investors can verify whether company management delivers on their promises by comparing con-call claims against actual earnings, powered by locally-run AI models.
-**Current focus:** Phase 3 - CrediSentiment Processing Pipeline
+**Current focus:** Phase 6 - Walking the Talk Backend
 
 ## Current Position
 
-Phase: 3 of 8 (CrediSentiment Processing Pipeline)
-Plan: 1 of 1 in current phase
-Status: Phase 3 complete
-Last activity: 2026-03-17 -- Completed 03-01-PLAN.md (credisentiment processing pipeline)
+Phase: 6 of 8 (Walking the Talk Backend)
+Plan: 1 of 2 in current phase
+Status: Plan 06-01 complete
+Last activity: 2026-03-18 -- Completed 06-01-PLAN.md (WTT backend utilities)
 
-Progress: [###░░░░░░░] 25%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 3.5 min
-- Total execution time: 0.12 hours
+- Total plans completed: 5
+- Average duration: 3.2 min
+- Total execution time: 0.27 hours
 
 **By Phase:**
 
@@ -60,13 +44,15 @@ Progress: [###░░░░░░░] 25%
 |-------|-------|-------|----------|
 | 02-navigation-and-tab-structure | 1 | 3 min | 3 min |
 | 03-credisentiment-processing-pipeline | 1 | 4 min | 4 min |
+| 04-credisentiment-ui | 1 | 3 min | 3 min |
+| 05-finbert-batch-inference | 1 | 2 min | 2 min |
+| 06-walking-the-talk-backend | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (3 min), 03-01 (4 min)
+- Last 5 plans: 02-01 (3 min), 03-01 (4 min), 04-01 (3 min), 05-01 (2 min), 06-01 (3 min)
 - Trend: stable
 
 *Updated after each plan completion*
-| Phase 05-01 P01 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -84,6 +70,9 @@ Recent decisions affecting current work:
 - Paragraph-break search uses 25% lookback window from chunk boundary
 - [Phase 05-01]: Used analyze_batch from ml/finbert.py directly, removing get_finbert+torch dependency from service
 - [Phase 05-01]: Sentence cap raised from 300 to 500 since batch inference handles volume more efficiently
+- [Phase 06-01]: MARKET_EXPANSION renamed to MARKET_SHARE per WTT-07 requirement
+- [Phase 06-01]: Stage 1 prompt dynamically builds category list from ClaimCategory enum
+- [Phase 06-01]: call_ollama_async uses 180s timeout for longer two-stage prompts
 
 ### Pending Todos
 
@@ -96,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-18T05:28:58.188Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-18T05:51:34Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
