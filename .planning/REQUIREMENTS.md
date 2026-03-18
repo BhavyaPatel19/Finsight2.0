@@ -32,10 +32,10 @@
 
 ### Walking the Talk
 
-- [ ] **WTT-01**: User manually selects two documents: claims doc (con-call) and actuals doc (earnings report)
-- [ ] **WTT-02**: Only CrediSentiment-processed documents visible in WTT document picker
-- [ ] **WTT-03**: Two-stage DeepSeek R1 14B prompting: extract claims per-chunk, then verify against actuals
-- [ ] **WTT-04**: Full chunked document content used (remove 8000-char truncation)
+- [x] **WTT-01**: User manually selects two documents: claims doc (con-call) and actuals doc (earnings report)
+- [x] **WTT-02**: Only CrediSentiment-processed documents visible in WTT document picker
+- [x] **WTT-03**: Two-stage DeepSeek R1 14B prompting: extract claims per-chunk, then verify against actuals
+- [x] **WTT-04**: Full chunked document content used (remove 8000-char truncation)
 - [ ] **WTT-05**: Output displays structured comparison table: Claim, Claimed Value, Actual Value, Verdict (Met/Missed/Partial), Evidence
 - [ ] **WTT-06**: Output displays narrative report below the structured table
 - [x] **WTT-07**: 10 claim categories supported: revenue_growth, margin_expansion, capex, debt_reduction, market_share, new_products, cost_optimization, employee_growth, geographic_expansion, regulatory_compliance
@@ -99,10 +99,10 @@
 | BERT-03 | Phase 5 | Complete |
 | BERT-04 | Phase 5 | Complete |
 | BERT-05 | Phase 5 | Complete |
-| WTT-01 | Phase 6 | Pending |
-| WTT-02 | Phase 6 | Pending |
-| WTT-03 | Phase 6 | Pending |
-| WTT-04 | Phase 6 | Pending |
+| WTT-01 | Phase 6 | Complete |
+| WTT-02 | Phase 6 | Complete |
+| WTT-03 | Phase 6 | Complete |
+| WTT-04 | Phase 6 | Complete |
 | WTT-05 | Phase 7 | Pending |
 | WTT-06 | Phase 7 | Pending |
 | WTT-07 | Phase 6 | Complete |
