@@ -132,9 +132,12 @@ export default function CredibilitySentiment() {
         })
     }
 
+    // Only RAG-processed documents are eligible for FinBERT sentiment analysis
+    const ragProcessedDocs = documents.filter(d => d.status === 'indexed')
+
     const selectAll = () => {
-        if (selectedIds.size === documents.length) setSelectedIds(new Set())
-        else setSelectedIds(new Set(documents.map(d => d.id)))
+        if (selectedIds.size === ragProcessedDocs.length) setSelectedIds(new Set())
+        else setSelectedIds(new Set(ragProcessedDocs.map(d => d.id)))
     }
 
     /* ── Feature 1: Analyze Sentiment ──── */
@@ -203,7 +206,7 @@ export default function CredibilitySentiment() {
                             </span>
                             <div style={{ display: 'flex', gap: 4 }}>
                                 <button className="btn btn-sm" onClick={selectAll} style={{ fontSize: 11, padding: '2px 8px' }}>
-                                    {selectedIds.size === documents.length ? 'None' : 'All'}
+                                    {selectedIds.size === ragProcessedDocs.length ? 'None' : 'All'}
                                 </button>
                             </div>
                         </div>
@@ -215,12 +218,12 @@ export default function CredibilitySentiment() {
                             <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)' }}>
                                 <Loader size={16} className="spin" /> Loading...
                             </div>
-                        ) : documents.length === 0 ? (
+                        ) : ragProcessedDocs.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13 }}>
-                                No documents found. Download some in the Documents tab or upload above.
+                                No RAG-processed documents found. Process documents for RAG in the Documents tab first.
                             </div>
                         ) : (
-                            documents.map(doc => (
+                            ragProcessedDocs.map(doc => (
                                 <label
                                     key={doc.id}
                                     style={{
