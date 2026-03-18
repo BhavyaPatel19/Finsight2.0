@@ -16,7 +16,16 @@ from finsight.models import (
     PageMetadata,
     DocumentSection,
 )
-from finsight.rag.service import process_for_rag, call_ollama
+from finsight.models import ComparisonChunk
+from finsight.rag.service import process_for_rag, call_ollama_async
+from finsight.credisentiment.prompts import (
+    STAGE1_EXTRACT_CLAIMS_PROMPT,
+    STAGE2_VERIFY_CLAIMS_PROMPT,
+    strip_think_tags,
+    parse_json_array,
+    parse_json_object,
+    deduplicate_claims,
+)
 from finsight.ml.finbert import analyze_batch, split_financial_sentences
 
 
@@ -200,146 +209,83 @@ def analyze_division_sentiment(
 
 
 # ---------------------------------------------------------------------------
-# Feature 2 — "Walking the Talk" LLM Comparison
+# Feature 2 — "Walking the Talk" LLM Comparison (Two-Stage Pipeline)
 # ---------------------------------------------------------------------------
 
-WALK_THE_TALK_PROMPT = """You are a financial analyst auditing management credibility. You have two documents:
 
-**CLAIMS DOCUMENT** (older — contains forward-looking statements, guidance, and promises):
-{claims_text}
-
----
-
-**ACTUALS DOCUMENT** (newer — contains actual financial results and outcomes):
-{actuals_text}
-
----
-
-{sentiment_context}
-
-**TASK**: Compare the claims/promises from the Claims Document against the actual results in the Actuals Document. For each forward-looking claim you find:
-1. What was claimed/promised (with the approximate value if numeric)
-2. What actually happened (from the actuals document)
-3. Whether the claim was MET, MISSED, or UNCLEAR
-4. A brief explanation
-
-Also provide an overall credibility score from 0-100 where:
-- 90-100: Excellent — almost all promises met or exceeded
-- 70-89: Good — majority of promises met
-- 50-69: Mixed — some met, some missed
-- 30-49: Poor — majority of promises missed
-- 0-29: Very Poor — severe disconnect between claims and reality
-
-**RESPOND ONLY WITH THIS EXACT JSON FORMAT (no other text)**:
-{{
-  "overall_score": <number 0-100>,
-  "claims": [
-    {{
-      "claim": "<what was promised>",
-      "category": "<revenue_growth|margin|debt|expansion|guidance|other>",
-      "claimed_value": "<claimed figure or target>",
-      "actual_value": "<actual result>",
-      "met": <true|false|null>,
-      "explanation": "<brief comparison>"
-    }}
-  ],
-  "narrative_summary": "<2-3 sentence overall assessment of management credibility>"
-}}"""
+def get_document_chunks(session: Session, document_id: int) -> list[str]:
+    """Load all CrediSentiment chunks for a document, ordered by chunk_index."""
+    stmt = (
+        select(ComparisonChunk)
+        .where(ComparisonChunk.document_id == document_id)
+        .order_by(ComparisonChunk.chunk_index)
+    )
+    chunks = list(session.exec(stmt).all())
+    return [c.text for c in chunks]
 
 
-def walk_the_talk(
+async def walk_the_talk(
     session: Session,
     claims_document_id: int,
     actuals_document_id: int,
 ) -> WalkTheTalkResult | None:
     """
-    Use DeepSeek R1 LLM to compare claims in one document against
-    actuals in another document. Optionally uses FinBERT sentiment
-    scores as additional context.
+    Two-stage async pipeline using DeepSeek R1 LLM:
+      Stage 1: Extract forward-looking claims from each ComparisonChunk
+      Stage 2: Verify deduplicated claims against all actuals chunks
     """
     claims_doc = session.get(Document, claims_document_id)
     actuals_doc = session.get(Document, actuals_document_id)
     if not claims_doc or not actuals_doc:
         return None
 
-    # Ensure both are indexed
-    for doc in [claims_doc, actuals_doc]:
-        if doc.status != "indexed":
-            result = process_for_rag(session, doc.id)
-            if result.get("status") == "error":
-                return None
-            session.refresh(doc)
-
-    # Read texts
-    claims_text = ""
-    actuals_text = ""
-    try:
-        if claims_doc.text_path:
-            claims_text = open(claims_doc.text_path, encoding="utf-8").read()[:8000]
-        if actuals_doc.text_path:
-            actuals_text = open(actuals_doc.text_path, encoding="utf-8").read()[:8000]
-    except Exception:
+    # Guard: both docs must be CrediSentiment-indexed
+    if claims_doc.cs_status != "indexed" or actuals_doc.cs_status != "indexed":
         return None
 
-    if not claims_text.strip() or not actuals_text.strip():
+    # Load ComparisonChunk texts (no truncation)
+    claims_chunks = get_document_chunks(session, claims_document_id)
+    actuals_chunks = get_document_chunks(session, actuals_document_id)
+    if not claims_chunks or not actuals_chunks:
         return None
 
-    # Check for existing FinBERT sentiment scores as context
-    sentiment_context = ""
-    from finsight.models import SentimentScore
-    claims_sentiment = session.exec(
-        select(SentimentScore).where(SentimentScore.document_id == claims_document_id)
-    ).first()
-    actuals_sentiment = session.exec(
-        select(SentimentScore).where(SentimentScore.document_id == actuals_document_id)
-    ).first()
-    if claims_sentiment or actuals_sentiment:
-        sentiment_context = "**FinBERT Sentiment Context**:\n"
-        if claims_sentiment:
-            sentiment_context += (
-                f"- Claims document sentiment: overall={claims_sentiment.overall_score:.4f}, "
-                f"optimism={claims_sentiment.optimism_index or 0:.4f}, "
-                f"risk_tone={claims_sentiment.risk_tone_index or 0:.4f}\n"
-            )
-        if actuals_sentiment:
-            sentiment_context += (
-                f"- Actuals document sentiment: overall={actuals_sentiment.overall_score:.4f}, "
-                f"optimism={actuals_sentiment.optimism_index or 0:.4f}, "
-                f"risk_tone={actuals_sentiment.risk_tone_index or 0:.4f}\n"
-            )
-        sentiment_context += "\nUse these sentiment scores as additional context when evaluating credibility.\n"
+    # ------------------------------------------------------------------
+    # Stage 1: Extract claims from each claims chunk (sequential)
+    # ------------------------------------------------------------------
+    all_claims: list[dict] = []
+    for chunk_text in claims_chunks:
+        prompt = STAGE1_EXTRACT_CLAIMS_PROMPT.format(chunk_text=chunk_text)
+        raw = await call_ollama_async(prompt, max_tokens=2048)
+        clean = strip_think_tags(raw)
+        extracted = parse_json_array(clean)
+        all_claims.extend(extracted)
 
-    # Build prompt
-    prompt = WALK_THE_TALK_PROMPT.format(
-        claims_text=claims_text,
+    # Deduplicate overlapping claims across chunks
+    unique_claims = deduplicate_claims(all_claims)
+
+    if not unique_claims:
+        return None
+
+    # ------------------------------------------------------------------
+    # Stage 2: Verify claims against actuals
+    # ------------------------------------------------------------------
+    actuals_text = "\n\n---\n\n".join(actuals_chunks)
+    prompt = STAGE2_VERIFY_CLAIMS_PROMPT.format(
+        claims_json=json.dumps(unique_claims, indent=2),
         actuals_text=actuals_text,
-        sentiment_context=sentiment_context,
     )
+    raw = await call_ollama_async(prompt, max_tokens=4096)
+    clean = strip_think_tags(raw)
+    result = parse_json_object(clean)
 
-    # Call LLM
-    raw = call_ollama(prompt, max_tokens=2048)
+    # Extract results
+    overall_score = float(result.get("overall_score", 50))
+    claims_list = result.get("verified_claims", result.get("claims", []))
+    narrative = result.get("narrative_summary", "No summary provided.")
 
-    # Strip <think>...</think> tags from DeepSeek R1
-    clean = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
-
-    # Parse JSON response
-    overall_score = 50.0
-    claims_list = []
-    narrative = "Analysis could not be completed."
-
-    try:
-        # Find JSON in response
-        start = clean.find("{")
-        end = clean.rfind("}") + 1
-        if start >= 0 and end > start:
-            parsed = json.loads(clean[start:end])
-            overall_score = float(parsed.get("overall_score", 50))
-            claims_list = parsed.get("claims", [])
-            narrative = parsed.get("narrative_summary", "No summary provided.")
-    except (json.JSONDecodeError, ValueError):
-        narrative = f"LLM response could not be parsed. Raw output: {clean[:500]}"
-
-    # Delete old results for this combination
+    # ------------------------------------------------------------------
+    # Persist: delete old results, save new
+    # ------------------------------------------------------------------
     old = session.exec(
         select(WalkTheTalkResult).where(
             WalkTheTalkResult.claims_document_id == claims_document_id,
@@ -350,7 +296,6 @@ def walk_the_talk(
         session.delete(o)
     session.commit()
 
-    # Save result
     symbol = claims_doc.symbol or actuals_doc.symbol or "UNKNOWN"
     row = WalkTheTalkResult(
         claims_document_id=claims_document_id,

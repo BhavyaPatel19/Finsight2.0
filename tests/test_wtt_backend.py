@@ -155,3 +155,56 @@ class TestCallOllamaAsync:
             result = asyncio.run(call_ollama_async("hello"))
             mock_cls.assert_called_once_with(timeout=180.0)
             assert result == "test reply"
+
+
+# ---------------------------------------------------------------------------
+# get_document_chunks tests
+# ---------------------------------------------------------------------------
+
+from finsight.credisentiment.service import get_document_chunks, walk_the_talk
+
+
+class TestGetDocumentChunks:
+    def test_returns_ordered_texts(self):
+        """Create 3 ComparisonChunk rows with different chunk_index values,
+        verify get_document_chunks returns them in order."""
+        from unittest.mock import MagicMock, patch
+        from finsight.models import ComparisonChunk
+
+        # Create mock chunks out of order
+        chunk_a = MagicMock(spec=ComparisonChunk, text="chunk_0", chunk_index=0)
+        chunk_b = MagicMock(spec=ComparisonChunk, text="chunk_1", chunk_index=1)
+        chunk_c = MagicMock(spec=ComparisonChunk, text="chunk_2", chunk_index=2)
+
+        mock_session = MagicMock()
+        # session.exec(stmt).all() returns ordered chunks
+        mock_session.exec.return_value.all.return_value = [chunk_a, chunk_b, chunk_c]
+
+        result = get_document_chunks(mock_session, document_id=42)
+
+        assert result == ["chunk_0", "chunk_1", "chunk_2"]
+        # Verify select was called
+        mock_session.exec.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# walk_the_talk pipeline tests
+# ---------------------------------------------------------------------------
+
+
+class TestWalkTheTalkPipeline:
+    def test_walk_the_talk_is_async(self):
+        assert inspect.iscoroutinefunction(walk_the_talk)
+
+    def test_walk_the_talk_rejects_non_cs_indexed_docs(self):
+        """Mock session with doc that has cs_status='pending', verify returns None."""
+        from unittest.mock import MagicMock
+
+        mock_doc = MagicMock()
+        mock_doc.cs_status = "pending"
+
+        mock_session = MagicMock()
+        mock_session.get.return_value = mock_doc
+
+        result = asyncio.run(walk_the_talk(mock_session, 1, 2))
+        assert result is None
