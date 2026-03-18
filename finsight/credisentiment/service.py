@@ -17,7 +17,7 @@ from finsight.models import (
     DocumentSection,
 )
 from finsight.rag.service import process_for_rag, call_ollama
-from finsight.ml.finbert import get_finbert
+from finsight.ml.finbert import analyze_batch, split_financial_sentences
 
 
 # ---------------------------------------------------------------------------
@@ -103,12 +103,15 @@ def _get_division_texts(session: Session, document_id: int) -> dict[str, str]:
 
 
 def _run_finbert_on_text(text: str) -> dict:
-    """Run FinBERT sentence-by-sentence; return aggregated scores."""
+    """Run FinBERT in batches of 32 with dynamic padding; return aggregated scores."""
+    sentences = split_financial_sentences(text, min_length=15)
+    sentences = sentences[:500]  # cap for performance
+    if not sentences:
+        sentences = [text[:512]]
+
     try:
-        tokenizer, model, device = get_finbert()
+        batch_results = analyze_batch(sentences, batch_size=32)
     except Exception:
-        tokenizer, model, device = None, None, None
-    if tokenizer is None or model is None:
         return {
             "positive": 0.0,
             "negative": 0.0,
@@ -117,28 +120,13 @@ def _run_finbert_on_text(text: str) -> dict:
             "count": 0,
         }
 
-    import torch
-
-    sentences = [s.strip() for s in re.split(r"[.!?]+", text) if len(s.strip()) > 15]
-    sentences = sentences[:300]  # cap for performance
-    if not sentences:
-        sentences = [text[:512]]
-
-    pos_sum, neg_sum, neu_sum, n = 0.0, 0.0, 0.0, 0
-
-    for sent in sentences:
-        inputs = tokenizer(sent, return_tensors="pt", truncation=True, max_length=512).to(device)
-        with torch.no_grad():
-            out = model(**inputs)
-        probs = torch.softmax(out.logits, dim=1)[0]
-        # FinBERT labels: positive=0, negative=1, neutral=2
-        pos_sum += probs[0].item()
-        neg_sum += probs[1].item()
-        neu_sum += probs[2].item()
-        n += 1
-
+    n = len(batch_results)
     if n == 0:
         return {"positive": 0.0, "negative": 0.0, "neutral": 0.0, "overall": 0.0, "count": 0}
+
+    pos_sum = sum(r["positive"] for r in batch_results)
+    neg_sum = sum(r["negative"] for r in batch_results)
+    neu_sum = sum(r["neutral"] for r in batch_results)
 
     return {
         "positive": round(pos_sum / n, 4),
