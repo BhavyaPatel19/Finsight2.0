@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Navigation and Tab Structure** - Remove standalone Credibility/Sentiment tabs, create CrediSentiment tab with FinBERT Sentiment and Walking the Talk sub-tabs
 - [x] **Phase 3: CrediSentiment Processing Pipeline** - Section-aware chunking (3500/500), separate ChromaDB collection, processing endpoint (completed 2026-03-17)
 - [ ] **Phase 4: Document Processing UI** - RAG and CrediSentiment processing buttons on Documents tab with status indicators, remove processing controls from other tabs
-- [x] **Phase 5: FinBERT Sentiment Analysis** - Batch inference (32 sentences), document picker filtered to RAG-processed docs, manual analyze trigger, division-level breakdown (completed 2026-03-18)
+- [x] **Phase 5: FinBERT Sentiment Analysis** - Batch inference (32 sentences), document picker filtered to RAG-processed docs, manual analyze trigger, division-level breakdown (completed 2026-03-18)
 - [ ] **Phase 6: Walking the Talk Backend** - Two-stage DeepSeek R1 prompting, full chunked content, 10 claim categories, robust think-tag parsing, async Ollama calls
 - [ ] **Phase 7: Walking the Talk Display** - Structured comparison table, narrative report, category grouping, per-category summaries, summary statistics strip
 - [ ] **Phase 8: UX Polish and State Persistence** - CSS display toggle for tab persistence, clear results button, empty states
@@ -108,12 +108,11 @@ Plans:
   5. Claims are classified into the 10 supported categories (revenue_growth, margin_expansion, capex, debt_reduction, market_share, new_products, cost_optimization, employee_growth, geographic_expansion, regulatory_compliance)
   6. DeepSeek R1 `<think>` tags are robustly parsed with fallback for malformed output
   7. Ollama calls run asynchronously and do not block the FastAPI event loop
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — Enum expansion, prompt templates, async Ollama, parsing utilities, and tests
+- [ ] 06-02-PLAN.md — Async two-stage walk_the_talk pipeline, WTT document filter endpoint
 
 ### Phase 7: Walking the Talk Display
 **Goal**: Users see Walking the Talk results as a structured, scannable comparison with category grouping and summary statistics
@@ -155,6 +154,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. CrediSentiment Processing Pipeline | 1/1 | Complete   | 2026-03-17 |
 | 4. Document Processing UI | 0/1 | Not started | - |
 | 5. FinBERT Sentiment Analysis | 1/1 | Complete   | 2026-03-18 |
-| 6. Walking the Talk Backend | 0/TBD | Not started | - |
+| 6. Walking the Talk Backend | 0/2 | Not started | - |
 | 7. Walking the Talk Display | 0/TBD | Not started | - |
 | 8. UX Polish and State Persistence | 0/TBD | Not started | - |
