@@ -232,6 +232,21 @@ export default function CredibilitySentiment() {
         finally { setAnalyzingW(false) }
     }
 
+    /* ── Clear Results ──── */
+    const clearResults = () => {
+        if (tab === 'sentiment') {
+            setSentimentResults([])
+            setSelectedIds(new Set())
+        } else {
+            setWttResult(null)
+            setClaimsDocId(null)
+            setActualsDocId(null)
+            setWttError('')
+        }
+    }
+
+    const hasResults = tab === 'sentiment' ? sentimentResults.length > 0 : wttResult !== null
+
     /* ── Derived ──── */
     const getDocLabel = (id) => {
         const d = documents.find(x => x.id === id)
@@ -242,11 +257,23 @@ export default function CredibilitySentiment() {
     return (
         <div>
             {/* Page header */}
-            <div className="page-header">
-                <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Scale size={24} color="#8b5cf6" /> Credibility Sentiment
-                </h1>
-                <p className="page-sub">Division-level FinBERT sentiment analysis &amp; management credibility scoring</p>
+            <div className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div>
+                    <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Scale size={24} color="#8b5cf6" /> Credibility Sentiment
+                    </h1>
+                    <p className="page-sub">Division-level FinBERT sentiment analysis &amp; management credibility scoring</p>
+                </div>
+                {hasResults && (
+                    <button
+                        id="clear-results-btn"
+                        className="btn btn-ghost"
+                        onClick={clearResults}
+                        style={{ fontSize: 13, color: '#f43f5e', display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                        <RefreshCw size={14} /> Clear Results
+                    </button>
+                )}
             </div>
 
             <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 220px)', minHeight: 500 }}>
