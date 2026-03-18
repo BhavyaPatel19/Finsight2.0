@@ -25,10 +25,10 @@
 ### FinBERT Sentiment
 
 - [ ] **BERT-01**: FinBERT model loaded as module-level singleton (load once per server process)
-- [ ] **BERT-02**: FinBERT processes sentences in batches of 32 with dynamic padding
-- [ ] **BERT-03**: User selects a document from picker showing only RAG-processed documents
-- [ ] **BERT-04**: User clicks "Analyze" button to trigger FinBERT analysis (manual trigger, not auto)
-- [ ] **BERT-05**: Division-level sentiment breakdown displayed with positive/negative/neutral scores
+- [x] **BERT-02**: FinBERT processes sentences in batches of 32 with dynamic padding
+- [x] **BERT-03**: User selects a document from picker showing only RAG-processed documents
+- [x] **BERT-04**: User clicks "Analyze" button to trigger FinBERT analysis (manual trigger, not auto)
+- [x] **BERT-05**: Division-level sentiment breakdown displayed with positive/negative/neutral scores
 
 ### Walking the Talk
 
@@ -95,10 +95,10 @@
 | PROC-07 | Phase 4 | Pending |
 | PROC-08 | Phase 4 | Pending |
 | BERT-01 | Phase 1 | Pending |
-| BERT-02 | Phase 5 | Pending |
-| BERT-03 | Phase 5 | Pending |
-| BERT-04 | Phase 5 | Pending |
-| BERT-05 | Phase 5 | Pending |
+| BERT-02 | Phase 5 | Complete |
+| BERT-03 | Phase 5 | Complete |
+| BERT-04 | Phase 5 | Complete |
+| BERT-05 | Phase 5 | Complete |
 | WTT-01 | Phase 6 | Pending |
 | WTT-02 | Phase 6 | Pending |
 | WTT-03 | Phase 6 | Pending |
