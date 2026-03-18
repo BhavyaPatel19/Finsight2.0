@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: FinBERT Sentiment Analysis** - Batch inference (32 sentences), document picker filtered to RAG-processed docs, manual analyze trigger, division-level breakdown (completed 2026-03-18)
 - [x] **Phase 6: Walking the Talk Backend** - Two-stage DeepSeek R1 prompting, full chunked content, 10 claim categories, robust think-tag parsing, async Ollama calls (completed 2026-03-18)
 - [x] **Phase 7: Walking the Talk Display** - Structured comparison table, narrative report, category grouping, per-category summaries, summary statistics strip (completed 2026-03-18)
-- [ ] **Phase 8: UX Polish and State Persistence** - CSS display toggle for tab persistence, clear results button, empty states
+- [x] **Phase 8: UX Polish and State Persistence** - CSS display toggle for tab persistence, clear results button, empty states (completed 2026-03-18)
 
 ## Phase Details
 
@@ -155,4 +155,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. FinBERT Sentiment Analysis | 1/1 | Complete   | 2026-03-18 |
 | 6. Walking the Talk Backend | 2/2 | Complete   | 2026-03-18 |
 | 7. Walking the Talk Display | 1/1 | Complete   | 2026-03-18 |
-| 8. UX Polish and State Persistence | 0/1 | Not started | - |
+| 8. UX Polish and State Persistence | 1/1 | Complete   | 2026-03-18 |

@@ -45,8 +45,8 @@
 
 ### UX / State
 
-- [ ] **UX-01**: CrediSentiment results persist across tab switches (CSS display toggle, not conditional render)
-- [ ] **UX-02**: Clear results button on CrediSentiment tab resets analysis state
+- [x] **UX-01**: CrediSentiment results persist across tab switches (CSS display toggle, not conditional render)
+- [x] **UX-02**: Clear results button on CrediSentiment tab resets analysis state
 - [x] **UX-03**: Empty states displayed when no document is selected on each sub-tab
 
 ### Performance
@@ -109,8 +109,8 @@
 | WTT-08 | Phase 7 | Pending |
 | WTT-09 | Phase 7 | Pending |
 | WTT-10 | Phase 6 | Complete |
-| UX-01 | Phase 8 | Pending |
-| UX-02 | Phase 8 | Pending |
+| UX-01 | Phase 8 | Complete |
+| UX-02 | Phase 8 | Complete |
 | UX-03 | Phase 2 | Complete |
 | PERF-01 | Phase 6 | Complete |
 | PERF-02 | Phase 1 | Pending |

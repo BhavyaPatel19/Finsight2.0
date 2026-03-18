@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-18T05:56:43Z"
-last_activity: 2026-03-18 -- Completed 06-02-PLAN.md (WTT two-stage pipeline)
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-18T11:05:12.838Z"
+last_activity: 2026-03-18 -- Completed 08-01-PLAN.md (Clear Results button and tab persistence)
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 7
-  completed_plans: 6
-  percent: 86
+  completed_phases: 8
+  total_plans: 9
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-17)
 
 **Core value:** Investors can verify whether company management delivers on their promises by comparing con-call claims against actual earnings, powered by locally-run AI models.
-**Current focus:** Phase 6 - Walking the Talk Backend
+**Current focus:** Phase 8 - UX Polish and State Persistence
 
 ## Current Position
 
-Phase: 6 of 8 (Walking the Talk Backend) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase 06 complete
-Last activity: 2026-03-18 -- Completed 06-02-PLAN.md (WTT two-stage pipeline)
+Phase: 8 of 8 (UX Polish and State Persistence)
+Plan: 1 of 1 in current phase -- COMPLETE
+Status: Phase 08 complete
+Last activity: 2026-03-18 -- Completed 08-01-PLAN.md (Clear Results button and tab persistence)
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 3.0 min
-- Total execution time: 0.30 hours
+- Total plans completed: 8
+- Average duration: 3.5 min
+- Total execution time: 0.47 hours
 
 **By Phase:**
 
@@ -48,9 +48,11 @@ Progress: [█████████░] 86%
 | 04-credisentiment-ui | 1 | 3 min | 3 min |
 | 05-finbert-batch-inference | 1 | 2 min | 2 min |
 | 06-walking-the-talk-backend | 2 | 6 min | 3 min |
+| 07-walking-the-talk-display | 1 | 15 min | 15 min |
+| 08-ux-polish-and-state-persistence | 1 | 1 min | 1 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (4 min), 04-01 (3 min), 05-01 (2 min), 06-01 (3 min), 06-02 (3 min)
+- Last 5 plans: 05-01 (2 min), 06-01 (3 min), 06-02 (3 min), 07-01 (15 min), 08-01 (1 min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -76,18 +78,22 @@ Recent decisions affecting current work:
 - [Phase 06-01]: call_ollama_async uses 180s timeout for longer two-stage prompts
 - [Phase 06-02]: Stage 2 accepts both verified_claims and claims keys from LLM for flexibility
 - [Phase 06-02]: Sequential chunk processing in Stage 1 due to single-GPU Ollama constraint
+- [Phase 07-01]: _verdict_to_met() maps LLM verdict strings to boolean met field in router
+- [Phase 07-01]: temperature: 0 added to call_ollama_async for deterministic output
+- [Phase 07-01]: Stage 1 prompt enhanced for more thorough claim extraction
+- [Phase 08-01]: Clear Results resets only the active sub-tab state, not both tabs
 
 ### Pending Todos
 
-None yet.
+- Embedding pre-filter for large documents (610+ chunks) to reduce WTT Stage 1 processing time
 
 ### Blockers/Concerns
 
-- Research flag: Phase 6 (WTT Backend) may need `/gsd:research-phase` for DeepSeek R1 prompt tuning
 - Research flag: Phase 8 area -- memory profiling on 16GB target machine for concurrent model loads
+- Large documents (610 chunks) cause ~7 min CPU load during WTT — pre-filter optimization deferred
 
 ## Session Continuity
 
-Last session: 2026-03-18T05:56:43Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-03-18T11:05:12.835Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
