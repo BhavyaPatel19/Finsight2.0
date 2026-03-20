@@ -145,27 +145,56 @@ function SummaryStrip({ claims }) {
     )
 }
 
+/* ── Session persistence helpers ───────────────────────── */
+
+const SS_KEY = 'credisent_state'
+
+function loadSessionState() {
+    try {
+        const raw = sessionStorage.getItem(SS_KEY)
+        return raw ? JSON.parse(raw) : null
+    } catch { return null }
+}
+
+function saveSessionState(state) {
+    try { sessionStorage.setItem(SS_KEY, JSON.stringify(state)) } catch {}
+}
+
 /* ── Main Page ─────────────────────────────────────────── */
 
 export default function CredibilitySentiment() {
+    const cached = loadSessionState()
+
     // Documents
     const [documents, setDocuments] = useState([])
     const [docsLoading, setDocsLoading] = useState(true)
-    const [selectedIds, setSelectedIds] = useState(new Set())
+    const [selectedIds, setSelectedIds] = useState(() => new Set(cached?.selectedIds || []))
 
     // Active tab
-    const [tab, setTab] = useState('sentiment')
+    const [tab, setTab] = useState(cached?.tab || 'sentiment')
 
     // Feature 1: Sentiment
-    const [sentimentResults, setSentimentResults] = useState([])
+    const [sentimentResults, setSentimentResults] = useState(cached?.sentimentResults || [])
     const [analyzingS, setAnalyzingS] = useState(false)
 
     // Feature 2: Walk the Talk
-    const [claimsDocId, setClaimsDocId] = useState(null)
-    const [actualsDocId, setActualsDocId] = useState(null)
-    const [wttResult, setWttResult] = useState(null)
+    const [claimsDocId, setClaimsDocId] = useState(cached?.claimsDocId || null)
+    const [actualsDocId, setActualsDocId] = useState(cached?.actualsDocId || null)
+    const [wttResult, setWttResult] = useState(cached?.wttResult || null)
     const [analyzingW, setAnalyzingW] = useState(false)
     const [wttError, setWttError] = useState('')
+
+    // Persist state changes to sessionStorage
+    useEffect(() => {
+        saveSessionState({
+            tab,
+            selectedIds: [...selectedIds],
+            sentimentResults,
+            claimsDocId,
+            actualsDocId,
+            wttResult,
+        })
+    }, [tab, selectedIds, sentimentResults, claimsDocId, actualsDocId, wttResult])
 
     useEffect(() => { loadDocuments() }, [])
 
@@ -243,6 +272,7 @@ export default function CredibilitySentiment() {
             setActualsDocId(null)
             setWttError('')
         }
+        sessionStorage.removeItem(SS_KEY)
     }
 
     const hasResults = tab === 'sentiment' ? sentimentResults.length > 0 : wttResult !== null
@@ -613,9 +643,22 @@ export default function CredibilitySentiment() {
                                                 <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: '0 0 12px' }}>
                                                     Management credibility score based on {wttResult.claims.length} extracted claims compared between the claims document and actuals document.
                                                 </p>
-                                                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
+                                                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                                                     <span>Claims: {getDocLabel(wttResult.claims_document_id)}</span>
                                                     <span>Actuals: {getDocLabel(wttResult.actuals_document_id)}</span>
+                                                    {wttResult.model_used && (
+                                                        <span style={{
+                                                            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                                            color: '#fff',
+                                                            padding: '1px 8px',
+                                                            borderRadius: 10,
+                                                            fontSize: 10,
+                                                            fontWeight: 600,
+                                                            letterSpacing: '0.03em',
+                                                        }}>
+                                                            Analyzed by {wttResult.model_used}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

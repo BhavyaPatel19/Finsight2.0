@@ -50,6 +50,7 @@ class WalkTheTalkResponse(BaseModel):
     overall_score: float  # 0-100
     claims: list[ClaimComparison]
     narrative_summary: str
+    model_used: str = ""
     computed_at: datetime
 
     class Config:

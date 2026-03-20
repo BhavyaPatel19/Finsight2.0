@@ -17,9 +17,9 @@ from finsight.models import (
     DocumentSection,
 )
 from finsight.models import ComparisonChunk
-from finsight.rag.service import process_for_rag, call_ollama_async
+from finsight.rag.service import process_for_rag
 from finsight.credisentiment.prompts import (
-    STAGE1_EXTRACT_CLAIMS_PROMPT,
+    STAGE1_BATCH_EXTRACT_PROMPT,
     STAGE2_VERIFY_CLAIMS_PROMPT,
     strip_think_tags,
     parse_json_array,
@@ -209,8 +209,134 @@ def analyze_division_sentiment(
 
 
 # ---------------------------------------------------------------------------
-# Feature 2 — "Walking the Talk" LLM Comparison (Two-Stage Pipeline)
+# Feature 2 — "Walking the Talk" Optimized Pipeline (Qwen 2.5)
 # ---------------------------------------------------------------------------
+
+import asyncio
+import logging
+
+import httpx
+
+from finsight.config import (
+    OLLAMA_BASE_URL,
+    WTT_MODEL,
+    WTT_MAX_CLAIMS_CHUNKS,
+    WTT_BATCH_SIZE,
+    WTT_PARALLEL,
+    WTT_ACTUALS_TOP_K,
+)
+
+logger = logging.getLogger(__name__)
+
+# Forward-looking keywords for pre-filtering claim-rich chunks
+_CLAIM_KEYWORDS = [
+    "target", "guidance", "expect", "plan to", "aim", "goal",
+    "outlook", "project", "intend", "forecast", "aspire", "commit",
+    "promise", "anticipate", "envision", "strategy", "initiative",
+    "fy2", "fy 2", "growth", "increase", "expand", "reduce",
+    "achieve", "deliver", "milestone", "pipeline", "launch",
+    "capex", "margin", "debt-free", "dividend",
+]
+
+
+async def _call_wtt_llm(
+    prompt: str,
+    max_tokens: int = 2048,
+    json_mode: bool = True,
+) -> str:
+    """WTT-specific async LLM call — isolated from RAG pipeline.
+
+    Uses WTT_MODEL (qwen2.5:7b by default), Ollama JSON mode,
+    and a 120s timeout tuned for faster models.
+    """
+    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+    payload: dict = {
+        "model": WTT_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"num_predict": max_tokens, "temperature": 0},
+    }
+    if json_mode:
+        payload["format"] = "json"
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            r = await client.post(url, json=payload)
+            r.raise_for_status()
+            return r.json().get("response", "").strip()
+    except Exception as e:
+        logger.error("WTT LLM call failed: %s", e)
+        return f"[LLM error: {e}]"
+
+
+def _score_chunk_for_claims(text: str) -> float:
+    """Score a chunk by forward-looking keyword density (0-1)."""
+    text_lower = text.lower()
+    hits = sum(1 for kw in _CLAIM_KEYWORDS if kw in text_lower)
+    return hits / len(_CLAIM_KEYWORDS)
+
+
+def _prefilter_claims_chunks(
+    chunks: list[str], max_n: int = WTT_MAX_CLAIMS_CHUNKS
+) -> list[str]:
+    """Keep only the top N most claim-rich chunks by keyword scoring."""
+    scored = [(chunk, _score_chunk_for_claims(chunk)) for chunk in chunks]
+    # Filter out chunks with zero score (no forward-looking language)
+    scored = [(c, s) for c, s in scored if s > 0]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [c for c, _ in scored[:max_n]]
+
+
+def _batch_chunks(chunks: list[str], batch_size: int = WTT_BATCH_SIZE) -> list[str]:
+    """Combine chunks into batched prompt texts with separators."""
+    batches = []
+    for i in range(0, len(chunks), batch_size):
+        group = chunks[i : i + batch_size]
+        parts = []
+        for j, chunk in enumerate(group):
+            parts.append(f"---EXCERPT {j + 1}---\n{chunk}")
+        batches.append("\n\n".join(parts))
+    return batches
+
+
+def _retrieve_relevant_actuals(
+    claims: list[dict],
+    actuals_document_id: int,
+    top_k: int = WTT_ACTUALS_TOP_K,
+) -> str:
+    """Use ChromaDB semantic search to find actuals chunks relevant to claims."""
+    from finsight.rag.service import get_embedding_model
+    from finsight.credisentiment.vectorstore import query_by_document_id
+
+    model = get_embedding_model()
+
+    # Build search queries from claim summaries grouped by category
+    categories: dict[str, list[str]] = {}
+    for c in claims:
+        cat = c.get("category", "other")
+        claim_text = c.get("claim", "")
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(claim_text)
+
+    # One query per category (search with concatenated claims)
+    seen_ids: set[str] = set()
+    all_texts: list[str] = []
+
+    for cat, cat_claims in categories.items():
+        query_text = f"{cat}: " + "; ".join(cat_claims[:3])
+        prefixed = f"Represent this sentence for searching relevant passages: {query_text}"
+        embedding = model.encode(
+            prefixed, convert_to_numpy=True, normalize_embeddings=True
+        ).tolist()
+        results = query_by_document_id(embedding, actuals_document_id, n_results=top_k)
+        for r in results:
+            rid = r.get("id", "")
+            if rid not in seen_ids:
+                seen_ids.add(rid)
+                all_texts.append(r.get("text", ""))
+
+    return "\n\n---\n\n".join(all_texts)
 
 
 def get_document_chunks(session: Session, document_id: int) -> list[str]:
@@ -230,61 +356,167 @@ async def walk_the_talk(
     actuals_document_id: int,
 ) -> WalkTheTalkResult | None:
     """
-    Two-stage async pipeline using DeepSeek R1 LLM:
-      Stage 1: Extract forward-looking claims from each ComparisonChunk
-      Stage 2: Verify deduplicated claims against all actuals chunks
+    Optimized two-stage async pipeline using Qwen 2.5:
+      Stage 1: Pre-filter → batch → parallel extract claims
+      Stage 2: Semantic retrieval of actuals → verify claims
+    Target: 3-5 minutes instead of hours.
     """
     claims_doc = session.get(Document, claims_document_id)
     actuals_doc = session.get(Document, actuals_document_id)
     if not claims_doc or not actuals_doc:
         return None
 
-    # Guard: both docs must be CrediSentiment-indexed
     if claims_doc.cs_status != "indexed" or actuals_doc.cs_status != "indexed":
         return None
 
-    # Load ComparisonChunk texts (no truncation)
     claims_chunks = get_document_chunks(session, claims_document_id)
     actuals_chunks = get_document_chunks(session, actuals_document_id)
     if not claims_chunks or not actuals_chunks:
         return None
 
-    # ------------------------------------------------------------------
-    # Stage 1: Extract claims from each claims chunk (sequential)
-    # ------------------------------------------------------------------
-    all_claims: list[dict] = []
-    for chunk_text in claims_chunks:
-        prompt = STAGE1_EXTRACT_CLAIMS_PROMPT.format(chunk_text=chunk_text)
-        raw = await call_ollama_async(prompt, max_tokens=2048)
-        clean = strip_think_tags(raw)
-        extracted = parse_json_array(clean)
-        all_claims.extend(extracted)
+    logger.info(
+        "WTT: %d claims chunks, %d actuals chunks (model=%s)",
+        len(claims_chunks), len(actuals_chunks), WTT_MODEL,
+    )
 
-    # Deduplicate overlapping claims across chunks
+    # ------------------------------------------------------------------
+    # Stage 1: Pre-filter → batch → parallel extract claims
+    # ------------------------------------------------------------------
+    filtered = _prefilter_claims_chunks(claims_chunks)
+    logger.info("WTT Stage 1: %d/%d chunks after pre-filter", len(filtered), len(claims_chunks))
+
+    if not filtered:
+        return None
+
+    batched_prompts = _batch_chunks(filtered)
+    logger.info("WTT Stage 1: %d batched prompts, %d parallel", len(batched_prompts), WTT_PARALLEL)
+
+    semaphore = asyncio.Semaphore(WTT_PARALLEL)
+
+    def _parse_claims_response(raw: str) -> list[dict]:
+        """Parse LLM response into list of claim dicts with 'claim' field."""
+        clean = strip_think_tags(raw)
+        obj = parse_json_object(clean)
+
+        candidates: list[dict] = []
+        if "claims" in obj and isinstance(obj["claims"], list):
+            candidates = [c for c in obj["claims"] if isinstance(c, dict)]
+        else:
+            # Flatten category-keyed objects
+            for key, val in obj.items():
+                if isinstance(val, list):
+                    for item in val:
+                        if isinstance(item, dict):
+                            if "category" not in item:
+                                item["category"] = key
+                            candidates.append(item)
+            if not candidates:
+                arr = parse_json_array(clean)
+                candidates = [c for c in arr if isinstance(c, dict)]
+
+        # Only keep items that have a proper 'claim' sentence (>20 chars)
+        return [c for c in candidates if isinstance(c.get("claim"), str) and len(c["claim"]) > 20]
+
+    async def _extract_batch(batch_text: str) -> list[dict]:
+        async with semaphore:
+            prompt = STAGE1_BATCH_EXTRACT_PROMPT.format(chunks_text=batch_text)
+            raw = await _call_wtt_llm(prompt, max_tokens=2048)
+            claims = _parse_claims_response(raw)
+            if claims:
+                return claims
+            # Retry once without JSON mode if no valid claims
+            logger.info("WTT Stage 1: retrying batch without JSON mode")
+            raw = await _call_wtt_llm(prompt, max_tokens=2048, json_mode=False)
+            return _parse_claims_response(raw)
+
+    tasks = [_extract_batch(bp) for bp in batched_prompts]
+    batch_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    all_claims: list[dict] = []
+    for i, result in enumerate(batch_results):
+        if isinstance(result, Exception):
+            logger.warning("WTT Stage 1 batch %d failed: %s", i, result)
+            continue
+        all_claims.extend(result)
+
     unique_claims = deduplicate_claims(all_claims)
+    logger.info("WTT Stage 1: %d total claims → %d unique", len(all_claims), len(unique_claims))
 
     if not unique_claims:
         return None
 
     # ------------------------------------------------------------------
-    # Stage 2: Verify claims against actuals
+    # Stage 2: Batched verification — 7 claims per LLM call
     # ------------------------------------------------------------------
-    actuals_text = "\n\n---\n\n".join(actuals_chunks)
-    prompt = STAGE2_VERIFY_CLAIMS_PROMPT.format(
-        claims_json=json.dumps(unique_claims, indent=2),
-        actuals_text=actuals_text,
-    )
-    raw = await call_ollama_async(prompt, max_tokens=4096)
-    clean = strip_think_tags(raw)
-    result = parse_json_object(clean)
+    # Cap claims to top 35 for reasonable processing time
+    if len(unique_claims) > 35:
+        unique_claims = unique_claims[:35]
+        logger.info("WTT: capped to %d claims for Stage 2", len(unique_claims))
+    STAGE2_BATCH = 7
+    claim_batches = [
+        unique_claims[i : i + STAGE2_BATCH]
+        for i in range(0, len(unique_claims), STAGE2_BATCH)
+    ]
+    logger.info("WTT Stage 2: %d claim batches of %d", len(claim_batches), STAGE2_BATCH)
 
-    # Extract results
-    overall_score = float(result.get("overall_score", 50))
-    claims_list = result.get("verified_claims", result.get("claims", []))
-    narrative = result.get("narrative_summary", "No summary provided.")
+    # Pre-retrieve actuals for each batch (sequential — embedding model not thread-safe)
+    batch_actuals: list[str] = []
+    for bc in claim_batches:
+        actuals_text = _retrieve_relevant_actuals(
+            bc, actuals_document_id, top_k=WTT_ACTUALS_TOP_K
+        )
+        if len(actuals_text) > 4000:
+            actuals_text = actuals_text[:4000]
+        batch_actuals.append(actuals_text)
+    logger.info("WTT Stage 2: pre-retrieved actuals for %d batches", len(batch_actuals))
+
+    stage2_semaphore = asyncio.Semaphore(2)  # fewer parallel for longer prompts
+
+    async def _verify_batch(batch_claims: list[dict], actuals_text: str) -> list[dict]:
+        async with stage2_semaphore:
+            prompt = STAGE2_VERIFY_CLAIMS_PROMPT.format(
+                claims_json=json.dumps(batch_claims, indent=2),
+                actuals_text=actuals_text,
+            )
+            raw = await _call_wtt_llm(prompt, max_tokens=4096)
+            clean = strip_think_tags(raw)
+            result = parse_json_object(clean)
+            verified = result.get("verified_claims", result.get("claims", []))
+            logger.info("WTT Stage 2 batch: %d/%d claims verified", len(verified), len(batch_claims))
+            return verified
+
+    verify_tasks = [_verify_batch(bc, ba) for bc, ba in zip(claim_batches, batch_actuals)]
+    verify_results = await asyncio.gather(*verify_tasks, return_exceptions=True)
+
+    claims_list: list[dict] = []
+    for i, vr in enumerate(verify_results):
+        if isinstance(vr, Exception):
+            logger.warning("WTT Stage 2 batch %d failed: %s", i, vr)
+            continue
+        claims_list.extend([c for c in vr if isinstance(c, dict)])
+
+    # Compute overall score from verdicts
+    if claims_list:
+        met = sum(1 for c in claims_list if str(c.get("verdict", "")).upper() == "MET")
+        partial = sum(1 for c in claims_list if str(c.get("verdict", "")).upper() == "PARTIAL")
+        total = len(claims_list)
+        overall_score = round((met + 0.5 * partial) / total * 100, 2) if total > 0 else 50
+    else:
+        overall_score = 50
+
+    # Generate narrative summary from a final LLM call
+    narrative_prompt = f"""Based on these verification results, write a 2-3 sentence executive summary of management credibility.
+Verified claims: {json.dumps(claims_list, indent=2)}
+Overall score: {overall_score}/100
+Respond with ONLY the summary text, no JSON."""
+    narrative = await _call_wtt_llm(narrative_prompt, max_tokens=256, json_mode=False)
+    narrative = strip_think_tags(narrative).strip('"').strip()
+    if not narrative or narrative.startswith("[LLM error"):
+        narrative = f"Credibility score: {overall_score}/100 based on {len(claims_list)} verified claims."
+    logger.info("WTT Stage 2: %d claims verified, score=%.1f", len(claims_list), overall_score)
 
     # ------------------------------------------------------------------
-    # Persist: delete old results, save new
+    # Persist
     # ------------------------------------------------------------------
     old = session.exec(
         select(WalkTheTalkResult).where(
@@ -308,4 +540,6 @@ async def walk_the_talk(
     session.add(row)
     session.commit()
     session.refresh(row)
+
+    logger.info("WTT complete: score=%.1f, %d claims verified", overall_score, len(claims_list))
     return row

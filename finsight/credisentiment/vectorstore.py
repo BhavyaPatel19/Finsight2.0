@@ -54,6 +54,38 @@ def add_chunks(
     coll.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
 
 
+def query_by_document_id(
+    query_embedding: list[float],
+    document_id: int,
+    n_results: int = 5,
+) -> list[dict]:
+    """Semantic search within a single document's credisentiment chunks."""
+    coll = get_collection()
+    try:
+        res = coll.query(
+            query_embeddings=[query_embedding],
+            n_results=n_results,
+            where={"document_id": document_id},
+            include=["documents", "metadatas", "distances"],
+        )
+    except Exception:
+        return []
+
+    items = []
+    ids = res.get("ids", [[]])[0]
+    docs = res.get("documents", [[]])[0]
+    metas = res.get("metadatas", [[]])[0]
+    dists = res.get("distances", [[]])[0]
+    for i, cid in enumerate(ids):
+        items.append({
+            "id": cid,
+            "text": docs[i] if docs else "",
+            "metadata": metas[i] if metas else {},
+            "distance": dists[i] if dists else 1.0,
+        })
+    return items
+
+
 def get_chunks_by_document_id(document_id: int) -> list[dict]:
     """Retrieve all chunks for a document, sorted by chunk_index."""
     coll = get_collection()

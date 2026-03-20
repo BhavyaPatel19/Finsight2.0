@@ -18,7 +18,9 @@ _CATEGORY_LIST = ", ".join(e.value for e in ClaimCategory)
 # Stage 1: Extract forward-looking claims from a concall chunk
 # ---------------------------------------------------------------------------
 
-STAGE1_EXTRACT_CLAIMS_PROMPT = f"""You are a financial analyst. Extract all forward-looking claims, promises, and guidance from the following earnings call transcript excerpt.
+STAGE1_EXTRACT_CLAIMS_PROMPT = f"""You are a financial analyst. Extract EVERY forward-looking claim, promise, target, guidance, and projection from the following earnings call transcript excerpt. Be thorough — capture even minor claims.
+
+Include: revenue targets, margin guidance, capex plans, debt reduction goals, market share aspirations, new product launches, cost savings initiatives, hiring plans, geographic expansion, regulatory milestones, dividend promises, growth forecasts, and any quantitative or qualitative commitment about the future.
 
 Categories: {_CATEGORY_LIST}
 
@@ -28,10 +30,34 @@ For each claim found, output a JSON array with objects containing:
 - "claimed_value": the numeric target or qualitative promise (e.g. "20% growth", "debt-free by FY26")
 - "context_snippet": a short surrounding quote for traceability
 
+Extract at least 5-10 claims per excerpt if present. Do not summarize or merge similar claims — keep each one separate.
+
 Transcript excerpt:
 {{chunk_text}}
 
 Respond ONLY with a JSON array. No preamble, no explanation."""
+
+
+# ---------------------------------------------------------------------------
+# Stage 1 BATCHED: Extract claims from multiple chunks in one call
+# ---------------------------------------------------------------------------
+
+STAGE1_BATCH_EXTRACT_PROMPT = f"""Extract forward-looking promises and targets from the text below. Only extract statements about the FUTURE — plans, targets, goals, guidance, projections. Ignore historical facts and past achievements.
+
+Each claim must be a complete sentence starting with the company or "We" or "The company".
+
+Categories: {_CATEGORY_LIST}
+
+Example output:
+{{{{"claims": [
+  {{{{"claim": "The company targets revenue growth of 20% in FY26", "category": "revenue", "claimed_value": "20% growth"}}}},
+  {{{{"claim": "The company plans to reduce net debt by Rs 5000 crore", "category": "debt_reduction", "claimed_value": "Rs 5000 crore reduction"}}}}
+]}}}}
+
+Text:
+{{chunks_text}}
+
+Return JSON with a "claims" array. Each item needs: claim (sentence), category, claimed_value."""
 
 # ---------------------------------------------------------------------------
 # Stage 2: Verify claims against actual results
@@ -122,6 +148,8 @@ def deduplicate_claims(claims: list[dict]) -> list[dict]:
     seen: set[tuple[str, str]] = set()
     result: list[dict] = []
     for c in claims:
+        if not isinstance(c, dict):
+            continue
         cat = str(c.get("category", "")).lower()
         claim_prefix = str(c.get("claim", ""))[:80].lower().strip()
         key = (cat, claim_prefix)

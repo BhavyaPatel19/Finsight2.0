@@ -221,6 +221,23 @@ async def walk_the_talk_endpoint(
     except json.JSONDecodeError:
         claims_data = []
 
+    def _verdict_to_met(claim: dict) -> bool | None:
+        """Convert LLM verdict string to boolean met field."""
+        # Check explicit 'met' field first (legacy format)
+        if "met" in claim and claim["met"] is not None:
+            return bool(claim["met"])
+        # Map verdict string from Stage 2 prompt
+        verdict = str(claim.get("verdict", "")).upper().strip()
+        if verdict == "MET":
+            return True
+        if verdict in ("MISSED", "NOT MET"):
+            return False
+        if verdict == "PARTIAL":
+            return None  # Partial treated as unclear
+        return None
+
+    from finsight.config import WTT_MODEL
+
     return WalkTheTalkResponse(
         claims_document_id=result.claims_document_id,
         actuals_document_id=result.actuals_document_id,
@@ -232,11 +249,12 @@ async def walk_the_talk_endpoint(
                 category=c.get("category", "other"),
                 claimed_value=c.get("claimed_value"),
                 actual_value=c.get("actual_value"),
-                met=c.get("met"),
+                met=_verdict_to_met(c),
                 explanation=c.get("explanation"),
             )
             for c in claims_data
         ],
         narrative_summary=result.narrative_summary or "",
+        model_used=WTT_MODEL,
         computed_at=result.computed_at,
     )
