@@ -27,6 +27,9 @@ def init_db() -> None:
         PageMetadata,
         DocumentSection,
         StockMetrics,
+        DivisionSentiment,
+        WalkTheTalkResult,
+        ComparisonChunk,
     )  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)
@@ -35,4 +38,3 @@ def init_db() -> None:
 def get_session():
     with Session(engine) as session:
         yield session
-

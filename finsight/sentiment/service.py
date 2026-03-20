@@ -1,19 +1,10 @@
+import re
+
+import torch
 from sqlmodel import Session, select
 
 from finsight.models import Document, SentimentScore
-
-
-def get_finbert_model():
-    """Lazy-load FinBERT for sentence-level sentiment."""
-    try:
-        from transformers import AutoTokenizer, AutoModelForSequenceClassification
-        import torch
-        name = "ProsusAI/finbert"
-        tokenizer = AutoTokenizer.from_pretrained(name)
-        model = AutoModelForSequenceClassification.from_pretrained(name)
-        return tokenizer, model
-    except Exception:
-        return None, None
+from finsight.ml.finbert import get_finbert
 
 
 def compute_sentiment_for_document(session: Session, document_id: int) -> SentimentScore | None:
@@ -21,11 +12,15 @@ def compute_sentiment_for_document(session: Session, document_id: int) -> Sentim
     doc = session.get(Document, document_id)
     if not doc or not doc.text_path:
         return None
-    text = open(doc.text_path, encoding="utf-8").read()
+    with open(doc.text_path, encoding="utf-8") as f:
+        text = f.read()
     if not text.strip():
         return None
 
-    tokenizer, model = get_finbert_model()
+    try:
+        tokenizer, model, device = get_finbert()
+    except Exception:
+        tokenizer, model, device = None, None, None
     if tokenizer is None or model is None:
         # Fallback: store a placeholder score
         score_row = SentimentScore(
@@ -40,18 +35,15 @@ def compute_sentiment_for_document(session: Session, document_id: int) -> Sentim
         session.refresh(score_row)
         return score_row
 
-    import re
     sentences = [s.strip() for s in re.split(r"[.!?]+", text) if s.strip()][:500]
     if not sentences:
         sentences = [text[:512]]
 
-    import torch
-    model.eval()
     pos_sum, neg_sum, risk_count, n = 0.0, 0.0, 0, 0
     risk_words = {"risk", "debt", "loss", "decline", "uncertain", "volatility"}
 
     for sent in sentences:
-        inputs = tokenizer(sent, return_tensors="pt", truncation=True, max_length=512)
+        inputs = tokenizer(sent, return_tensors="pt", truncation=True, max_length=512).to(device)
         with torch.no_grad():
             out = model(**inputs)
         probs = torch.softmax(out.logits, dim=1)[0]

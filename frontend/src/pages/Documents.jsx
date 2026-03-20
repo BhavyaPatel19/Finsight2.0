@@ -1,18 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ingestionApi, scraperApi } from '../api/client'
+import { ingestionApi, scraperApi, credisentimentApi } from '../api/client'
 import {
   Search, FileText, Trash2, Eye, MessageSquare,
   Download, RefreshCw, Loader, CheckCircle, AlertCircle,
   Upload, X, Play, ChevronRight, Square, CheckSquare, BookOpen, Mic
 } from 'lucide-react'
 
-const STATUS_CONFIG = {
-  pending: { label: 'Pending', color: '#a78bfa', bg: 'rgba(167,139,250,0.12)' },
-  downloading: { label: 'Downloading…', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', spin: true },
-  processing: { label: 'Processing…', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', spin: true },
-  indexed: { label: 'Indexed', color: '#22d3a5', bg: 'rgba(34,211,165,0.12)', icon: CheckCircle },
-  error: { label: 'Error', color: '#f43f5e', bg: 'rgba(244,63,94,0.12)', icon: AlertCircle },
+const PIPELINE_STATUS = {
+  pending:    { label: 'Unprocessed', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', icon: null },
+  processing: { label: 'Processing',  color: '#38bdf8', bg: 'rgba(56,189,248,0.12)', spin: true },
+  indexed:    { label: 'Processed',   color: '#22d3a5', bg: 'rgba(34,211,165,0.12)', icon: CheckCircle },
+  error:      { label: 'Error',       color: '#f43f5e', bg: 'rgba(244,63,94,0.12)', icon: AlertCircle },
 }
 
 const CATEGORY_ICONS = {
@@ -29,8 +28,8 @@ const CATEGORY_COLORS = {
   credit_rating: { color: '#f472b6', bg: 'rgba(244,114,182,0.12)' },
 }
 
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending
+function PipelineStatusBadge({ status, label }) {
+  const cfg = PIPELINE_STATUS[status] || PIPELINE_STATUS.pending
   const Icon = cfg.icon
   return (
     <span style={{
@@ -40,8 +39,34 @@ function StatusBadge({ status }) {
     }}>
       {cfg.spin && <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2, borderColor: `${cfg.color} transparent transparent transparent` }} />}
       {Icon && <Icon size={12} />}
-      {cfg.label}
+      {label}: {cfg.label}
     </span>
+  )
+}
+
+function ProcessButton({ status, onClick, label }) {
+  if (status === 'processing') {
+    return (
+      <button disabled className="btn btn-ghost btn-sm" title={`${label}: Processing...`}
+        style={{ padding: '4px 8px' }}>
+        <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+      </button>
+    )
+  }
+  if (status === 'indexed') {
+    return (
+      <button disabled className="btn btn-ghost btn-sm" title={`${label}: Processed`}
+        style={{ padding: '4px 8px' }}>
+        <CheckCircle size={14} style={{ color: '#22d3a5' }} />
+      </button>
+    )
+  }
+  return (
+    <button className="btn btn-ghost btn-sm" onClick={onClick}
+      title={`Process for ${label}`}
+      style={{ padding: '4px 8px' }}>
+      <Play size={14} style={{ color: status === 'error' ? 'var(--danger)' : undefined }} />
+    </button>
   )
 }
 
@@ -338,6 +363,7 @@ export default function Documents() {
   // Job status state
   const [activeJob, setActiveJob] = useState(null)
   const pollRef = useRef(null)
+  const processPollRef = useRef(null)
 
   // Load documents
   const loadDocs = useCallback(async () => {
@@ -450,11 +476,42 @@ export default function Documents() {
     finally { setDeleting(false) }
   }
 
-  // Process
-  const handleProcess = async (docId) => {
+  // Process polling
+  const startProcessPolling = () => {
+    if (processPollRef.current) return
+    processPollRef.current = setInterval(async () => {
+      try {
+        const r = await ingestionApi.list(filterSymbol || undefined)
+        setDocs(r.data)
+        const anyProcessing = r.data.some(d =>
+          d.status === 'processing' || d.cs_status === 'processing'
+        )
+        if (!anyProcessing) {
+          clearInterval(processPollRef.current)
+          processPollRef.current = null
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (processPollRef.current) clearInterval(processPollRef.current)
+    }
+  }, [])
+
+  // Process handlers
+  const handleProcessRAG = async (docId) => {
     try {
       await ingestionApi.process(docId)
-      loadDocs()
+      startProcessPolling()
+    } catch { /* ignore */ }
+  }
+
+  const handleProcessCS = async (docId) => {
+    try {
+      await credisentimentApi.process(docId)
+      startProcessPolling()
     } catch { /* ignore */ }
   }
 
@@ -603,7 +660,8 @@ export default function Documents() {
                 <th>Company / Symbol</th>
                 <th>Type</th>
                 <th>Period</th>
-                <th>Status</th>
+                <th>RAG Status</th>
+                <th>CS Status</th>
                 <th>Date</th>
                 <th>Size</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
@@ -626,7 +684,8 @@ export default function Documents() {
                   <td className="text-sm">
                     {[doc.fiscal_quarter, doc.fiscal_year].filter(Boolean).join(' / ') || '—'}
                   </td>
-                  <td><StatusBadge status={doc.status || 'pending'} /></td>
+                  <td><PipelineStatusBadge status={doc.status || 'pending'} label="RAG" /></td>
+                  <td><PipelineStatusBadge status={doc.cs_status || 'pending'} label="CS" /></td>
                   <td className="text-sm text-muted" style={{ whiteSpace: 'nowrap' }}>
                     {doc.ingested_at ? new Date(doc.ingested_at).toLocaleDateString() : '—'}
                   </td>
@@ -653,13 +712,16 @@ export default function Documents() {
                           <MessageSquare size={14} />
                         </button>
                       )}
-                      {doc.status === 'pending' && doc.pdf_path && (
-                        <button className="btn btn-ghost btn-sm" title="Process — Extract & Index"
-                          onClick={() => handleProcess(doc.id)}
-                          style={{ padding: '4px 8px' }}>
-                          <Play size={14} />
-                        </button>
-                      )}
+                      <ProcessButton
+                        status={doc.status || 'pending'}
+                        onClick={() => handleProcessRAG(doc.id)}
+                        label="RAG"
+                      />
+                      <ProcessButton
+                        status={doc.cs_status || 'pending'}
+                        onClick={() => handleProcessCS(doc.id)}
+                        label="CrediSentiment"
+                      />
                       <button className="btn btn-ghost btn-sm" title="Delete"
                         onClick={() => setDeleteTarget(doc)}
                         style={{ padding: '4px 8px', color: 'var(--danger)' }}>
