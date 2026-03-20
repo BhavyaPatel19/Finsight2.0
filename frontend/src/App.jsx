@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
-import Sidebar from './components/Sidebar'
+import TopNavbar from './components/TopNavbar'
 import { FinSightLogo } from './components/FinSightLogo'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -22,7 +22,7 @@ function ProtectedLayout({ children }) {
   if (!user) return <Navigate to="/login" replace />
   return (
     <div className="app-shell">
-      <Sidebar />
+      <TopNavbar />
       <main className="main-content">{children}</main>
     </div>
   )
