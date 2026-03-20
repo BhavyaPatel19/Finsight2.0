@@ -28,7 +28,7 @@ export default function TopNavbar() {
     <nav className="topnav">
       {/* Logo — left */}
       <Link to="/" className="topnav-logo">
-        <FinSightLogo size="small" animated />
+        <FinSightLogo size="small" animated theme="dark" />
       </Link>
 
       {/* Tubelight pill — center */}

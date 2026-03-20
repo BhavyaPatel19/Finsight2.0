@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, BarChart, Bar
+  ResponsiveContainer, CartesianGrid, BarChart, Bar, Cell, LabelList
 } from 'recharts'
 
 const fmtCcy = (n) =>
@@ -116,27 +116,15 @@ export default function Dashboard() {
       <div className="card mb-6" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', padding: '16px 22px' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>🔗 Zerodha Integration</div>
-          <div className="text-xs text-muted">Connect → Paste token → Link → Sync</div>
+          <div className="text-xs text-muted">Connect → Sync</div>
         </div>
         <button id="zerodha-connect-btn" className="btn btn-primary btn-sm flex-center gap-2" onClick={connectZerodha} disabled={connecting}>
           {connecting ? <span className="spinner" /> : <Link2 size={14} />}
-          {connecting ? 'Opening…' : '1. Connect'}
-        </button>
-        <input
-          id="zerodha-token-input"
-          className="form-control"
-          style={{ maxWidth: 220, marginBottom: 0, fontSize: 12 }}
-          placeholder="Paste request_token here"
-          value={requestToken}
-          onChange={e => setRequestToken(e.target.value)}
-        />
-        <button id="zerodha-link-btn" className="btn btn-ghost btn-sm flex-center gap-2" onClick={linkZerodha} disabled={linking || !requestToken.trim()}>
-          {linking ? <span className="spinner" /> : <Link2 size={14} />}
-          {linking ? 'Linking…' : '2. Link'}
+          {connecting ? 'Opening…' : 'Connect'}
         </button>
         <button id="zerodha-sync-btn" className="btn btn-ghost btn-sm flex-center gap-2" onClick={syncHoldings} disabled={syncing}>
           {syncing ? <span className="spinner" /> : <Download size={14} />}
-          {syncing ? 'Syncing…' : '3. Sync'}
+          {syncing ? 'Syncing…' : 'Sync'}
         </button>
         {syncMsg && (
           <span className="text-sm" style={{ width: '100%', color: syncMsg.startsWith('✅') ? 'var(--success)' : 'var(--danger)' }}>
@@ -157,7 +145,7 @@ export default function Dashboard() {
               </div>
               <div className="stat-label">Portfolio Value</div>
               <div className="stat-value" style={{ fontSize: 22 }}>{fmtCcy(totalValue)}</div>
-              <div className={`stat-sub ${pnl >= 0 ? 'text-success' : 'text-danger'}`}>
+              <div className={`stat-sub ${pnl >= 0 ? 'text-success' : 'text-danger'}`} style={{ textShadow: pnl >= 0 ? '0 0 6px rgba(34,211,165,0.5)' : '0 0 6px rgba(244,63,94,0.5)' }}>
                 {pnl >= 0 ? '▲' : '▼'} {fmtCcy(Math.abs(pnl))} ({pnlPct.toFixed(2)}%)
               </div>
             </div>
@@ -185,7 +173,7 @@ export default function Dashboard() {
                 {pnl >= 0 ? <TrendingUp size={20} color="#22d3a5" /> : <TrendingDown size={20} color="#f43f5e" />}
               </div>
               <div className="stat-label">Overall P&L</div>
-              <div className="stat-value" style={{ color: pnl >= 0 ? '#22d3a5' : '#f43f5e' }}>
+              <div className="stat-value" style={{ color: pnl >= 0 ? '#22d3a5' : '#f43f5e', textShadow: pnl >= 0 ? '0 0 8px rgba(34,211,165,0.6), 0 0 20px rgba(34,211,165,0.3)' : '0 0 8px rgba(244,63,94,0.6), 0 0 20px rgba(244,63,94,0.3)' }}>
                 {pnl >= 0 ? '+' : ''}{fmtCcy(pnl)}
               </div>
               <div className="stat-sub text-muted">{pnlPct.toFixed(2)}% return</div>
@@ -206,7 +194,7 @@ export default function Dashboard() {
                     {topGainers.map(h => (
                       <div key={h.symbol} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'rgba(34,211,165,0.06)' }}>
                         <span className="badge badge-accent">{h.symbol}</span>
-                        <span style={{ color: '#22d3a5', fontWeight: 600, fontSize: 14 }}>
+                        <span style={{ color: '#22d3a5', fontWeight: 600, fontSize: 14, textShadow: '0 0 8px rgba(34,211,165,0.6), 0 0 20px rgba(34,211,165,0.3)' }}>
                           +{h.day_change_pct?.toFixed(2)}%
                         </span>
                       </div>
@@ -225,8 +213,8 @@ export default function Dashboard() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {topLosers.map(h => (
                       <div key={h.symbol} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', borderRadius: 8, background: 'rgba(244,63,94,0.06)' }}>
-                        <span className="badge badge-accent">{h.symbol}</span>
-                        <span style={{ color: '#f43f5e', fontWeight: 600, fontSize: 14 }}>
+                        <span className="badge badge-danger">{h.symbol}</span>
+                        <span style={{ color: '#f43f5e', fontWeight: 600, fontSize: 14, textShadow: '0 0 8px rgba(244,63,94,0.6), 0 0 20px rgba(244,63,94,0.3)' }}>
                           {h.day_change_pct?.toFixed(2)}%
                         </span>
                       </div>
@@ -250,12 +238,14 @@ export default function Dashboard() {
                     tickFormatter={v => '₹' + (Math.abs(v) >= 1000 ? (v/1000).toFixed(1)+'k' : v)} />
                   <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
                   <Tooltip
-                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
-                    formatter={val => [fmtCcy(val), 'P&L']}
+                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 13, color: '#f1f5f9' }}
+                    labelStyle={{ color: '#e2e8f0', fontWeight: 600 }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    formatter={(val) => [<span style={{ color: val >= 0 ? '#22d3a5' : '#f43f5e', fontWeight: 600 }}>{fmtCcy(val)}</span>, 'P&L']}
                   />
                   <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
                     {pnlData.map((entry, i) => (
-                      <rect key={i} fill={entry.pnl >= 0 ? '#22d3a5' : '#f43f5e'} />
+                      <Cell key={i} fill={entry.pnl >= 0 ? '#22d3a5' : '#f43f5e'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -269,24 +259,31 @@ export default function Dashboard() {
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
                 Holdings Value Distribution
               </h3>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={chartData}>
+              <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 32)}>
+                <BarChart data={[...chartData].sort((a, b) => b.value - a.value)} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
                   <defs>
-                    <linearGradient id="gradV" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <linearGradient id="gradBar" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="#818cf8" stopOpacity={1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false}
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false}
                     tickFormatter={v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#c8d0da', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} width={90} />
                   <Tooltip
-                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
+                    cursor={{ fill: 'rgba(99,102,241,0.08)' }}
+                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, fontSize: 13 }}
                     formatter={val => [fmtCcy(val), 'Value']}
                   />
-                  <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={2} fill="url(#gradV)" />
-                </AreaChart>
+                  <Bar dataKey="value" fill="url(#gradBar)" radius={[0, 6, 6, 0]} barSize={20}>
+                    {[...chartData].sort((a, b) => b.value - a.value).map((entry, i) => (
+                      <Cell key={i} fill={`hsl(${235 + i * 8}, 70%, ${60 + (i % 3) * 5}%)`} />
+                    ))}
+                    <LabelList dataKey="value" position="right" fill="#c8d0da" fontSize={11} fontWeight={500}
+                      formatter={v => '₹' + (v >= 1000 ? (v/1000).toFixed(1)+'k' : v)} />
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           )}

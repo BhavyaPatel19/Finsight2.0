@@ -7,7 +7,7 @@ const currencySymbols = [
   "\u09F3", "\u20AA", "\u20A2", "\u20A3", "\u20A4", "\u20A0", "\u00A2", "\u0192", "\u20AF", "\u20B0",
 ];
 
-export function FloatingCurrencies() {
+export function FloatingCurrencies({ theme = 'light' }) {
   const items = useMemo(() => {
     return Array.from({ length: 55 }, (_, i) => {
       const symbol = currencySymbols[i % currencySymbols.length];
@@ -69,7 +69,7 @@ export function FloatingCurrencies() {
         >
           <span
             style={{
-              color: '#1B2A4A',
+              color: theme === 'dark' ? 'rgba(26, 188, 156, 0.6)' : '#1B2A4A',
               fontSize: `${item.size}rem`,
               fontWeight: 700,
               userSelect: 'none',
