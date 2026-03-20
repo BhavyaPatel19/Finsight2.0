@@ -4,6 +4,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, BarChart2, RefreshCw,
   Link2, Download, Briefcase
 } from 'lucide-react'
+import GlowCard from '../components/GlowCard'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, BarChart, Bar, Cell, LabelList
@@ -113,7 +114,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Zerodha Connect/Sync Bar ── */}
-      <div className="card mb-6" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', padding: '16px 22px' }}>
+      <GlowCard className="card mb-6" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', padding: '16px 22px' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>🔗 Zerodha Integration</div>
           <div className="text-xs text-muted">Connect → Sync</div>
@@ -131,7 +132,7 @@ export default function Dashboard() {
             {syncMsg}
           </span>
         )}
-      </div>
+      </GlowCard>
 
       {loading ? (
         <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>
@@ -139,7 +140,7 @@ export default function Dashboard() {
         <>
           {/* ── Summary Cards ── */}
           <div className="card-grid">
-            <div className="stat-card">
+            <GlowCard className="stat-card">
               <div className="stat-icon" style={{ background: 'rgba(99,102,241,0.15)' }}>
                 <Briefcase size={20} color="#6366f1" />
               </div>
@@ -148,27 +149,27 @@ export default function Dashboard() {
               <div className={`stat-sub ${pnl >= 0 ? 'text-success' : 'text-danger'}`} style={{ textShadow: pnl >= 0 ? '0 0 6px rgba(34,211,165,0.5)' : '0 0 6px rgba(244,63,94,0.5)' }}>
                 {pnl >= 0 ? '▲' : '▼'} {fmtCcy(Math.abs(pnl))} ({pnlPct.toFixed(2)}%)
               </div>
-            </div>
+            </GlowCard>
 
-            <div className="stat-card">
+            <GlowCard className="stat-card">
               <div className="stat-icon" style={{ background: 'rgba(34,211,165,0.12)' }}>
                 <BarChart2 size={20} color="#22d3a5" />
               </div>
               <div className="stat-label">Holdings</div>
               <div className="stat-value">{holdings.length}</div>
               <div className="stat-sub text-muted">Tracked stocks</div>
-            </div>
+            </GlowCard>
 
-            <div className="stat-card">
+            <GlowCard className="stat-card">
               <div className="stat-icon" style={{ background: 'rgba(245,158,11,0.12)' }}>
                 <DollarSign size={20} color="#f59e0b" />
               </div>
               <div className="stat-label">Total Invested</div>
               <div className="stat-value">{fmtCcy(totalCost)}</div>
               <div className="stat-sub text-muted">Cost basis</div>
-            </div>
+            </GlowCard>
 
-            <div className="stat-card">
+            <GlowCard className="stat-card">
               <div className="stat-icon" style={{ background: pnl >= 0 ? 'rgba(34,211,165,0.12)' : 'rgba(244,63,94,0.12)' }}>
                 {pnl >= 0 ? <TrendingUp size={20} color="#22d3a5" /> : <TrendingDown size={20} color="#f43f5e" />}
               </div>
@@ -177,13 +178,13 @@ export default function Dashboard() {
                 {pnl >= 0 ? '+' : ''}{fmtCcy(pnl)}
               </div>
               <div className="stat-sub text-muted">{pnlPct.toFixed(2)}% return</div>
-            </div>
+            </GlowCard>
           </div>
 
           {/* ── Top Gainers & Losers ── */}
           {sorted.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-              <div className="card">
+              <GlowCard className="card">
                 <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <TrendingUp size={16} color="#22d3a5" /> Today's Gainers
                 </h3>
@@ -201,9 +202,9 @@ export default function Dashboard() {
                     ))}
                   </div>
                 )}
-              </div>
+              </GlowCard>
 
-              <div className="card">
+              <GlowCard className="card">
                 <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <TrendingDown size={16} color="#f43f5e" /> Today's Losers
                 </h3>
@@ -221,13 +222,13 @@ export default function Dashboard() {
                     ))}
                   </div>
                 )}
-              </div>
+              </GlowCard>
             </div>
           )}
 
           {/* ── P&L by Stock (bar chart) ── */}
           {pnlData.length > 0 && (
-            <div className="card mb-6">
+            <GlowCard className="card mb-6">
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
                 P&L by Stock
               </h3>
@@ -250,12 +251,12 @@ export default function Dashboard() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </GlowCard>
           )}
 
           {/* ── Value Distribution ── */}
           {chartData.length > 0 && (
-            <div className="card mb-6">
+            <GlowCard className="card mb-6">
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>
                 Holdings Value Distribution
               </h3>
@@ -285,7 +286,7 @@ export default function Dashboard() {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </GlowCard>
           )}
         </>
       )}

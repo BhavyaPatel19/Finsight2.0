@@ -10,6 +10,9 @@ import {
     ResponsiveContainer, CartesianGrid, Cell,
     RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
+import GlowCard from '../components/GlowCard'
+import HoverButton from '../components/HoverButton'
+import AnimatedCheckbox from '../components/AnimatedCheckbox'
 
 /* ── Helpers ────────────────────────────────────────────── */
 
@@ -309,7 +312,7 @@ export default function CredibilitySentiment() {
             <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 220px)', minHeight: 500 }}>
 
                 {/* ── Left Panel: Document Picker ── */}
-                <div className="card" style={{ width: 280, minWidth: 280, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+                <GlowCard className="card" style={{ width: 280, minWidth: 280, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
                     <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                             <span style={{ fontWeight: 600, fontSize: 14 }}>
@@ -338,6 +341,7 @@ export default function CredibilitySentiment() {
                             ragProcessedDocs.map(doc => (
                                 <label
                                     key={doc.id}
+                                    onClick={() => toggleDoc(doc.id)}
                                     style={{
                                         display: 'flex', alignItems: 'flex-start', gap: 8,
                                         padding: '8px 16px', cursor: 'pointer',
@@ -346,11 +350,11 @@ export default function CredibilitySentiment() {
                                         transition: 'background 0.15s',
                                     }}
                                 >
-                                    <input
-                                        type="checkbox"
+                                    <AnimatedCheckbox
                                         checked={selectedIds.has(doc.id)}
                                         onChange={() => toggleDoc(doc.id)}
-                                        style={{ marginTop: 3 }}
+                                        size={20}
+                                        style={{ marginTop: 2 }}
                                     />
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.3 }}>{doc.symbol}</div>
@@ -371,7 +375,7 @@ export default function CredibilitySentiment() {
                             {selectedIds.size} document(s) selected
                         </div>
                     </div>
-                </div>
+                </GlowCard>
 
                 {/* ── Right Panel: Tabs + Content ── */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -379,7 +383,7 @@ export default function CredibilitySentiment() {
                     <div style={{ display: 'flex', gap: 2, marginBottom: 16 }}>
                         <button
                             id="tab-sentiment"
-                            className={`btn ${tab === 'sentiment' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`btn btn-tab ${tab === 'sentiment' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setTab('sentiment')}
                             style={{ flex: 1, borderRadius: '10px 10px 0 0', fontSize: 14, padding: '10px 0', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                         >
@@ -387,7 +391,7 @@ export default function CredibilitySentiment() {
                         </button>
                         <button
                             id="tab-walkthetalk"
-                            className={`btn ${tab === 'wtt' ? 'btn-primary' : 'btn-ghost'}`}
+                            className={`btn btn-tab ${tab === 'wtt' ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => setTab('wtt')}
                             style={{ flex: 1, borderRadius: '10px 10px 0 0', fontSize: 14, padding: '10px 0', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                         >
@@ -396,7 +400,7 @@ export default function CredibilitySentiment() {
                     </div>
 
                     {/* Tab content */}
-                    <div className="card" style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+                    <GlowCard className="card" style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
                         {/* ── TAB 1: FinBERT Sentiment ── */}
                         <div style={{ display: tab === 'sentiment' ? 'block' : 'none' }}>
@@ -407,15 +411,21 @@ export default function CredibilitySentiment() {
                                             FinBERT analyses sentiment per business division/section of your documents
                                         </p>
                                     </div>
-                                    <button
-                                        id="run-sentiment-btn"
-                                        className="btn btn-primary flex-center gap-2"
-                                        onClick={runSentiment}
-                                        disabled={analyzingS || selectedIds.size === 0}
-                                        style={{ fontSize: 13 }}
-                                    >
-                                        {analyzingS ? <><Loader size={14} className="spin" /> Analyzing...</> : <><RefreshCw size={14} /> Analyze Selected</>}
-                                    </button>
+                                    {analyzingS ? (
+                                        <button className="btn btn-primary flex-center gap-2" disabled style={{ fontSize: 13 }}>
+                                            <Loader size={14} className="spin" /> Analyzing...
+                                        </button>
+                                    ) : (
+                                        <button
+                                            id="run-sentiment-btn"
+                                            className="btn btn-primary"
+                                            onClick={runSentiment}
+                                            disabled={selectedIds.size === 0}
+                                            style={{ fontSize: 13 }}
+                                        >
+                                            <RefreshCw size={14} /> Analyze Selected
+                                        </button>
+                                    )}
                                 </div>
 
                                 {analyzingS && (
@@ -584,19 +594,21 @@ export default function CredibilitySentiment() {
 
                                 {/* Compare button */}
                                 <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                                    <button
-                                        id="run-wtt-btn"
-                                        className="btn btn-primary flex-center gap-2"
-                                        onClick={runWalkTheTalk}
-                                        disabled={analyzingW || !claimsDocId || !actualsDocId}
-                                        style={{ fontSize: 14, padding: '10px 32px' }}
-                                    >
-                                        {analyzingW ? (
-                                            <><Loader size={14} className="spin" /> Analyzing with DeepSeek R1...</>
-                                        ) : (
-                                            <><Crosshair size={16} /> Compare &amp; Analyze</>
-                                        )}
-                                    </button>
+                                    {analyzingW ? (
+                                        <button className="btn btn-primary flex-center gap-2" disabled style={{ fontSize: 14, padding: '10px 32px' }}>
+                                            <Loader size={14} className="spin" /> Analyzing with DeepSeek R1...
+                                        </button>
+                                    ) : (
+                                        <button
+                                            id="run-wtt-btn"
+                                            className="btn btn-primary"
+                                            onClick={runWalkTheTalk}
+                                            disabled={!claimsDocId || !actualsDocId}
+                                            style={{ fontSize: 14, padding: '10px 32px' }}
+                                        >
+                                            <Crosshair size={16} /> Compare &amp; Analyze
+                                        </button>
+                                    )}
                                     {wttError && (
                                         <div style={{ marginTop: 8, color: 'var(--danger)', fontSize: 13 }}>
                                             <AlertCircle size={13} style={{ verticalAlign: -2, marginRight: 4 }} />{wttError}
@@ -625,7 +637,7 @@ export default function CredibilitySentiment() {
                                     <div>
                                         {/* Score + Credibility Overview */}
                                         <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 20, marginBottom: 24 }}>
-                                            <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 16px' }}>
+                                            <GlowCard className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '24px 16px' }}>
                                                 <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontWeight: 600 }}>
                                                     Credibility Score
                                                 </div>
@@ -633,9 +645,9 @@ export default function CredibilitySentiment() {
                                                 <span className={`badge ${credBadge(wttResult.overall_score).cls}`} style={{ fontSize: 13 }}>
                                                     {credBadge(wttResult.overall_score).label}
                                                 </span>
-                                            </div>
+                                            </GlowCard>
 
-                                            <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                            <GlowCard className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                                     <Brain size={16} color="#8b5cf6" />
                                                     <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Credibility Overview</h3>
@@ -660,7 +672,7 @@ export default function CredibilitySentiment() {
                                                         </span>
                                                     )}
                                                 </div>
-                                            </div>
+                                            </GlowCard>
                                         </div>
 
                                         {/* Summary Statistics Strip */}
@@ -737,7 +749,7 @@ export default function CredibilitySentiment() {
                                         )}
 
                                         {/* Narrative Report */}
-                                        <div id="wtt-narrative-report" className="card" style={{ padding: 20, marginTop: 24 }}>
+                                        <GlowCard id="wtt-narrative-report" className="card" style={{ padding: 20, marginTop: 24 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                                                 <Brain size={16} color="#8b5cf6" />
                                                 <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Narrative Report</h3>
@@ -745,11 +757,11 @@ export default function CredibilitySentiment() {
                                             <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0 }}>
                                                 {wttResult.narrative_summary}
                                             </p>
-                                        </div>
+                                        </GlowCard>
                                     </div>
                                 )}
                         </div>
-                    </div>
+                    </GlowCard>
                 </div>
             </div>
         </div>

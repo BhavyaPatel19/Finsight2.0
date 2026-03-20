@@ -4,6 +4,7 @@ import { BarChart2, RefreshCw } from 'lucide-react'
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer
 } from 'recharts'
+import GlowCard from '../components/GlowCard'
 
 const COLORS = ['#6366f1','#22d3a5','#f59e0b','#f43f5e','#38bdf8','#c084fc','#fb7185','#34d399']
 
@@ -60,25 +61,25 @@ export default function Portfolio() {
         <>
           {/* Summary strip */}
           <div className="card-grid" style={{ marginBottom: 24 }}>
-            <div className="stat-card">
+            <GlowCard className="stat-card">
               <div className="stat-label">Total Value</div>
               <div className="stat-value" style={{ fontSize: 22 }}>{fmtCcy(totalValue)}</div>
-            </div>
-            <div className="stat-card">
+            </GlowCard>
+            <GlowCard className="stat-card">
               <div className="stat-label">Total Invested</div>
               <div className="stat-value">{fmtCcy(totalCost)}</div>
-            </div>
-            <div className="stat-card">
+            </GlowCard>
+            <GlowCard className="stat-card">
               <div className="stat-label">Total P&L</div>
               <div className="stat-value" style={{ color: pnl >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                 {pnl >= 0 ? '+' : ''}{fmtCcy(pnl)} ({pnlPct.toFixed(1)}%)
               </div>
-            </div>
+            </GlowCard>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20, marginBottom: 24 }}>
             {/* Pie chart */}
-            <div className="card">
+            <GlowCard className="card">
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Allocation</h3>
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
@@ -93,10 +94,10 @@ export default function Portfolio() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            </GlowCard>
 
             {/* Holdings table */}
-            <div className="card">
+            <GlowCard className="card">
               <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Holdings</h3>
               <div className="table-wrap" style={{ borderRadius: 8 }}>
                 <table>
@@ -142,7 +143,7 @@ export default function Portfolio() {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </GlowCard>
           </div>
         </>
       )}

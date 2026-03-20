@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ingestionApi, scraperApi, credisentimentApi } from '../api/client'
+import GlowCard from '../components/GlowCard'
+import AnimatedCheckbox from '../components/AnimatedCheckbox'
 import {
   Search, FileText, Trash2, Eye, MessageSquare,
   Download, RefreshCw, Loader, CheckCircle, AlertCircle,
-  Upload, X, Play, ChevronRight, Square, CheckSquare, BookOpen, Mic
+  Upload, X, Play, ChevronRight, BookOpen, Mic
 } from 'lucide-react'
 
 const PIPELINE_STATUS = {
@@ -247,8 +249,8 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
           cursor: 'pointer', userSelect: 'none',
         }} onClick={() => toggleCategory(category)}>
           {allSel
-            ? <CheckSquare size={16} style={{ color: 'var(--primary)' }} />
-            : <Square size={16} style={{ color: 'var(--text-muted)' }} />
+            ? <AnimatedCheckbox checked={true} onChange={() => toggleCategory(category)} size={18} />
+            : <AnimatedCheckbox checked={false} onChange={() => toggleCategory(category)} size={18} />
           }
           <CatIcon size={15} style={{ color: catCfg.color }} />
           <span style={{ fontWeight: 600, fontSize: 13 }}>{title}</span>
@@ -269,10 +271,12 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
                 }}
                 onClick={() => toggle(globalIdx)}
               >
-                {isSel
-                  ? <CheckSquare size={14} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-                  : <Square size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                }
+                <AnimatedCheckbox
+                  checked={isSel}
+                  onChange={() => toggle(globalIdx)}
+                  size={16}
+                  style={{ flexShrink: 0 }}
+                />
                 <span style={{ flex: 1, lineHeight: 1.3 }}>{doc.title}</span>
                 {doc.date && <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>{doc.date}</span>}
               </div>
@@ -545,7 +549,7 @@ export default function Documents() {
       </div>
 
       {/* ── Search Bar ──────────────────────────────── */}
-      <div className="card mb-6" style={{ position: 'relative', zIndex: 10 }}>
+      <GlowCard className="card mb-6" style={{ position: 'relative', zIndex: 10 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>
           <Search size={15} style={{ display: 'inline', verticalAlign: -2, marginRight: 6 }} />
           Search & Download Reports
@@ -632,10 +636,10 @@ export default function Documents() {
             )}
           </div>
         )}
-      </div>
+      </GlowCard>
 
       {/* ── Library Section ─────────────────────────── */}
-      <div className="card mb-6" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <GlowCard className="card mb-6" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <FileText size={15} style={{ color: 'var(--text-muted)' }} />
         <span style={{ fontWeight: 600, fontSize: 14 }}>Document Library</span>
         <div style={{ flex: 1 }} />
@@ -643,7 +647,7 @@ export default function Documents() {
           placeholder="Filter by symbol…" value={filterSymbol}
           onChange={e => setFilterSymbol(e.target.value)} />
         <span className="text-sm text-muted">{docs.length} doc{docs.length !== 1 ? 's' : ''}</span>
-      </div>
+      </GlowCard>
 
       {loading ? (
         <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>

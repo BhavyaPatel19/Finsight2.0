@@ -5,6 +5,9 @@ import {
   ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
 } from 'lucide-react'
 import { FinSightLogo } from '../components/FinSightLogo'
+import GlowCard from '../components/GlowCard'
+import HoverButton from '../components/HoverButton'
+import AnimatedCheckbox from '../components/AnimatedCheckbox'
 
 const MODELS = [
   { value: 'deepseek-r1:14b', label: 'DeepSeek-R1 14B (Reasoning)' },
@@ -185,7 +188,7 @@ export default function Chat() {
 
       <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 220px)', minHeight: 500 }}>
         {/* Left panel — Document picker */}
-        <div className="card" style={{ width: 280, minWidth: 280, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+        <GlowCard className="card" style={{ width: 280, minWidth: 280, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ fontWeight: 600, fontSize: 14 }}>
@@ -228,6 +231,7 @@ export default function Chat() {
               documents.map(doc => (
                 <label
                   key={doc.id}
+                  onClick={() => toggleDoc(doc.id)}
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 8,
                     padding: '8px 16px', cursor: 'pointer',
@@ -235,11 +239,11 @@ export default function Chat() {
                     borderLeft: selectedIds.has(doc.id) ? '3px solid #6366f1' : '3px solid transparent',
                   }}
                 >
-                  <input
-                    type="checkbox"
+                  <AnimatedCheckbox
                     checked={selectedIds.has(doc.id)}
                     onChange={() => toggleDoc(doc.id)}
-                    style={{ marginTop: 3 }}
+                    size={20}
+                    style={{ marginTop: 2 }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.3 }}>
@@ -264,25 +268,31 @@ export default function Chat() {
                 {statusText}
               </div>
             )}
-            <button
-              className="btn btn-primary"
-              onClick={prepareSelected}
-              disabled={selectedIds.size === 0 || preparing}
-              style={{ width: '100%', fontSize: 13 }}
-            >
-              {preparing ? 'Processing...' : `Prepare Selected (${selectedIds.size})`}
-            </button>
+            {preparing ? (
+              <button className="btn btn-primary" disabled style={{ width: '100%', fontSize: 13 }}>
+                <Loader size={13} className="spin" /> Processing...
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={prepareSelected}
+                disabled={selectedIds.size === 0}
+                style={{ width: '100%', fontSize: 13 }}
+              >
+                Prepare ({selectedIds.size})
+              </button>
+            )}
             {selectedIds.size > 0 && (
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, textAlign: 'center' }}>
                 {indexedCount} ready{pendingCount > 0 ? ` · ${pendingCount} need processing` : ''}
               </div>
             )}
           </div>
-        </div>
+        </GlowCard>
 
         {/* Right panel — Chat */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+          <GlowCard className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
             {/* Chat header with clear button */}
             {messages.length > 1 && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
@@ -362,7 +372,7 @@ export default function Chat() {
                 <Send size={16} />
               </button>
             </div>
-          </div>
+          </GlowCard>
         </div>
       </div>
     </div>

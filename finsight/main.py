@@ -17,8 +17,40 @@ from finsight.scraper.router import router as scraper_router
 from finsight.credisentiment.router import router as credisentiment_router
 
 
+import sqlite3
+import os
+
+
+def run_migrations():
+    """Apply any missing columns to the SQLite DB at startup (idempotent)."""
+    db_path = os.environ.get("DATABASE_URL", "sqlite:///./finsight.db")
+    # Strip the sqlite:/// prefix to get the filesystem path
+    db_path = db_path.replace("sqlite:///", "")
+    migrations = [
+        "ALTER TABLE documents ADD COLUMN cs_status TEXT DEFAULT 'pending'",
+        "ALTER TABLE documents ADD COLUMN cs_chunk_count INTEGER DEFAULT 0",
+        "ALTER TABLE documents ADD COLUMN cs_error_message TEXT",
+    ]
+    try:
+        conn = sqlite3.connect(db_path)
+        for sql in migrations:
+            try:
+                conn.execute(sql)
+                conn.commit()
+                print(f"[migration] Applied: {sql}")
+            except sqlite3.OperationalError as e:
+                if "duplicate column name" in str(e):
+                    pass  # column already exists, skip
+                else:
+                    raise
+        conn.close()
+    except Exception as e:
+        print(f"[migration] Warning: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    run_migrations()
     init_db()
     start_scheduler()
     yield

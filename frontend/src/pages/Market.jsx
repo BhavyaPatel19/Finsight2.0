@@ -9,6 +9,8 @@ import {
   ResponsiveContainer, CartesianGrid,
   ComposedChart, Bar, Line
 } from 'recharts'
+import GlowCard from '../components/GlowCard'
+import AnimatedCheckbox from '../components/AnimatedCheckbox'
 
 const fmtCcy = (n) =>
   n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n)
@@ -114,7 +116,7 @@ function QuoteCard({ symKey, quote, isSelected, onClick }) {
   const up = change >= 0
 
   return (
-    <div
+    <GlowCard
       className="card"
       style={{
         padding: '14px 16px', cursor: 'pointer',
@@ -122,25 +124,26 @@ function QuoteCard({ symKey, quote, isSelected, onClick }) {
         transition: 'all 0.2s',
         background: isSelected ? 'rgba(99,102,241,0.06)' : undefined,
       }}
-      onClick={() => onClick(sym)}
     >
-      <div className="flex-between" style={{ marginBottom: 6 }}>
-        <span className="badge badge-accent" style={{ fontSize: 12 }}>{sym}</span>
-        {up ? <TrendingUp size={14} color="#22d3a5" /> : <TrendingDown size={14} color="#f43f5e" />}
+      <div onClick={() => onClick(sym)}>
+        <div className="flex-between" style={{ marginBottom: 6 }}>
+          <span className="badge badge-accent" style={{ fontSize: 12 }}>{sym}</span>
+          {up ? <TrendingUp size={14} color="#22d3a5" /> : <TrendingDown size={14} color="#f43f5e" />}
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+          {fmtCcy(quote.last_price)}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: up ? '#22d3a5' : '#f43f5e', marginTop: 3 }}>
+          {up ? '+' : ''}{fmtCcy(change)} ({changePct.toFixed(2)}%)
+        </div>
+        <div className="text-xs text-muted" style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px' }}>
+          <span>H: {fmtCcy(quote.ohlc?.high)}</span>
+          <span>L: {fmtCcy(quote.ohlc?.low)}</span>
+          <span>O: {fmtCcy(quote.ohlc?.open)}</span>
+          <span>V: {fmtVol(quote.volume)}</span>
+        </div>
       </div>
-      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
-        {fmtCcy(quote.last_price)}
-      </div>
-      <div style={{ fontSize: 12, fontWeight: 600, color: up ? '#22d3a5' : '#f43f5e', marginTop: 3 }}>
-        {up ? '+' : ''}{fmtCcy(change)} ({changePct.toFixed(2)}%)
-      </div>
-      <div className="text-xs text-muted" style={{ marginTop: 6, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px' }}>
-        <span>H: {fmtCcy(quote.ohlc?.high)}</span>
-        <span>L: {fmtCcy(quote.ohlc?.low)}</span>
-        <span>O: {fmtCcy(quote.ohlc?.open)}</span>
-        <span>V: {fmtVol(quote.volume)}</span>
-      </div>
-    </div>
+    </GlowCard>
   )
 }
 
@@ -323,11 +326,14 @@ export default function Market() {
             }} />
             {marketOpen ? 'Market Open' : 'Market Closed'}
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={autoRefresh} onChange={e => setAutoRefresh(e.target.checked)}
-              style={{ accentColor: '#6366f1' }} />
-            Auto (15s)
-          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-muted)' }}>
+            <AnimatedCheckbox
+              checked={autoRefresh}
+              onChange={e => setAutoRefresh(e.target.checked)}
+              size={18}
+            />
+            <span style={{ cursor: 'pointer' }} onClick={() => setAutoRefresh(v => !v)}>Auto (15s)</span>
+          </div>
           <button className="btn btn-ghost btn-sm flex-center gap-2" onClick={refreshAll}>
             <RefreshCw size={14} /> Refresh
           </button>
@@ -470,7 +476,7 @@ export default function Market() {
 
           {/* Chart */}
           {selectedSymbol && (
-            <div className="card">
+            <GlowCard className="card">
               <div className="flex-between" style={{ marginBottom: 16 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 600 }}>
                   {selectedSymbol} — Price History
@@ -544,7 +550,7 @@ export default function Market() {
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
-            </div>
+            </GlowCard>
           )}
         </>
       )}

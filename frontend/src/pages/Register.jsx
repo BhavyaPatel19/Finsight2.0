@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { UserPlus } from 'lucide-react'
 import { FinSightLogo } from '../components/FinSightLogo'
 import { FloatingCurrencies } from '../components/FloatingCurrencies'
+import HoverButton from '../components/HoverButton'
 
 export default function Register() {
   const { register } = useAuth()
@@ -164,34 +165,28 @@ export default function Register() {
                 onBlur={onBlur}
               />
             </div>
-            <button
-              id="reg-submit"
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #1A5276, #148F77)',
-                color: 'white',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                opacity: loading ? 0.7 : 1,
-                transition: 'opacity 0.2s, transform 0.1s',
-              }}
-              onMouseDown={e => { if (!loading) e.target.style.transform = 'scale(0.98)' }}
-              onMouseUp={e => e.target.style.transform = 'scale(1)'}
-              onMouseLeave={e => e.target.style.transform = 'scale(1)'}
-            >
-              {loading ? <span className="spinner" /> : <UserPlus size={16} />}
-              {loading ? 'Creating account...' : 'Create Account'}
-            </button>
+            {loading ? (
+              <button
+                type="submit"
+                disabled
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
+                  background: 'linear-gradient(135deg, #1A5276, #148F77)', color: 'white',
+                  fontSize: '0.9rem', fontWeight: 600, cursor: 'not-allowed', opacity: 0.7,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}
+              >
+                <span className="spinner" /> Creating account...
+              </button>
+            ) : (
+              <HoverButton
+                id="reg-submit"
+                type="submit"
+                text="Create Account"
+                icon={UserPlus}
+                style={{ width: '100%', borderRadius: '10px', fontSize: '0.9rem', padding: '12px' }}
+              />
+            )}
           </form>
 
           <div style={{
