@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { ragApi } from '../api/client'
 import {
-  Send, Bot, Sparkles, FileText, CheckCircle, Loader,
+  Send, Bot, FileText, CheckCircle, Loader,
   ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
 } from 'lucide-react'
+import { FinSightLogo } from '../components/FinSightLogo'
 
 const MODELS = [
   { value: 'deepseek-r1:14b', label: 'DeepSeek-R1 14B (Reasoning)' },
@@ -177,7 +178,7 @@ export default function Chat() {
     <div>
       <div className="page-header">
         <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Sparkles size={24} color="#6366f1" /> RAG Analysis
+          <FinSightLogo size="small" variant="icon" animated={false} /> RAG Analysis
         </h1>
         <p className="page-sub">Select documents, prepare them for analysis, then ask questions</p>
       </div>

@@ -4,6 +4,7 @@ import {
   BarChart2, LogOut, Activity, Scale
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { FinSightLogo } from './FinSightLogo'
 
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,8 +27,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">💹</div>
-        <span className="sidebar-logo-text">FinSight</span>
+        <FinSightLogo size="small" animated />
       </div>
 
       {NAV.map(({ to, icon: Icon, label }) => (

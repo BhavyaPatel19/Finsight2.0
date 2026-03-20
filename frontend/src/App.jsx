@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
+import { FinSightLogo } from './components/FinSightLogo'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -13,8 +14,9 @@ import CredibilitySentiment from './pages/CredibilitySentiment'
 function ProtectedLayout({ children }) {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span className="spinner" style={{ width: 48, height: 48, borderWidth: 4 }} />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: 'linear-gradient(135deg, #f0f4f8, #e8eef5, #dce6f0)' }}>
+      <FinSightLogo size="large" showTagline animated />
+      <span className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
