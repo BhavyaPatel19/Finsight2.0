@@ -227,3 +227,22 @@ def get_fundamentals_endpoint(
     from finsight.market.fundamentals import get_fundamentals
 
     return get_fundamentals(session, symbol.upper())
+
+
+@router.get("/insights/{symbol}")
+def get_insights(
+    symbol: str,
+    sector: str = Query(None, description="Sector hint from fundamentals"),
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Return a Groq-generated AI insight using live fundamentals data."""
+    from finsight.market.fundamentals import get_fundamentals
+    from finsight.market.insights import get_company_insight
+
+    fund_data = get_fundamentals(session, symbol.upper())
+    if "error" in fund_data:
+        fund_data = None
+
+    text = get_company_insight(symbol.upper(), sector=sector, fundamentals=fund_data)
+    return {"symbol": symbol.upper(), "insight": text}
