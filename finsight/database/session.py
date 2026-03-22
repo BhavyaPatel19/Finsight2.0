@@ -30,6 +30,8 @@ def init_db() -> None:
         DivisionSentiment,
         WalkTheTalkResult,
         ComparisonChunk,
+        Watchlist,
+        WatchlistItem,
     )  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)

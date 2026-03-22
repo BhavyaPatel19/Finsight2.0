@@ -11,6 +11,7 @@ import Chat from './pages/Chat'
 import Portfolio from './pages/Portfolio'
 import Market from './pages/Market'
 import CredibilitySentiment from './pages/CredibilitySentiment'
+import Watchlist from './pages/Watchlist'
 
 function ProtectedLayout({ children }) {
   const { user, loading } = useAuth()
@@ -42,6 +43,7 @@ export default function App() {
       <Route path="/credisentiment" element={<ProtectedLayout><CredibilitySentiment /></ProtectedLayout>} />
       <Route path="/portfolio" element={<ProtectedLayout><Portfolio /></ProtectedLayout>} />
       <Route path="/market" element={<ProtectedLayout><Market /></ProtectedLayout>} />
+      <Route path="/watchlist" element={<ProtectedLayout><Watchlist /></ProtectedLayout>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { marketApi } from '../api/client'
 import {
   Activity, RefreshCw, TrendingUp, TrendingDown,
@@ -281,6 +282,7 @@ function isMarketOpen() {
    Main Market Component
    ================================================================ */
 export default function Market() {
+  const [searchParams] = useSearchParams()
   const [watchlistQuotes, setWatchlistQuotes] = useState({})
   const [customSymbols, setCustomSymbols] = useState([])
   const [customQuotes, setCustomQuotes] = useState({})
@@ -330,6 +332,19 @@ export default function Market() {
 
   useEffect(() => { loadWatchlist() }, [loadWatchlist])
   useEffect(() => { loadCustom() }, [loadCustom])
+
+  // Auto-select stock from URL query param (e.g., /market?symbol=INFY)
+  useEffect(() => {
+    const sym = searchParams.get('symbol')
+    if (sym && !loading) {
+      const upper = sym.toUpperCase()
+      const inWatchlist = Object.keys(watchlistQuotes).some(k => k.split(':').pop() === upper)
+      if (!inWatchlist && !customSymbols.includes(upper)) {
+        setCustomSymbols(prev => [...prev, upper])
+      }
+      selectStock(upper)
+    }
+  }, [loading]) // run once after watchlist loads
 
   // Auto-refresh
   useEffect(() => {

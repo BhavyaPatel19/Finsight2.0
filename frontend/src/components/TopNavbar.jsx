@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   LayoutDashboard, FileText, MessageSquare,
-  BarChart2, LogOut, Activity, Scale,
+  BarChart2, LogOut, Activity, Scale, List,
   User, Settings, ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -12,6 +12,7 @@ import { FinSightLogo } from './FinSightLogo'
 const NAV = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/market', icon: Activity, label: 'Market' },
+  { to: '/watchlist', icon: List, label: 'Watchlist' },
   { to: '/documents', icon: FileText, label: 'Documents' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
   { to: '/credisentiment', icon: Scale, label: 'CrediSentiment' },

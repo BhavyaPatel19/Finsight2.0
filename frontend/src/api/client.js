@@ -58,6 +58,8 @@ export const marketApi = {
   watchlist: () => client.get('/market/watchlist'),
   searchInstruments: (q) => client.get('/market/instruments/search', { params: { q } }),
   fundamentals: (symbol) => client.get(`/market/fundamentals/${symbol}`),
+  insights: (symbol, sector) =>
+    client.get(`/market/insights/${symbol}`, { params: sector ? { sector } : {} }),
 }
 
 // ── Ingestion ─────────────────────────────────────────
@@ -149,6 +151,23 @@ export const credisentimentApi = {
     if (fiscalYear) fd.append('fiscal_year', fiscalYear)
     return client.post('/credisentiment/upload', fd)
   },
+}
+
+// ── Watchlist ────────────────────────────────────────
+export const watchlistApi = {
+  list: () => client.get('/watchlist/'),
+  create: (name, isDefault = false) =>
+    client.post('/watchlist/', { name, is_default: isDefault }),
+  get: (id) => client.get(`/watchlist/${id}`),
+  update: (id, data) => client.put(`/watchlist/${id}`, data),
+  delete: (id) => client.delete(`/watchlist/${id}`),
+  addItem: (id, symbol, notes) =>
+    client.post(`/watchlist/${id}/items`, { symbol, notes }),
+  updateItem: (id, itemId, notes) =>
+    client.put(`/watchlist/${id}/items/${itemId}`, { notes }),
+  removeItem: (id, symbol) =>
+    client.delete(`/watchlist/${id}/items/${symbol}`),
+  quotes: (id) => client.get(`/watchlist/${id}/quotes`),
 }
 
 export default client

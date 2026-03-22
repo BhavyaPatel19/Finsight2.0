@@ -13,6 +13,7 @@ from .document_section import DocumentSection
 from .stock_metrics import StockMetrics
 from .division_sentiment import DivisionSentiment, WalkTheTalkResult
 from .comparison_chunk import ComparisonChunk
+from .watchlist import Watchlist, WatchlistItem
 
 __all__ = [
     "User",
@@ -33,4 +34,6 @@ __all__ = [
     "DivisionSentiment",
     "WalkTheTalkResult",
     "ComparisonChunk",
+    "Watchlist",
+    "WatchlistItem",
 ]
