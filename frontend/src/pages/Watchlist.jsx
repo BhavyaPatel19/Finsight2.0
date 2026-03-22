@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { watchlistApi, marketApi } from '../api/client'
+import { watchlistApi, marketApi, portfolioApi } from '../api/client'
 import {
   Plus, X, Search, Edit3, Trash2, Check, Star,
   TrendingUp, TrendingDown, StickyNote, MoreVertical,
-  List, ChevronRight, ArrowUpDown, Filter,
+  List, ChevronRight, ArrowUpDown, Filter, Newspaper, Sparkles,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area,
@@ -127,6 +127,22 @@ export default function WatchlistPage() {
   const [sortKey, setSortKey] = useState(null) // 'symbol' | 'change' | 'pe'
   const [sortDir, setSortDir] = useState('asc')
 
+  // Portfolio overlap
+  const [portfolioHoldings, setPortfolioHoldings] = useState({})
+
+  // Screener filters
+  const [filters, setFilters] = useState({ pe_min: '', pe_max: '', roe_min: '', de_max: '', dividend_yield_min: '', sector: '' })
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // News feed
+  const [newsSymbol, setNewsSymbol] = useState(null)
+  const [newsArticles, setNewsArticles] = useState([])
+  const [newsLoading, setNewsLoading] = useState(false)
+
+  // AI Digest
+  const [digest, setDigest] = useState('')
+  const [digestLoading, setDigestLoading] = useState(false)
+
   // ── Load watchlists ──
   const loadWatchlists = useCallback(async () => {
     try {
@@ -195,6 +211,44 @@ export default function WatchlistPage() {
       } catch { /* ignore */ }
     })
   }, [items])
+
+  // ── Load portfolio holdings (for overlap) ──
+  useEffect(() => {
+    portfolioApi.holdings()
+      .then(r => {
+        const map = {}
+        for (const h of r.data.holdings || []) {
+          map[h.symbol] = { quantity: h.quantity, avg_price: h.avg_price }
+        }
+        setPortfolioHoldings(map)
+      })
+      .catch(() => {})
+  }, [])
+
+  // ── Clear digest on watchlist switch ──
+  useEffect(() => { setDigest('') }, [selectedId])
+
+  // ── News toggle ──
+  const toggleNews = async (symbol) => {
+    if (newsSymbol === symbol) { setNewsSymbol(null); return }
+    setNewsSymbol(symbol)
+    setNewsLoading(true)
+    try {
+      const r = await marketApi.news(symbol)
+      setNewsArticles(r.data.articles || [])
+    } catch { setNewsArticles([]) }
+    finally { setNewsLoading(false) }
+  }
+
+  // ── Generate AI digest ──
+  const generateDigest = async () => {
+    setDigestLoading(true)
+    try {
+      const r = await watchlistApi.digest(selectedId)
+      setDigest(r.data.digest || '')
+    } catch { setDigest('Failed to generate digest.') }
+    finally { setDigestLoading(false) }
+  }
 
   // ── Search instruments ──
   useEffect(() => {
@@ -297,6 +351,20 @@ export default function WatchlistPage() {
       return (pa - pb) * dir
     }
     return 0
+  })
+
+  // ── Apply screener filters ──
+  const sectors = [...new Set(Object.values(fundamentals).map(f => f.sector).filter(Boolean))].sort()
+  const filteredItems = sortedItems.filter(item => {
+    const f = fundamentals[item.symbol]
+    if (!f) return true
+    if (filters.pe_min && (f.pe_ratio == null || f.pe_ratio < Number(filters.pe_min))) return false
+    if (filters.pe_max && (f.pe_ratio == null || f.pe_ratio > Number(filters.pe_max))) return false
+    if (filters.roe_min && (f.roe == null || f.roe < Number(filters.roe_min))) return false
+    if (filters.de_max && (f.debt_to_equity == null || f.debt_to_equity > Number(filters.de_max))) return false
+    if (filters.dividend_yield_min && (f.dividend_yield == null || f.dividend_yield < Number(filters.dividend_yield_min))) return false
+    if (filters.sector && f.sector !== filters.sector) return false
+    return true
   })
 
   const selectedWl = watchlists.find(w => w.id === selectedId)
@@ -440,20 +508,87 @@ export default function WatchlistPage() {
                 )}
               </div>
 
-              {/* Sort controls */}
+              {/* Sort + Filter + Digest controls */}
               {items.length > 0 && (
-                <div className="wl-sort-bar">
-                  <span className="wl-sort-label"><ArrowUpDown size={12} /> Sort:</span>
-                  {[['symbol', 'Name'], ['change', 'Change %'], ['pe', 'P/E']].map(([key, label]) => (
+                <>
+                  <div className="wl-sort-bar">
+                    <span className="wl-sort-label"><ArrowUpDown size={12} /> Sort:</span>
+                    {[['symbol', 'Name'], ['change', 'Change %'], ['pe', 'P/E']].map(([key, label]) => (
+                      <button
+                        key={key}
+                        className={`wl-sort-btn${sortKey === key ? ' active' : ''}`}
+                        onClick={() => toggleSort(key)}
+                      >
+                        {label} {sortKey === key && (sortDir === 'asc' ? '↑' : '↓')}
+                      </button>
+                    ))}
+                    <span style={{ flex: 1 }} />
                     <button
-                      key={key}
-                      className={`wl-sort-btn${sortKey === key ? ' active' : ''}`}
-                      onClick={() => toggleSort(key)}
+                      className={`wl-sort-btn${filtersOpen ? ' active' : ''}`}
+                      onClick={() => setFiltersOpen(o => !o)}
                     >
-                      {label} {sortKey === key && (sortDir === 'asc' ? '↑' : '↓')}
+                      <Filter size={12} /> Screener {filtersOpen ? '▲' : '▼'}
                     </button>
-                  ))}
-                </div>
+                    <button
+                      className="btn btn-accent btn-sm"
+                      onClick={generateDigest}
+                      disabled={digestLoading}
+                      style={{ marginLeft: 6, padding: '4px 12px', fontSize: 12 }}
+                    >
+                      {digestLoading ? <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> : <Sparkles size={13} />}
+                      {digestLoading ? ' Generating...' : ' AI Digest'}
+                    </button>
+                  </div>
+
+                  {/* AI Digest card */}
+                  {digest && (
+                    <div className="wl-digest-card">
+                      <div className="wl-digest-header">
+                        <Sparkles size={14} className="wl-digest-icon" />
+                        <span>AI Watchlist Digest</span>
+                        <button className="wl-icon-btn tiny" onClick={() => setDigest('')} style={{ marginLeft: 'auto' }}><X size={12} /></button>
+                      </div>
+                      <div className="wl-digest-text">{digest}</div>
+                    </div>
+                  )}
+
+                  {/* Screener filters */}
+                  {filtersOpen && (
+                    <div className="wl-filter-controls">
+                      <label className="wl-filter-group">
+                        <span>P/E</span>
+                        <input type="number" placeholder="Min" value={filters.pe_min} onChange={e => setFilters(f => ({ ...f, pe_min: e.target.value }))} />
+                        <span>–</span>
+                        <input type="number" placeholder="Max" value={filters.pe_max} onChange={e => setFilters(f => ({ ...f, pe_max: e.target.value }))} />
+                      </label>
+                      <label className="wl-filter-group">
+                        <span>ROE ≥</span>
+                        <input type="number" placeholder="%" value={filters.roe_min} onChange={e => setFilters(f => ({ ...f, roe_min: e.target.value }))} />
+                      </label>
+                      <label className="wl-filter-group">
+                        <span>D/E ≤</span>
+                        <input type="number" placeholder="x" value={filters.de_max} onChange={e => setFilters(f => ({ ...f, de_max: e.target.value }))} />
+                      </label>
+                      <label className="wl-filter-group">
+                        <span>Div Yield ≥</span>
+                        <input type="number" placeholder="%" value={filters.dividend_yield_min} onChange={e => setFilters(f => ({ ...f, dividend_yield_min: e.target.value }))} />
+                      </label>
+                      <label className="wl-filter-group">
+                        <span>Sector</span>
+                        <select value={filters.sector} onChange={e => setFilters(f => ({ ...f, sector: e.target.value }))}>
+                          <option value="">All</option>
+                          {sectors.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </label>
+                      <button className="wl-sort-btn" onClick={() => setFilters({ pe_min: '', pe_max: '', roe_min: '', de_max: '', dividend_yield_min: '', sector: '' })}>
+                        Clear
+                      </button>
+                      {filteredItems.length !== sortedItems.length && (
+                        <span className="wl-filter-count">{filteredItems.length}/{sortedItems.length} stocks</span>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Stock table */}
@@ -479,7 +614,7 @@ export default function WatchlistPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedItems.map(item => {
+                      {filteredItems.map(item => {
                         const q = quotes[`NSE:${item.symbol}`]
                         const fund = fundamentals[item.symbol]
                         const ltp = q?.last_price
@@ -488,54 +623,91 @@ export default function WatchlistPage() {
                         const changePct = change != null && prevClose ? (change / prevClose) * 100 : null
                         const up = change != null ? change >= 0 : null
                         const sparkColor = up === null ? '#64748b' : up ? '#22c55e' : '#ef4444'
+                        const held = portfolioHoldings[item.symbol]
 
                         return (
-                          <tr key={item.symbol}>
-                            <td>
-                              <div className="wl-stock-cell">
-                                <span
-                                  className="wl-stock-sym wl-stock-link"
-                                  onClick={() => navigate(`/market?symbol=${item.symbol}`)}
-                                  title="View in Market"
-                                >{item.symbol}</span>
-                              </div>
-                            </td>
-                            <td>
-                              <Sparkline data={sparklines[item.symbol]} color={sparkColor} />
-                            </td>
-                            <td className="font-mono">{ltp ? fmtCcy(ltp) : '—'}</td>
-                            <td>
-                              {changePct != null ? (
-                                <span className={up ? 'text-success' : 'text-danger'}>
-                                  {up ? '+' : ''}{changePct.toFixed(2)}%
-                                </span>
-                              ) : '—'}
-                            </td>
-                            <td>
-                              <RangeBar
-                                low={fund?.low_52w}
-                                high={fund?.high_52w}
-                                current={ltp}
-                              />
-                            </td>
-                            <td className="font-mono">{fund?.pe_ratio ? fmt(fund.pe_ratio) : '—'}</td>
-                            <td className="font-mono">{fmtMcap(fund?.market_cap)}</td>
-                            <td>
-                              <NotesCell
-                                notes={item.notes}
-                                onSave={(text) => updateNotes(item.id, text)}
-                              />
-                            </td>
-                            <td>
-                              <button
-                                className="wl-icon-btn tiny danger"
-                                onClick={() => removeStock(item.symbol)}
-                                title="Remove"
-                              >
-                                <X size={14} />
-                              </button>
-                            </td>
-                          </tr>
+                          <React.Fragment key={item.symbol}>
+                            <tr>
+                              <td>
+                                <div className="wl-stock-cell">
+                                  <span
+                                    className="wl-stock-sym wl-stock-link"
+                                    onClick={() => navigate(`/market?symbol=${item.symbol}`)}
+                                    title="View in Market"
+                                  >{item.symbol}</span>
+                                  {held && (
+                                    <span className="wl-held-badge" title={`Avg ₹${fmt(held.avg_price)}`}>
+                                      Held: {held.quantity}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td>
+                                <Sparkline data={sparklines[item.symbol]} color={sparkColor} />
+                              </td>
+                              <td className="font-mono">{ltp ? fmtCcy(ltp) : '—'}</td>
+                              <td>
+                                {changePct != null ? (
+                                  <span className={up ? 'text-success' : 'text-danger'}>
+                                    {up ? '+' : ''}{changePct.toFixed(2)}%
+                                  </span>
+                                ) : '—'}
+                              </td>
+                              <td>
+                                <RangeBar
+                                  low={fund?.low_52w}
+                                  high={fund?.high_52w}
+                                  current={ltp}
+                                />
+                              </td>
+                              <td className="font-mono">{fund?.pe_ratio ? fmt(fund.pe_ratio) : '—'}</td>
+                              <td className="font-mono">{fmtMcap(fund?.market_cap)}</td>
+                              <td>
+                                <NotesCell
+                                  notes={item.notes}
+                                  onSave={(text) => updateNotes(item.id, text)}
+                                />
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: 2 }}>
+                                  <button
+                                    className={`wl-icon-btn tiny${newsSymbol === item.symbol ? ' active' : ''}`}
+                                    onClick={() => toggleNews(item.symbol)}
+                                    title="News"
+                                  >
+                                    <Newspaper size={13} />
+                                  </button>
+                                  <button
+                                    className="wl-icon-btn tiny danger"
+                                    onClick={() => removeStock(item.symbol)}
+                                    title="Remove"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                            {newsSymbol === item.symbol && (
+                              <tr className="wl-news-row">
+                                <td colSpan={9}>
+                                  <div className="wl-news-panel">
+                                    {newsLoading ? (
+                                      <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                                    ) : newsArticles.length === 0 ? (
+                                      <p className="text-muted" style={{ margin: 0, fontSize: 12 }}>No recent news found.</p>
+                                    ) : (
+                                      newsArticles.map((a, i) => (
+                                        <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="wl-news-item">
+                                          <span className="wl-news-title">{a.title}</span>
+                                          <span className="wl-news-meta">{a.source} {a.published && `· ${new Date(a.published).toLocaleDateString()}`}</span>
+                                        </a>
+                                      ))
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         )
                       })}
                     </tbody>

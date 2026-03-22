@@ -60,6 +60,7 @@ export const marketApi = {
   fundamentals: (symbol) => client.get(`/market/fundamentals/${symbol}`),
   insights: (symbol, sector) =>
     client.get(`/market/insights/${symbol}`, { params: sector ? { sector } : {} }),
+  news: (symbol) => client.get(`/market/news/${symbol}`),
 }
 
 // ── Ingestion ─────────────────────────────────────────
@@ -168,6 +169,7 @@ export const watchlistApi = {
   removeItem: (id, symbol) =>
     client.delete(`/watchlist/${id}/items/${symbol}`),
   quotes: (id) => client.get(`/watchlist/${id}/quotes`),
+  digest: (id) => client.get(`/watchlist/${id}/digest`),
 }
 
 export default client

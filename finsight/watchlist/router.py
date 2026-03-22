@@ -295,6 +295,54 @@ def get_watchlist_quotes(
     return {"quotes": quotes}
 
 
+# ── AI Digest ─────────────────────────────────────────────
+
+@router.get("/{watchlist_id}/digest")
+def get_watchlist_digest(
+    watchlist_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate AI digest for all stocks in a watchlist."""
+    from finsight.models import ZerodhaSession
+    from finsight.zerodha.client import fetch_quotes
+    from finsight.market.fundamentals import get_fundamentals
+    from finsight.watchlist.digest import generate_digest
+
+    wl = _get_owned_watchlist(session, watchlist_id, current_user.id)
+
+    items = session.exec(
+        select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id)
+    ).all()
+    if not items:
+        return {"digest": "This watchlist is empty. Add stocks to generate a digest."}
+
+    symbols = [item.symbol for item in items]
+
+    # Fetch Zerodha quotes (gracefully handle missing session)
+    quotes = {}
+    zs = session.exec(
+        select(ZerodhaSession).where(ZerodhaSession.user_id == current_user.id)
+    ).first()
+    if zs and zs.access_token:
+        try:
+            sym_list = [f"NSE:{s}" for s in symbols]
+            quotes = fetch_quotes(zs.access_token, sym_list)
+        except Exception:
+            pass
+
+    # Fetch fundamentals (uses 24h cache)
+    fund_data = {}
+    for sym in symbols:
+        try:
+            fund_data[sym] = get_fundamentals(session, sym)
+        except Exception:
+            fund_data[sym] = {}
+
+    digest_text = generate_digest(wl.id, wl.name, symbols, quotes, fund_data)
+    return {"digest": digest_text}
+
+
 # ── Helpers ──────────────────────────────────────────────
 
 def _get_owned_watchlist(session: Session, watchlist_id: int, user_id: int) -> Watchlist:

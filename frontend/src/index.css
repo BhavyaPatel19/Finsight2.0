@@ -2014,6 +2014,125 @@ tbody tr:hover {
   outline: none;
 }
 
+/* ── Portfolio Overlap Badge ── */
+.wl-held-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  margin-left: 6px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ── Screener Filters ── */
+.wl-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.wl-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.wl-filter-group input,
+.wl-filter-group select {
+  width: 70px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--text-primary);
+  outline: none;
+}
+.wl-filter-group select { width: 120px; }
+.wl-filter-group input:focus,
+.wl-filter-group select:focus {
+  border-color: var(--accent);
+}
+.wl-filter-count {
+  font-size: 11px;
+  color: var(--accent);
+  margin-left: auto;
+}
+
+/* ── News Feed ── */
+.wl-news-row td {
+  padding: 0 !important;
+  border-top: none !important;
+}
+.wl-news-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 16px 12px;
+  background: rgba(255,255,255,0.015);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.wl-news-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.wl-news-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+.wl-news-title {
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.wl-news-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.wl-icon-btn.active {
+  color: var(--accent);
+}
+
+/* ── AI Digest ── */
+.wl-digest-card {
+  padding: 14px 16px;
+  background: rgba(20, 143, 119, 0.06);
+  border: 1px solid rgba(20, 143, 119, 0.2);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.wl-digest-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.wl-digest-icon { color: var(--accent); }
+.wl-digest-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .wl-layout {
@@ -2021,5 +2140,9 @@ tbody tr:hover {
   }
   .wl-sidebar {
     order: -1;
+  }
+  .wl-filter-controls {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

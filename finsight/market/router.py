@@ -246,3 +246,16 @@ def get_insights(
 
     text = get_company_insight(symbol.upper(), sector=sector, fundamentals=fund_data)
     return {"symbol": symbol.upper(), "insight": text}
+
+
+@router.get("/news/{symbol}")
+def get_news(
+    symbol: str,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch latest news headlines for a stock from Google News RSS."""
+    from finsight.market.news import fetch_news
+
+    articles = fetch_news(symbol.upper())
+    return {"symbol": symbol.upper(), "articles": articles}
