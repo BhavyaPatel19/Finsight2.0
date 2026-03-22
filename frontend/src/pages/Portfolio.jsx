@@ -106,6 +106,7 @@ export default function Portfolio() {
                       <th>Symbol</th>
                       <th>Qty</th>
                       <th>Avg Price</th>
+                      <th>Invested</th>
                       <th>LTP</th>
                       <th>Day Chg</th>
                       <th>P&L</th>
@@ -126,6 +127,7 @@ export default function Portfolio() {
                           </td>
                           <td>{h.quantity}</td>
                           <td>{fmtCcy(h.avg_price)}</td>
+                          <td>{fmtCcy(h.avg_price * h.quantity)}</td>
                           <td>{fmtCcy(cur)}</td>
                           <td className={h.day_change_pct >= 0 ? 'text-success' : 'text-danger'}>
                             {h.day_change_pct != null
