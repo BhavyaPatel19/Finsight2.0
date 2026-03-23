@@ -13,6 +13,7 @@ import Portfolio from './pages/Portfolio'
 import Market from './pages/Market'
 import CredibilitySentiment from './pages/CredibilitySentiment'
 import Watchlist from './pages/Watchlist'
+import Landing from './pages/Landing'
 
 function ProtectedLayout({ children }) {
   const { user, loading } = useAuth()
@@ -36,10 +37,11 @@ function ProtectedLayout({ children }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      <Route path="/" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
+      <Route path="/dashboard" element={<ProtectedLayout><Dashboard /></ProtectedLayout>} />
       <Route path="/documents" element={<ProtectedLayout><Documents /></ProtectedLayout>} />
       <Route path="/chat" element={<ProtectedLayout><Chat /></ProtectedLayout>} />
       <Route path="/credisentiment" element={<ProtectedLayout><CredibilitySentiment /></ProtectedLayout>} />

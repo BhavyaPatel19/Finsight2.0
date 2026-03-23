@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext'
 import { FinSightLogo } from './FinSightLogo'
 
 const NAV = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/market', icon: Activity, label: 'Market' },
   { to: '/watchlist', icon: List, label: 'Watchlist' },
   { to: '/documents', icon: FileText, label: 'Documents' },
@@ -48,7 +48,7 @@ export default function TopNavbar() {
   return (
     <nav className="topnav">
       {/* Logo — left */}
-      <Link to="/" className="topnav-logo">
+      <Link to="/dashboard" className="topnav-logo">
         <FinSightLogo size="small" animated theme={theme} />
       </Link>
 

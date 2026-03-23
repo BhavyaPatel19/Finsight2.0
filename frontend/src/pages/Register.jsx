@@ -23,7 +23,7 @@ export default function Register() {
     setLoading(true)
     try {
       await register(email, password)
-      navigate('/')
+      navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail ?? 'Registration failed. Please try again.')
     } finally { setLoading(false) }
