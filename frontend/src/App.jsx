@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useTheme } from './context/ThemeContext'
 import TopNavbar from './components/TopNavbar'
 import { FinSightLogo } from './components/FinSightLogo'
 import { FloatingCurrencies } from './components/FloatingCurrencies'
@@ -15,16 +16,17 @@ import Watchlist from './pages/Watchlist'
 
 function ProtectedLayout({ children }) {
   const { user, loading } = useAuth()
+  const { theme } = useTheme()
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: '#080c14' }}>
-      <FinSightLogo size="large" showTagline animated />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, background: 'var(--bg-base)' }}>
+      <FinSightLogo size="large" showTagline animated theme={theme} />
       <span className="spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
     </div>
   )
   if (!user) return <Navigate to="/login" replace />
   return (
     <div className="app-shell">
-      <FloatingCurrencies theme="dark" />
+      <FloatingCurrencies theme={theme} />
       <TopNavbar />
       <main className="main-content">{children}</main>
     </div>

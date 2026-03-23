@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTheme } from '../context/ThemeContext'
+import { getChartColors } from '../utils/chartTheme'
 import { marketApi } from '../api/client'
 import {
   Activity, RefreshCw, TrendingUp, TrendingDown,
@@ -282,6 +284,8 @@ function isMarketOpen() {
    Main Market Component
    ================================================================ */
 export default function Market() {
+  const { theme } = useTheme()
+  const cc = getChartColors(theme)
   const [searchParams] = useSearchParams()
   const [watchlistQuotes, setWatchlistQuotes] = useState({})
   const [customSymbols, setCustomSymbols] = useState([])
@@ -675,10 +679,10 @@ export default function Market() {
                           <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
                       <XAxis
                         dataKey="timestamp"
-                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                        tick={{ fill: cc.tick, fontSize: 10 }}
                         axisLine={false} tickLine={false}
                         tickFormatter={t => {
                           const d = new Date(t)
@@ -691,7 +695,7 @@ export default function Market() {
                       <YAxis
                         yAxisId="price"
                         domain={['auto', 'auto']}
-                        tick={{ fill: '#94a3b8', fontSize: 11 }}
+                        tick={{ fill: cc.tick, fontSize: 11 }}
                         axisLine={false} tickLine={false}
                         tickFormatter={v => '₹' + v}
                       />
@@ -701,8 +705,8 @@ export default function Market() {
                         hide
                       />
                       <Tooltip
-                        contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 12, color: '#f1f5f9' }}
-                        labelStyle={{ color: '#e2e8f0' }}
+                        contentStyle={cc.tooltip}
+                        labelStyle={{ color: cc.labelPrimary }}
                         formatter={(v, name) => {
                           if (name === 'volume') return [fmtVol(v), 'Volume']
                           return [fmtCcy(v), name.charAt(0).toUpperCase() + name.slice(1)]

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
+import { getChartColors } from '../utils/chartTheme'
 import { sentimentApi } from '../api/client'
 import { TrendingUp, RefreshCw } from 'lucide-react'
 import {
@@ -19,6 +21,8 @@ const sentimentLabel = (s) => {
 }
 
 export default function Sentiment() {
+  const { theme } = useTheme()
+  const cc = getChartColors(theme)
   const [symbol, setSymbol] = useState('')
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(false)
@@ -83,11 +87,11 @@ export default function Sentiment() {
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16 }}>Sentiment Over Time — {symbol.toUpperCase()}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={chartData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[-1, 1]} tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                <XAxis dataKey="label" tick={{ fill: cc.tick, fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[-1, 1]} tick={{ fill: cc.tick, fontSize: 12 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
+                  contentStyle={cc.tooltip}
                 />
                 <Bar dataKey="overall" name="Overall" radius={[4,4,0,0]}>
                   {chartData.map((entry, i) => (

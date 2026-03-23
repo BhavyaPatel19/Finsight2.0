@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'motion/react'
 import {
   LayoutDashboard, FileText, MessageSquare,
   BarChart2, LogOut, Activity, Scale, List,
-  User, Settings, ChevronDown,
+  User, Settings, ChevronDown, Sun, Moon,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { FinSightLogo } from './FinSightLogo'
 
 const NAV = [
@@ -23,6 +24,7 @@ export default function TopNavbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen] = useState(false)
   const popoverRef = useRef(null)
 
@@ -47,7 +49,7 @@ export default function TopNavbar() {
     <nav className="topnav">
       {/* Logo — left */}
       <Link to="/" className="topnav-logo">
-        <FinSightLogo size="small" animated theme="dark" />
+        <FinSightLogo size="small" animated theme={theme} />
       </Link>
 
       {/* Tubelight pill — center */}
@@ -84,8 +86,28 @@ export default function TopNavbar() {
         })}
       </div>
 
-      {/* Profile popover — right */}
+      {/* Theme toggle + Profile — right */}
       <div className="topnav-right" ref={popoverRef} style={{ position: 'relative' }}>
+        {/* Theme toggle */}
+        <button
+          className="topnav-theme-toggle"
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={theme}
+              initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+              animate={{ rotate: 0, opacity: 1, scale: 1 }}
+              exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </motion.div>
+          </AnimatePresence>
+        </button>
+
         {/* Avatar trigger */}
         <button
           className="topnav-avatar-btn"

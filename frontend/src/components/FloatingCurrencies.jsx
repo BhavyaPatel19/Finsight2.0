@@ -69,7 +69,7 @@ export function FloatingCurrencies({ theme = 'light' }) {
         >
           <span
             style={{
-              color: theme === 'dark' ? 'rgba(26, 188, 156, 0.6)' : '#1B2A4A',
+              color: theme === 'dark' ? 'rgba(26, 188, 156, 0.6)' : 'rgba(20, 143, 119, 0.25)',
               fontSize: `${item.size}rem`,
               fontWeight: 700,
               userSelect: 'none',

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useTheme } from '../context/ThemeContext'
+import { getChartColors } from '../utils/chartTheme'
 import { credisentimentApi } from '../api/client'
 import {
     Scale, FileText, Loader, CheckCircle,
@@ -77,15 +79,15 @@ function ScoreDial({ score, size = 180 }) {
                 >
                     <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
                     <RadialBar
-                        background={{ fill: 'rgba(255,255,255,0.06)' }}
+                        background={{ fill: 'var(--glass-hover)' }}
                         dataKey="value" cornerRadius={8} angleAxisId={0}
                     />
                     <text x="50%" y="48%" textAnchor="middle" dominantBaseline="middle"
-                        fill="#f1f5f9" fontSize={28} fontWeight={700} fontFamily="Inter">
+                        fill="var(--text-primary)" fontSize={28} fontWeight={700} fontFamily="Inter">
                         {score != null ? Math.round(score) : '—'}
                     </text>
                     <text x="50%" y="62%" textAnchor="middle" dominantBaseline="middle"
-                        fill="#94a3b8" fontSize={11} fontFamily="Inter">
+                        fill="var(--text-secondary)" fontSize={11} fontFamily="Inter">
                         / 100
                     </text>
                 </RadialBarChart>
@@ -166,6 +168,8 @@ function saveSessionState(state) {
 /* ── Main Page ─────────────────────────────────────────── */
 
 export default function CredibilitySentiment() {
+    const { theme } = useTheme()
+    const cc = getChartColors(theme)
     const cached = loadSessionState()
 
     // Documents
@@ -469,11 +473,11 @@ export default function CredibilitySentiment() {
                                                             layout="vertical"
                                                             margin={{ left: 10, right: 30 }}
                                                         >
-                                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                                                            <XAxis type="number" domain={[-1, 1]} tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                                                            <YAxis type="category" dataKey="name" width={160} tick={{ fill: '#cbd5e1', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                            <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                                                            <XAxis type="number" domain={[-1, 1]} tick={{ fill: cc.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+                                                            <YAxis type="category" dataKey="name" width={160} tick={{ fill: cc.labelMuted, fontSize: 12 }} axisLine={false} tickLine={false} />
                                                             <Tooltip
-                                                                contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
+                                                                contentStyle={cc.tooltip}
                                                             />
                                                             <Bar dataKey="positive" name="Positive" fill="#22d3a5" radius={[0, 4, 4, 0]} barSize={14} />
                                                             <Bar dataKey="negative" name="Negative" fill="#f43f5e" radius={[4, 0, 0, 4]} barSize={14} />

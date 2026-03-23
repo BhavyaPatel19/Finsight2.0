@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ingestionApi, scraperApi, credisentimentApi } from '../api/client'
 import GlowCard from '../components/GlowCard'
@@ -49,24 +49,21 @@ function PipelineStatusBadge({ status, label }) {
 function ProcessButton({ status, onClick, label }) {
   if (status === 'processing') {
     return (
-      <button disabled className="btn btn-ghost btn-sm" title={`${label}: Processing...`}
-        style={{ padding: '4px 8px' }}>
+      <button disabled className="doc-action-btn" title={`${label}: Processing...`}>
         <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
       </button>
     )
   }
   if (status === 'indexed') {
     return (
-      <button disabled className="btn btn-ghost btn-sm" title={`${label}: Processed`}
-        style={{ padding: '4px 8px' }}>
-        <CheckCircle size={14} style={{ color: '#22d3a5' }} />
+      <button disabled className="doc-action-btn success" title={`${label}: Processed`}>
+        <CheckCircle size={14} />
       </button>
     )
   }
   return (
-    <button className="btn btn-ghost btn-sm" onClick={onClick}
-      title={`Process for ${label}`}
-      style={{ padding: '4px 8px' }}>
+    <button className="doc-action-btn" onClick={onClick}
+      title={`Process for ${label}`}>
       <Play size={14} style={{ color: status === 'error' ? 'var(--danger)' : undefined }} />
     </button>
   )
@@ -266,7 +263,7 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
                   borderRadius: 6, cursor: 'pointer', fontSize: 13,
                   background: isSel ? 'rgba(129,140,248,0.08)' : 'transparent',
-                  border: `1px solid ${isSel ? 'rgba(129,140,248,0.3)' : 'rgba(255,255,255,0.05)'}`,
+                  border: `1px solid ${isSel ? 'rgba(129,140,248,0.3)' : 'var(--glass-border)'}`,
                   transition: 'all 0.15s',
                 }}
                 onClick={() => toggle(globalIdx)}
@@ -358,6 +355,7 @@ export default function Documents() {
   const [companyResults, setCompanyResults] = useState([])
   const [companyLoading, setCompanyLoading] = useState(false)
   const searchTimerRef = useRef(null)
+  const dropdownRef = useRef(null)
 
   // Document picker state
   const [pickerData, setPickerData] = useState(null)
@@ -380,6 +378,17 @@ export default function Documents() {
   }, [filterSymbol])
 
   useEffect(() => { loadDocs() }, [loadDocs])
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setCompanyResults([])
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Debounced search
   useEffect(() => {
@@ -580,10 +589,10 @@ export default function Documents() {
 
         {/* Company Dropdown */}
         {companyResults.length > 0 && (
-          <div style={{
+          <div ref={dropdownRef} style={{
             position: 'absolute', left: 16, right: 16, top: '100%', zIndex: 50,
-            background: 'var(--card-bg, #1a1a2e)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 10, boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+            background: 'var(--popover-bg)', border: '1px solid var(--glass-border)',
+            borderRadius: 10, boxShadow: 'var(--popover-shadow)',
             maxHeight: 300, overflowY: 'auto', marginTop: 4,
           }}>
             {companyResults.map((c, i) => (
@@ -591,11 +600,11 @@ export default function Documents() {
                 style={{
                   display: 'flex', width: '100%', padding: '10px 16px',
                   alignItems: 'center', justifyContent: 'space-between',
-                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)',
+                  background: 'none', border: 'none', borderBottom: '1px solid var(--glass-border)',
                   cursor: 'pointer', color: 'var(--text-primary)', textAlign: 'left',
                   transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--glass-hover)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 onClick={() => openPicker(c)}
               >
@@ -695,24 +704,22 @@ export default function Documents() {
                   </td>
                   <td className="text-sm text-muted">{formatSize(doc.file_size)}</td>
                   <td>
-                    <div className="flex gap-1" style={{ justifyContent: 'flex-end' }}>
+                    <div className="doc-actions">
                       {doc.pdf_path && (
-                        <button className="btn btn-ghost btn-sm" title="View PDF"
+                        <button className="doc-action-btn" title="View PDF"
                           onClick={async () => {
                             try {
                               const resp = await ingestionApi.getPdf(doc.id)
                               const blob = new Blob([resp.data], { type: 'application/pdf' })
                               window.open(URL.createObjectURL(blob), '_blank')
                             } catch { alert('Failed to load PDF') }
-                          }}
-                          style={{ padding: '4px 8px' }}>
+                          }}>
                           <Eye size={14} />
                         </button>
                       )}
                       {doc.status === 'indexed' && (
-                        <button className="btn btn-ghost btn-sm" title="Analyze — Chat with RAG"
-                          onClick={() => navigate(`/chat?symbol=${doc.symbol}`)}
-                          style={{ padding: '4px 8px' }}>
+                        <button className="doc-action-btn" title="Chat with RAG"
+                          onClick={() => navigate(`/chat?symbol=${doc.symbol}`)}>
                           <MessageSquare size={14} />
                         </button>
                       )}
@@ -726,9 +733,8 @@ export default function Documents() {
                         onClick={() => handleProcessCS(doc.id)}
                         label="CrediSentiment"
                       />
-                      <button className="btn btn-ghost btn-sm" title="Delete"
-                        onClick={() => setDeleteTarget(doc)}
-                        style={{ padding: '4px 8px', color: 'var(--danger)' }}>
+                      <button className="doc-action-btn danger" title="Delete"
+                        onClick={() => setDeleteTarget(doc)}>
                         <Trash2 size={14} />
                       </button>
                     </div>

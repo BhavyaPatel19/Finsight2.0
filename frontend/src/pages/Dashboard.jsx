@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
+import { getChartColors } from '../utils/chartTheme'
 import { portfolioApi, zerodhaApi } from '../api/client'
 import {
   DollarSign, TrendingUp, TrendingDown, BarChart2, RefreshCw,
@@ -14,6 +16,8 @@ const fmtCcy = (n) =>
   n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n)
 
 export default function Dashboard() {
+  const { theme } = useTheme()
+  const cc = getChartColors(theme)
   const [holdings, setHoldings] = useState([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -234,14 +238,14 @@ export default function Dashboard() {
               </h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={pnlData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false}
+                  <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} />
+                  <XAxis type="number" tick={{ fill: cc.tick, fontSize: 12 }} axisLine={false} tickLine={false}
                     tickFormatter={v => '₹' + (Math.abs(v) >= 1000 ? (v/1000).toFixed(1)+'k' : v)} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: cc.tick, fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
                   <Tooltip
-                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, fontSize: 13, color: '#f1f5f9' }}
-                    labelStyle={{ color: '#e2e8f0', fontWeight: 600 }}
-                    itemStyle={{ color: '#e2e8f0' }}
+                    contentStyle={cc.tooltip}
+                    labelStyle={{ color: cc.labelPrimary, fontWeight: 600 }}
+                    itemStyle={{ color: cc.labelPrimary }}
                     formatter={(val) => [<span style={{ color: val >= 0 ? '#22d3a5' : '#f43f5e', fontWeight: 600 }}>{fmtCcy(val)}</span>, 'P&L']}
                   />
                   <Bar dataKey="pnl" radius={[0, 4, 4, 0]}>
@@ -268,13 +272,13 @@ export default function Dashboard() {
                       <stop offset="100%" stopColor="#818cf8" stopOpacity={1} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false}
+                  <CartesianGrid strokeDasharray="3 3" stroke={cc.grid} horizontal={false} />
+                  <XAxis type="number" tick={{ fill: cc.tick, fontSize: 11 }} axisLine={false} tickLine={false}
                     tickFormatter={v => '₹' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)} />
-                  <YAxis type="category" dataKey="name" tick={{ fill: '#c8d0da', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} width={90} />
+                  <YAxis type="category" dataKey="name" tick={{ fill: cc.labelMuted, fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} width={90} />
                   <Tooltip
                     cursor={{ fill: 'rgba(99,102,241,0.08)' }}
-                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 10, fontSize: 13 }}
+                    contentStyle={cc.tooltip}
                     formatter={val => [fmtCcy(val), 'Value']}
                   />
                   <Bar dataKey="value" fill="url(#gradBar)" radius={[0, 6, 6, 0]} barSize={20}>

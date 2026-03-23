@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useTheme } from '../context/ThemeContext'
+import { getChartColors } from '../utils/chartTheme'
 import { portfolioApi } from '../api/client'
 import { BarChart2, RefreshCw } from 'lucide-react'
 import {
@@ -12,6 +14,8 @@ const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-IN', { maximumF
 const fmtCcy = (n) => n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n)
 
 export default function Portfolio() {
+  const { theme } = useTheme()
+  const cc = getChartColors(theme)
   const [holdings, setHoldings] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -90,7 +94,7 @@ export default function Portfolio() {
                     {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip formatter={(v) => fmtCcy(v)}
-                    contentStyle={{ background: '#0e1421', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, fontSize: 13 }}
+                    contentStyle={cc.tooltip}
                   />
                 </PieChart>
               </ResponsiveContainer>

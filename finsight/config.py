@@ -57,3 +57,7 @@ WTT_MAX_CLAIMS_CHUNKS = int(os.getenv("WTT_MAX_CLAIMS_CHUNKS", "40"))
 WTT_BATCH_SIZE = int(os.getenv("WTT_BATCH_SIZE", "5"))
 WTT_PARALLEL = int(os.getenv("WTT_PARALLEL", "4"))
 WTT_ACTUALS_TOP_K = int(os.getenv("WTT_ACTUALS_TOP_K", "3"))
+
+# Groq — fast cloud inference for market insights
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
