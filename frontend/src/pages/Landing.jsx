@@ -13,6 +13,7 @@ import { FinSightLogo } from '../components/FinSightLogo'
 import { FloatingCurrencies } from '../components/FloatingCurrencies'
 import GlowCard from '../components/GlowCard'
 import HoverButton from '../components/HoverButton'
+import ShaderBackground from '../components/ShaderBackground'
 
 /* ── Scroll-triggered reveal wrapper ─────────────── */
 function Reveal({ children, delay = 0, direction = 'up', className = '' }) {
@@ -43,10 +44,44 @@ const FEATURES = [
 ]
 
 const TECH_STACK = [
-  { category: 'Backend', techs: ['FastAPI', 'SQLite', 'SQLModel', 'ChromaDB', 'APScheduler'] },
-  { category: 'AI / ML', techs: ['Llama 3 (Ollama)', 'FinBERT', 'Sentence Transformers', 'Groq'] },
-  { category: 'Frontend', techs: ['React 18', 'Vite', 'Framer Motion', 'Recharts', 'Lucide'] },
-  { category: 'Integration', techs: ['Zerodha Kite API', 'Screener.in', 'BSE Filings', 'OAuth 2.0'] },
+  {
+    category: 'Backend',
+    techs: [
+      { name: 'FastAPI', color: '#009688', logo: '/tech-logos/fastapi.svg', desc: 'High-performance async Python web framework for building APIs.' },
+      { name: 'SQLite', color: '#003B57', logo: '/tech-logos/sqlite.png', desc: 'Lightweight embedded relational database for local persistence.' },
+      { name: 'SQLModel', color: '#e91e63', logo: '/tech-logos/sqlmodel.svg', desc: 'Pydantic + SQLAlchemy ORM for type-safe database models.' },
+      { name: 'ChromaDB', color: '#FFD54F', logo: '/tech-logos/chromadb.png', desc: 'Open-source vector database for semantic document embeddings.' },
+      { name: 'APScheduler', color: '#7E57C2', logo: '/tech-logos/apscheduler.png', desc: 'Background job scheduler for periodic document fetches.' },
+    ],
+  },
+  {
+    category: 'AI / ML',
+    techs: [
+      { name: 'Llama 3', color: '#7B1FA2', desc: 'Meta\'s open-source LLM, served locally via Ollama for RAG.' },
+      { name: 'FinBERT', color: '#FF7043', logo: '/tech-logos/finbert.png', desc: 'Finance-domain BERT model for sentiment analysis on earnings calls.' },
+      { name: 'Sentence Transformers', color: '#FFB300', logo: '/tech-logos/sentence-transformers.svg', desc: 'Transformer models for generating semantic text embeddings.' },
+      { name: 'Groq', color: '#F55036', logo: '/tech-logos/groq.png', desc: 'Ultra-fast cloud LLM inference for market insights and digests.' },
+    ],
+  },
+  {
+    category: 'Frontend',
+    techs: [
+      { name: 'React 18', color: '#61DAFB', logo: '/tech-logos/react.png', desc: 'Component-based UI library with concurrent rendering features.' },
+      { name: 'Vite', color: '#646CFF', logo: '/tech-logos/vite.png', desc: 'Next-gen frontend build tool with instant HMR and fast bundling.' },
+      { name: 'Framer Motion', color: '#FF0055', logo: '/tech-logos/framer-motion.webp', desc: 'Production-ready animation library for fluid UI transitions.' },
+      { name: 'Recharts', color: '#22B5BF', logo: '/tech-logos/recharts.jpeg', desc: 'Composable charting library built on React and D3 primitives.' },
+      { name: 'Lucide', color: '#F56565', logo: '/tech-logos/lucide.png', desc: 'Beautiful open-source icon set with tree-shakeable React components.' },
+    ],
+  },
+  {
+    category: 'Integration',
+    techs: [
+      { name: 'Zerodha Kite', color: '#387ED1', logo: '/tech-logos/zerodha.jpg', desc: 'India\'s largest broker API for live quotes, holdings, and OAuth.' },
+      { name: 'Screener.in', color: '#4CAF50', logo: '/tech-logos/screener.png', desc: 'Financial data source for company documents and annual reports.' },
+      { name: 'BSE Filings', color: '#FF9800', logo: '/tech-logos/bse.png', desc: 'Bombay Stock Exchange corporate filing scraper integration.' },
+      { name: 'OAuth 2.0', color: '#1565C0', logo: '/tech-logos/oauth.png', desc: 'Secure token-based authentication for Zerodha broker access.' },
+    ],
+  },
 ]
 
 const FLOW_PIPELINES = [
@@ -118,10 +153,13 @@ export default function Landing() {
         className="landing-section landing-hero"
         style={{ opacity: heroOpacity, scale: heroScale }}
       >
+        <ShaderBackground />
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'relative', zIndex: 1 }}
         >
           <FinSightLogo size="xl" showTagline animated theme={theme} />
         </motion.div>
@@ -260,9 +298,21 @@ export default function Landing() {
               <Reveal key={i} delay={i * 0.1}>
                 <div className="landing-tech-category">
                   <h4>{cat.category}</h4>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div className="landing-tech-list">
                     {cat.techs.map((tech, j) => (
-                      <span key={j} className="landing-tech-badge">{tech}</span>
+                      <div key={j} className="landing-tech-item">
+                        {tech.logo ? (
+                          <img src={tech.logo} alt={tech.name} className="landing-tech-logo-img" />
+                        ) : (
+                          <div className="landing-tech-logo" style={{ background: tech.color }}>
+                            {tech.name[0]}
+                          </div>
+                        )}
+                        <div>
+                          <div className="landing-tech-name">{tech.name}</div>
+                          <div className="landing-tech-desc">{tech.desc}</div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
