@@ -1,40 +1,48 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { ragApi } from '../api/client'
 import {
   Send, Bot, FileText, CheckCircle, Loader,
   ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
+  TrendingUp, BarChart2, FileSearch, Scale, Sparkles,
 } from 'lucide-react'
 import { FinSightLogo } from '../components/FinSightLogo'
 import GlowCard from '../components/GlowCard'
-import HoverButton from '../components/HoverButton'
 import AnimatedCheckbox from '../components/AnimatedCheckbox'
+import { useAuth } from '../context/AuthContext'
+import TextGenerateEffect from '../components/TextGenerateEffect'
 
 const MODELS = [
   { value: 'deepseek-r1:14b', label: 'DeepSeek-R1 14B (Reasoning)' },
   { value: 'llama3.1:8b-instruct-q8_0', label: 'Llama 3.1 8B (Fast)' },
 ]
 
-const WELCOME = {
-  id: 'welcome',
-  role: 'ai',
-  text: "Hi! I'm FinSight AI. Select documents from the left panel, prepare them, and ask me anything about earnings, revenue, debt, management guidance, and more.",
-  sources: [],
-  navigations: [],
-  thinking: null,
+const PROMPT_CHIPS = [
+  { icon: FileSearch, label: 'Summarize', prompt: 'Give me a concise summary of the selected documents.' },
+  { icon: TrendingUp, label: 'Revenue Trends', prompt: 'What are the revenue trends across the selected documents?' },
+  { icon: BarChart2, label: 'Key Metrics', prompt: 'What are the key financial metrics and KPIs from these filings?' },
+  { icon: Scale, label: 'Risk Factors', prompt: 'What are the main risk factors mentioned in these documents?' },
+  { icon: Sparkles, label: 'Management Guidance', prompt: 'What guidance did management provide for the upcoming period?' },
+]
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
-const STORAGE_KEY = 'finsight_chat_messages'
-
-function loadMessages() {
-  try {
-    const saved = sessionStorage.getItem(STORAGE_KEY)
-    if (saved) return JSON.parse(saved)
-  } catch {}
-  return [WELCOME]
-}
+const STORAGE_KEY = 'finsight_chat_v3'
 
 export default function Chat() {
-  const [messages, setMessages] = useState(loadMessages)
+  const { user } = useAuth()
+  const username = user?.email?.split('@')[0] ?? 'there'
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return []
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [statusText, setStatusText] = useState('')
@@ -60,7 +68,7 @@ export default function Chat() {
   }, [messages])
 
   const clearChat = () => {
-    setMessages([WELCOME])
+    setMessages([])
     sessionStorage.removeItem(STORAGE_KEY)
   }
 
@@ -181,7 +189,7 @@ export default function Chat() {
     <div>
       <div className="page-header">
         <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <FinSightLogo size="small" variant="icon" animated={false} /> RAG Analysis
+          <FinSightLogo size="small" animated={false} theme="dark" /> RAG Analysis
         </h1>
         <p className="page-sub">Select documents, prepare them for analysis, then ask questions</p>
       </div>
@@ -204,17 +212,6 @@ export default function Chat() {
               </button>
             </div>
 
-            {/* Model selector */}
-            <select
-              className="form-control"
-              value={model}
-              onChange={e => setModel(e.target.value)}
-              style={{ fontSize: 12, padding: '4px 8px', marginBottom: 0 }}
-            >
-              {MODELS.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
           </div>
 
           {/* Document list */}
@@ -293,85 +290,206 @@ export default function Chat() {
         {/* Right panel — Chat */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <GlowCard className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
-            {/* Chat header with clear button */}
-            {messages.length > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
-                <button
-                  onClick={clearChat}
-                  className="btn btn-sm"
-                  style={{ fontSize: 11, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, color: '#991b1b' }}
-                >
-                  <Trash2 size={12} /> Clear Chat
-                </button>
+
+            {messages.length === 0 ? (
+              /* ── Empty state ── */
+              <div className="chat-empty-state">
+                <FinSightLogo size="large" animated />
+                <h2 className="chat-greeting">
+                  {getGreeting()},&nbsp;
+                  <span className="chat-greeting-name">{username}</span>
+                </h2>
+                <p className="chat-greeting-sub">Select documents on the left, then ask me anything about your filings.</p>
+
+                {/* Input */}
+                <div className="chat-empty-input-wrap">
+                  <input
+                    className="form-control chat-empty-input"
+                    placeholder="Ask about your financial documents..."
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={onKey}
+                    disabled={loading}
+                    autoFocus
+                  />
+                  <button
+                    className="btn btn-primary chat-empty-send"
+                    onClick={send}
+                    disabled={loading || !input.trim()}
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+
+                {/* Model selector in empty state */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>Model:</span>
+                  <select
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    style={{
+                      background: 'var(--bg-card)', border: '1px solid var(--border)',
+                      borderRadius: 8, color: 'var(--text-secondary)', fontSize: 12,
+                      padding: '4px 10px', cursor: 'pointer', outline: 'none',
+                    }}
+                  >
+                    {MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Prompt chips */}
+                <div className="chat-prompt-chips">
+                  {PROMPT_CHIPS.map(({ icon: Icon, label, prompt }) => (
+                    <button
+                      key={label}
+                      className="chat-prompt-chip"
+                      onClick={() => setInput(prompt)}
+                    >
+                      <Icon size={13} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-            {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
-              {messages.map(msg => (
-                <div key={msg.id} className={`chat-msg ${msg.role}`}>
-                  <div className={`chat-avatar ${msg.role}`}>
-                    {msg.role === 'ai' ? <Bot size={16} /> : 'U'}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="chat-bubble">{msg.text}</div>
+            ) : (
+              /* ── Active chat view ── */
+              <>
+                {/* Clear Chat header */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 16px 0' }}>
+                  <button
+                    onClick={clearChat}
+                    className="btn btn-sm"
+                    style={{ fontSize: 11, padding: '3px 10px', display: 'flex', alignItems: 'center', gap: 4, color: '#991b1b' }}
+                  >
+                    <Trash2 size={12} /> Clear Chat
+                  </button>
+                </div>
 
-                    {/* Navigation breadcrumbs */}
-                    {msg.navigations?.length > 0 && (
-                      <NavigationTrail navigations={msg.navigations} />
-                    )}
+                {/* Messages — Claude-style */}
+                <div className="chat-thread">
+                  {messages.map((msg, idx) => {
+                    // Only animate the very last AI message
+                    const isLatestAI =
+                      msg.role === 'ai' &&
+                      idx === [...messages].map(m => m.role).lastIndexOf('ai')
 
-                    {/* Thinking panel (DeepSeek-R1) */}
-                    {msg.thinking && (
-                      <ThinkingPanel thinking={msg.thinking} />
-                    )}
+                    return (
+                    <div key={msg.id} className={`chat-turn ${msg.role}`}>
 
-                    {/* Source chips */}
-                    {msg.sources?.length > 0 && (
-                      <div className="chat-sources">
-                        {msg.sources.slice(0, 6).map((s, i) => (
-                          <span key={i} className="source-chip">
-                            [{i+1}] {s.symbol} · {s.doc_type?.replace(/_/g,' ')}
-                            {s.page_number ? ` · p.${s.page_number}` : ''}
-                            {s.fiscal_year ? ` · ${s.fiscal_year}` : ''}
-                          </span>
-                        ))}
+                      {msg.role === 'user' ? (
+                        /* User: right-aligned pill bubble */
+                        <>
+                          <div className="chat-user-header">
+                            <span className="chat-user-label">You</span>
+                            <div className="chat-user-avatar">{username[0]?.toUpperCase() ?? 'U'}</div>
+                          </div>
+                          <div className="chat-user-bubble">{msg.text}</div>
+                        </>
+                      ) : (
+                        /* AI: left-aligned, word-by-word fade for latest */
+                        <>
+                          <div className="chat-ai-header">
+                            <div className="chat-ai-avatar">
+                              <svg width="14" height="14" viewBox="0 0 120 120" fill="none">
+                                <ellipse cx="60" cy="60" rx="52" ry="32" stroke="#fff" strokeWidth="9" fill="none"/>
+                                <circle cx="60" cy="60" r="16" fill="#1ABC9C"/>
+                                <circle cx="60" cy="60" r="8" fill="#fff"/>
+                              </svg>
+                            </div>
+                            <span className="chat-ai-label">FinSight AI</span>
+                          </div>
+                          <div className="chat-ai-body">
+                            <TextGenerateEffect
+                              text={msg.text}
+                              animate={isLatestAI}
+                              duration={0.35}
+                              staggerDelay={0.04}
+                            />
+                          </div>
+                          {msg.navigations?.length > 0 && (
+                            <div style={{ paddingLeft: 38 }}><NavigationTrail navigations={msg.navigations} /></div>
+                          )}
+                          {msg.thinking && (
+                            <div style={{ paddingLeft: 38 }}><ThinkingPanel thinking={msg.thinking} /></div>
+                          )}
+                          {msg.sources?.length > 0 && (
+                            <div className="chat-sources-row">
+                              {msg.sources.slice(0, 6).map((s, i) => (
+                                <span key={i} className="source-chip">
+                                  [{i+1}] {s.symbol} · {s.doc_type?.replace(/_/g,' ')}
+                                  {s.page_number ? ` · p.${s.page_number}` : ''}
+                                  {s.fiscal_year ? ` · ${s.fiscal_year}` : ''}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                    </div>
+                  )})
+                  }
+                  {loading && (
+                    <div className="chat-turn ai">
+                      <div className="chat-ai-header">
+                        <div className="chat-ai-avatar">
+                          <svg width="14" height="14" viewBox="0 0 120 120" fill="none">
+                            <ellipse cx="60" cy="60" rx="52" ry="32" stroke="#fff" strokeWidth="9" fill="none"/>
+                            <circle cx="60" cy="60" r="16" fill="#1ABC9C"/>
+                            <circle cx="60" cy="60" r="8" fill="#fff"/>
+                          </svg>
+                        </div>
+                        <span className="chat-ai-label">FinSight AI</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="chat-ai-body" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span className="spinner" style={{ flexShrink: 0 }} />
+                        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{statusText || 'Thinking...'}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={bottomRef} />
                 </div>
-              ))}
-              {loading && (
-                <div className="chat-msg ai">
-                  <div className="chat-avatar ai"><Bot size={16} /></div>
-                  <div className="chat-bubble" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="spinner" />
-                    {statusText || 'Thinking...'}
-                  </div>
-                </div>
-              )}
-              <div ref={bottomRef} />
-            </div>
 
-            {/* Input */}
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
-              <input
-                className="form-control"
-                placeholder="Ask about your financial documents... (Enter to send)"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={onKey}
-                disabled={loading}
-                style={{ marginBottom: 0 }}
-              />
-              <button
-                className="btn btn-primary"
-                onClick={send}
-                disabled={loading || !input.trim()}
-                style={{ flexShrink: 0 }}
-              >
-                <Send size={16} />
-              </button>
-            </div>
+                {/* Input bar with model selector */}
+                <div style={{ padding: '10px 16px 12px', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
+                    <input
+                      className="form-control"
+                      placeholder="Ask about your financial documents... (Enter to send)"
+                      value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={onKey}
+                      disabled={loading}
+                      style={{ marginBottom: 0, flex: 1 }}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      onClick={send}
+                      disabled={loading || !input.trim()}
+                      style={{ flexShrink: 0, height: 40, width: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
+                  {/* Model selector row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Model:</span>
+                    <select
+                      value={model}
+                      onChange={e => setModel(e.target.value)}
+                      style={{
+                        background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)',
+                        borderRadius: 8, color: 'var(--text-secondary)', fontSize: 12,
+                        padding: '3px 8px', cursor: 'pointer', outline: 'none',
+                      }}
+                    >
+                      {MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
           </GlowCard>
         </div>
       </div>
