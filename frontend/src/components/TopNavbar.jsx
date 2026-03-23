@@ -30,7 +30,8 @@ export default function TopNavbar() {
 
   const handleLogout = () => { logout(); navigate('/login') }
   const initial = (user?.email?.[0] ?? 'U').toUpperCase()
-  const username = user?.email?.split('@')[0] ?? 'User'
+  const fullName = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim()
+  const username = fullName || user?.email?.split('@')[0] || 'User'
   const email = user?.email ?? ''
 
   // Close popover on outside click
@@ -147,11 +148,17 @@ export default function TopNavbar() {
 
               {/* Menu items */}
               <div className="profile-popover-body">
-                <button className="profile-popover-item" onClick={() => setOpen(false)}>
+                <button
+                  className="profile-popover-item"
+                  onClick={() => { setOpen(false); navigate('/profile') }}
+                >
                   <User size={15} />
                   <span>View Profile</span>
                 </button>
-                <button className="profile-popover-item" onClick={() => setOpen(false)}>
+                <button
+                  className="profile-popover-item"
+                  onClick={() => { setOpen(false); navigate('/settings') }}
+                >
                   <Settings size={15} />
                   <span>Settings</span>
                 </button>

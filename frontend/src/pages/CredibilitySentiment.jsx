@@ -324,7 +324,7 @@ export default function CredibilitySentiment() {
                                 Documents
                             </span>
                             <div style={{ display: 'flex', gap: 4 }}>
-                                <button className="btn btn-sm" onClick={selectAll} style={{ fontSize: 11, padding: '2px 8px' }}>
+                                <button className="btn btn-ghost btn-sm" onClick={selectAll} style={{ fontSize: 11, padding: '2px 8px' }}>
                                     {selectedIds.size === ragProcessedDocs.length ? 'None' : 'All'}
                                 </button>
                             </div>

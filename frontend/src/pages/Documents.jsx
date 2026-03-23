@@ -251,19 +251,19 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
           }
           <CatIcon size={15} style={{ color: catCfg.color }} />
           <span style={{ fontWeight: 600, fontSize: 13 }}>{title}</span>
-          <span className="text-xs text-muted">({docs.length})</span>
+          <span className="text-xs text-muted doc-picker-count">({docs.length})</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 28 }}>
           {docs.map((doc) => {
             const globalIdx = allDocs.indexOf(doc)
             const isSel = selected.has(globalIdx)
             return (
-              <div key={globalIdx}
+              <div
+                key={globalIdx}
+                className={`doc-picker-item${isSel ? ' selected' : ''}`}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
                   borderRadius: 6, cursor: 'pointer', fontSize: 13,
-                  background: isSel ? 'rgba(129,140,248,0.08)' : 'transparent',
-                  border: `1px solid ${isSel ? 'rgba(129,140,248,0.3)' : 'var(--glass-border)'}`,
                   transition: 'all 0.15s',
                 }}
                 onClick={() => toggle(globalIdx)}
@@ -274,8 +274,8 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
                   size={16}
                   style={{ flexShrink: 0 }}
                 />
-                <span style={{ flex: 1, lineHeight: 1.3 }}>{doc.title}</span>
-                {doc.date && <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap' }}>{doc.date}</span>}
+                <span className="doc-picker-title" style={{ flex: 1, lineHeight: 1.3 }}>{doc.title}</span>
+                {doc.date && <span className="text-xs text-muted doc-picker-date" style={{ whiteSpace: 'nowrap' }}>{doc.date}</span>}
               </div>
             )
           })}
@@ -289,13 +289,13 @@ function DocumentPicker({ companyDocs, onDownload, onClose, downloading }) {
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999
     }}>
-      <div className="card" style={{ width: 640, maxWidth: '95vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="card doc-picker-panel" style={{ width: 640, maxWidth: '95vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
         <div className="flex-between" style={{ marginBottom: 12 }}>
           <div>
             <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
               {companyDocs.company_name}
             </h3>
-            <p className="text-sm text-muted" style={{ margin: '2px 0 0' }}>
+            <p className="text-sm text-muted doc-picker-sub" style={{ margin: '2px 0 0' }}>
               Select documents to download & index · {allDocs.length} available
             </p>
           </div>
@@ -540,7 +540,7 @@ export default function Documents() {
   }
 
   return (
-    <div>
+    <div className="documents-page">
       {/* Header */}
       <div className="flex-between mb-6">
         <div className="page-header" style={{ marginBottom: 0 }}>

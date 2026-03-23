@@ -35,7 +35,12 @@ const STORAGE_KEY = 'finsight_chat_v3'
 
 export default function Chat() {
   const { user } = useAuth()
-  const username = user?.email?.split('@')[0] ?? 'there'
+  const username = user?.first_name?.trim() || user?.email?.split('@')[0] || 'there'
+  const [logoTheme, setLogoTheme] = useState(() => (
+    typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
+      ? 'light'
+      : 'dark'
+  ))
   const [messages, setMessages] = useState(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY)
@@ -60,6 +65,18 @@ export default function Chat() {
   // Load available documents on mount
   useEffect(() => {
     loadDocuments()
+  }, [])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const root = document.documentElement
+    const updateTheme = () => {
+      setLogoTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark')
+    }
+    updateTheme()
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
@@ -189,7 +206,8 @@ export default function Chat() {
     <div>
       <div className="page-header">
         <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <FinSightLogo size="small" animated={false} theme="dark" /> RAG Analysis
+          <FinSightLogo size="small" variant="icon" theme={logoTheme} animated={false} />
+          RAG Analysis
         </h1>
         <p className="page-sub">Select documents, prepare them for analysis, then ask questions</p>
       </div>
@@ -204,7 +222,7 @@ export default function Chat() {
                 Documents
               </span>
               <button
-                className="btn btn-sm"
+                className="btn btn-ghost btn-sm"
                 onClick={selectAll}
                 style={{ fontSize: 11, padding: '2px 8px' }}
               >
@@ -294,7 +312,7 @@ export default function Chat() {
             {messages.length === 0 ? (
               /* ── Empty state ── */
               <div className="chat-empty-state">
-                <FinSightLogo size="large" animated />
+                <FinSightLogo size="large" theme={logoTheme} animated />
                 <h2 className="chat-greeting">
                   {getGreeting()},&nbsp;
                   <span className="chat-greeting-name">{username}</span>

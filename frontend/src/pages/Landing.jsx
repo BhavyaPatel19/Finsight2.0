@@ -12,7 +12,6 @@ import { useTheme } from '../context/ThemeContext'
 import { FinSightLogo } from '../components/FinSightLogo'
 import { FloatingCurrencies } from '../components/FloatingCurrencies'
 import GlowCard from '../components/GlowCard'
-import HoverButton from '../components/HoverButton'
 import ShaderBackground from '../components/ShaderBackground'
 
 /* ── Scroll-triggered reveal wrapper ─────────────── */
@@ -190,16 +189,16 @@ export default function Landing() {
           transition={{ delay: 0.7, duration: 0.7 }}
         >
           {user ? (
-            <Link to="/dashboard">
-              <HoverButton text="Go to Dashboard" icon={ArrowRight} />
+            <Link to="/dashboard" className="btn btn-primary" style={{ minWidth: 170, justifyContent: 'center' }}>
+              Go to Dashboard <ArrowRight size={15} />
             </Link>
           ) : (
             <>
-              <Link to="/login">
-                <HoverButton text="Get Started" icon={ArrowRight} />
+              <Link to="/login" className="btn btn-primary" style={{ minWidth: 160, justifyContent: 'center' }}>
+                Get Started <ArrowRight size={15} />
               </Link>
-              <Link to="/register">
-                <HoverButton text="Create Account" variant="ghost" />
+              <Link to="/register" className="btn btn-ghost" style={{ minWidth: 160, justifyContent: 'center' }}>
+                Create Account
               </Link>
             </>
           )}

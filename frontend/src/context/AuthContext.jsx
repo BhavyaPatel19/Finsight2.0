@@ -18,6 +18,13 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false))
   }, [])
 
+  const refreshUser = async () => {
+    const me = await authApi.me()
+    localStorage.setItem('fs_user', JSON.stringify(me.data))
+    setUser(me.data)
+    return me.data
+  }
+
   const login = async (email, password) => {
     const r = await authApi.login(email, password)
     const token = r.data.access_token
@@ -28,9 +35,21 @@ export function AuthProvider({ children }) {
     return me.data
   }
 
-  const register = async (email, password) => {
-    await authApi.register(email, password)
+  const register = async (firstName, lastName, email, password) => {
+    await authApi.register(firstName, lastName, email, password)
     return login(email, password)
+  }
+
+  const updateAccount = async (payload) => {
+    const r = await authApi.updateMe(payload)
+    localStorage.setItem('fs_user', JSON.stringify(r.data))
+    setUser(r.data)
+    return r.data
+  }
+
+  const deleteAccount = async () => {
+    await authApi.deleteMe()
+    logout()
   }
 
   const logout = () => {
@@ -40,7 +59,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser, updateAccount, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   )

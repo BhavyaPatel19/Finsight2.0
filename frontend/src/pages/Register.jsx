@@ -1,205 +1,253 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { UserPlus } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext'
+import { Check, ArrowRight, Moon, Sun } from 'lucide-react'
 import { FinSightLogo } from '../components/FinSightLogo'
 import { FloatingCurrencies } from '../components/FloatingCurrencies'
-import HoverButton from '../components/HoverButton'
 
 export default function Register() {
   const { register } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const [currentStep, setCurrentStep] = useState(0)
+  const [isComplete, setIsComplete] = useState(false)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const steps = [
+    { id: 1, label: 'Name' },
+    { id: 2, label: 'Email' },
+    { id: 3, label: 'Password' },
+  ]
+
+  const progress = ((currentStep + 1) / steps.length) * 100
+
+  const validateStep = () => {
     setError('')
-    if (password !== confirm) { setError('Passwords do not match.'); return }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
+    if (currentStep === 0) {
+      if (!firstName.trim() || !lastName.trim()) {
+        setError('First name and last name are required.')
+        return false
+      }
+      return true
+    }
+
+    if (currentStep === 1) {
+      if (!email.trim()) {
+        setError('Email is required.')
+        return false
+      }
+      return true
+    }
+
+    if (!password || !confirm) {
+      setError('Password and confirm password are required.')
+      return false
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return false
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return false
+    }
+    return true
+  }
+
+  const handleContinue = async (e) => {
+    e.preventDefault()
+    if (!validateStep()) return
+
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(s => s + 1)
+      return
+    }
+
     setLoading(true)
     try {
-      await register(email, password)
-      navigate('/dashboard')
+      await register(firstName.trim(), lastName.trim(), email, password)
+      setIsComplete(true)
     } catch (err) {
       setError(err.response?.data?.detail ?? 'Registration failed. Please try again.')
     } finally { setLoading(false) }
   }
 
-  const inputStyle = {
-    width: '100%',
-    padding: '11px 14px',
-    borderRadius: '10px',
-    border: '1px solid #d5dde5',
-    background: 'rgba(255,255,255,0.8)',
-    fontSize: '0.88rem',
-    color: '#1B2A4A',
-    outline: 'none',
-    transition: 'border-color 0.2s, box-shadow 0.2s',
-    boxSizing: 'border-box',
+  const goBack = () => {
+    if (currentStep > 0) setCurrentStep(s => s - 1)
   }
 
-  const onFocus = (e) => {
-    e.target.style.borderColor = '#1ABC9C'
-    e.target.style.boxShadow = '0 0 0 3px rgba(26, 188, 156, 0.12)'
-  }
-  const onBlur = (e) => {
-    e.target.style.borderColor = '#d5dde5'
-    e.target.style.boxShadow = 'none'
+  const fullName = `${firstName} ${lastName}`.trim()
+
+  const renderStepFields = () => {
+    if (currentStep === 0) {
+      return (
+        <div className="register-step-grid">
+          <input
+            id="reg-first-name"
+            type="text"
+            placeholder="First name"
+            value={firstName}
+            onChange={e => setFirstName(e.target.value)}
+            className="form-control register-step-input"
+            autoFocus
+          />
+          <input
+            id="reg-last-name"
+            type="text"
+            placeholder="Last name"
+            value={lastName}
+            onChange={e => setLastName(e.target.value)}
+            className="form-control register-step-input"
+          />
+        </div>
+      )
+    }
+
+    if (currentStep === 1) {
+      return (
+        <input
+          id="reg-email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          className="form-control register-step-input"
+          autoFocus
+        />
+      )
+    }
+
+    return (
+      <div className="register-step-stack">
+        <input
+          id="reg-password"
+          type="password"
+          placeholder="Password (min 6 characters)"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="form-control register-step-input"
+          autoFocus
+        />
+        <input
+          id="reg-confirm"
+          type="password"
+          placeholder="Confirm password"
+          value={confirm}
+          onChange={e => setConfirm(e.target.value)}
+          className="form-control register-step-input"
+        />
+      </div>
+    )
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      width: '100%',
-      background: 'linear-gradient(135deg, #f0f4f8, #e8eef5, #dce6f0)',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    }}>
-      <FloatingCurrencies />
+    <div className="auth-layout register-layout">
+      <button
+        className="auth-theme-toggle"
+        onClick={toggleTheme}
+        aria-label="Toggle theme"
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+      </button>
 
-      <div style={{
-        position: 'relative',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: '420px',
-        padding: '0 24px',
-      }}>
-        <div style={{ marginBottom: '32px' }}>
-          <FinSightLogo size="xl" showTagline animated />
+      <FloatingCurrencies theme={theme} />
+
+      <div className="register-shell">
+        <div className="register-logo">
+          <FinSightLogo size="xl" showTagline animated theme={theme} />
         </div>
 
-        <div style={{
-          width: '100%',
-          background: 'rgba(255, 255, 255, 0.75)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderRadius: '20px',
-          border: '1px solid rgba(213, 221, 229, 0.6)',
-          padding: '36px 32px',
-          boxShadow: '0 8px 32px rgba(27, 42, 74, 0.08), 0 2px 8px rgba(27, 42, 74, 0.04)',
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#1B2A4A', margin: 0 }}>
-              Create account
-            </h2>
-            <p style={{ fontSize: '0.85rem', color: '#5D6D7E', marginTop: '6px' }}>
-              Start your AI-powered financial journey
-            </p>
-          </div>
-
-          {error && (
-            <div style={{
-              background: 'rgba(231, 76, 60, 0.08)',
-              border: '1px solid rgba(231, 76, 60, 0.2)',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              marginBottom: '20px',
-              fontSize: '0.82rem',
-              color: '#c0392b',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              <span>&#9888;</span> {error}
+        <div className="register-wizard">
+          {isComplete ? (
+            <div className="register-complete">
+              <div className="register-complete-icon-wrap">
+                <Check size={34} strokeWidth={2.6} />
+              </div>
+              <h2 className="register-complete-title">You're all set</h2>
+              <p className="register-complete-sub">{fullName || email}</p>
+              <button
+                className="btn btn-primary register-next-btn"
+                onClick={() => navigate('/dashboard')}
+              >
+                Go to Dashboard <ArrowRight size={16} />
+              </button>
             </div>
+          ) : (
+            <>
+              <div className="register-stepper">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="register-stepper-item">
+                    <button
+                      type="button"
+                      className={`register-step-dot ${index < currentStep ? 'done' : ''} ${index === currentStep ? 'active' : ''}`}
+                      disabled={index > currentStep}
+                      onClick={() => index < currentStep && setCurrentStep(index)}
+                    >
+                      {index < currentStep ? <Check size={15} strokeWidth={2.8} /> : <span>{step.id}</span>}
+                    </button>
+                    {index < steps.length - 1 && (
+                      <div className="register-step-line">
+                        <div
+                          className="register-step-line-active"
+                          style={{ transform: `scaleX(${index < currentStep ? 1 : 0})` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="register-progress-wrap">
+                <div className="register-progress" style={{ width: `${progress}%` }} />
+              </div>
+
+              <form onSubmit={handleContinue} className="register-step-content">
+                <div className="register-step-header">
+                  <label className="register-step-label">{steps[currentStep].label}</label>
+                  <span className="register-step-count">{currentStep + 1}/{steps.length}</span>
+                </div>
+
+                {renderStepFields()}
+
+                {error && <p className="register-step-error">{error}</p>}
+
+                <button
+                  id="reg-submit"
+                  type="submit"
+                  className="btn btn-primary register-next-btn"
+                  disabled={loading}
+                >
+                  {loading ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : null}
+                  {loading ? 'Creating account...' : (currentStep === steps.length - 1 ? 'Complete' : 'Continue')}
+                  {!loading && <ArrowRight size={16} />}
+                </button>
+
+                {currentStep > 0 && (
+                  <button
+                    type="button"
+                    className="register-back-btn"
+                    onClick={goBack}
+                  >
+                    Go back
+                  </button>
+                )}
+              </form>
+            </>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#1B2A4A', marginBottom: '6px' }}>
-                Email address
-              </label>
-              <input
-                id="reg-email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required autoFocus
-                style={inputStyle}
-                onFocus={onFocus}
-                onBlur={onBlur}
-              />
+          {!isComplete && (
+            <div className="auth-switch" style={{ marginTop: 18 }}>
+              Already have an account? <Link to="/login">Sign in</Link>
             </div>
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#1B2A4A', marginBottom: '6px' }}>
-                Password
-              </label>
-              <input
-                id="reg-password"
-                type="password"
-                placeholder="Min. 6 characters"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                style={inputStyle}
-                onFocus={onFocus}
-                onBlur={onBlur}
-              />
-            </div>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#1B2A4A', marginBottom: '6px' }}>
-                Confirm password
-              </label>
-              <input
-                id="reg-confirm"
-                type="password"
-                placeholder="••••••••"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                required
-                style={inputStyle}
-                onFocus={onFocus}
-                onBlur={onBlur}
-              />
-            </div>
-            {loading ? (
-              <button
-                type="submit"
-                disabled
-                style={{
-                  width: '100%', padding: '12px', borderRadius: '10px', border: 'none',
-                  background: 'linear-gradient(135deg, #1A5276, #148F77)', color: 'white',
-                  fontSize: '0.9rem', fontWeight: 600, cursor: 'not-allowed', opacity: 0.7,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                }}
-              >
-                <span className="spinner" /> Creating account...
-              </button>
-            ) : (
-              <HoverButton
-                id="reg-submit"
-                type="submit"
-                text="Create Account"
-                icon={UserPlus}
-                style={{ width: '100%', borderRadius: '10px', fontSize: '0.9rem', padding: '12px' }}
-              />
-            )}
-          </form>
-
-          <div style={{
-            textAlign: 'center',
-            marginTop: '22px',
-            fontSize: '0.82rem',
-            color: '#5D6D7E',
-          }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: '#148F77', fontWeight: 600, textDecoration: 'none' }}>
-              Sign in
-            </Link>
-          </div>
+          )}
         </div>
       </div>
     </div>

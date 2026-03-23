@@ -26,11 +26,18 @@ client.interceptors.response.use(
 
 // ── Auth ─────────────────────────────────────────────
 export const authApi = {
-  register: (email, password) =>
-    client.post('/auth/register', { email, password }),
+  register: (firstName, lastName, email, password) =>
+    client.post('/auth/register', {
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      password,
+    }),
   login: (email, password) =>
     client.post('/auth/login', { email, password }),
   me: () => client.get('/auth/me'),
+  updateMe: (payload) => client.put('/auth/me', payload),
+  deleteMe: () => client.delete('/auth/me'),
 }
 
 // ── Zerodha ───────────────────────────────────────────

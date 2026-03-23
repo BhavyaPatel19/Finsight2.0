@@ -31,6 +31,8 @@ def run_migrations():
         "ALTER TABLE documents ADD COLUMN cs_status TEXT DEFAULT 'pending'",
         "ALTER TABLE documents ADD COLUMN cs_chunk_count INTEGER DEFAULT 0",
         "ALTER TABLE documents ADD COLUMN cs_error_message TEXT",
+        "ALTER TABLE user ADD COLUMN first_name TEXT DEFAULT ''",
+        "ALTER TABLE user ADD COLUMN last_name TEXT DEFAULT ''",
     ]
     try:
         conn = sqlite3.connect(db_path)

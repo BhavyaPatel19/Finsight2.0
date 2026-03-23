@@ -381,7 +381,7 @@ export default function WatchlistPage() {
 
       <div className="wl-layout">
         {/* ── Left: Watchlist Selector ── */}
-        <div className="wl-sidebar">
+        <GlowCard className="wl-sidebar">
           <div className="wl-sidebar-header">
             <span className="wl-sidebar-title">My Watchlists</span>
             <button className="wl-icon-btn" onClick={() => setCreating(true)} title="New watchlist">
@@ -409,8 +409,8 @@ export default function WatchlistPage() {
           ) : watchlists.length === 0 ? (
             <div className="wl-sidebar-empty">
               <p>No watchlists yet.</p>
-              <button className="btn btn-accent btn-sm" onClick={() => setCreating(true)}>
-                <Plus size={14} /> Create one
+              <button className="wl-text-action" onClick={() => setCreating(true)}>
+                Create one
               </button>
             </div>
           ) : (
@@ -457,10 +457,10 @@ export default function WatchlistPage() {
               ))}
             </div>
           )}
-        </div>
+        </GlowCard>
 
         {/* ── Right: Stock Table ── */}
-        <div className="wl-main">
+        <GlowCard className="wl-main">
           {!selectedId ? (
             <div className="wl-empty-main">
               <List size={48} strokeWidth={1} />
@@ -542,19 +542,19 @@ export default function WatchlistPage() {
 
                   {/* AI Digest card */}
                   {digest && (
-                    <div className="wl-digest-card">
+                    <GlowCard className="wl-digest-card">
                       <div className="wl-digest-header">
                         <Sparkles size={14} className="wl-digest-icon" />
                         <span>AI Watchlist Digest</span>
                         <button className="wl-icon-btn tiny" onClick={() => setDigest('')} style={{ marginLeft: 'auto' }}><X size={12} /></button>
                       </div>
                       <div className="wl-digest-text">{digest}</div>
-                    </div>
+                    </GlowCard>
                   )}
 
                   {/* Screener filters */}
                   {filtersOpen && (
-                    <div className="wl-filter-controls">
+                    <GlowCard className="wl-filter-controls">
                       <label className="wl-filter-group">
                         <span>P/E</span>
                         <input type="number" placeholder="Min" value={filters.pe_min} onChange={e => setFilters(f => ({ ...f, pe_min: e.target.value }))} />
@@ -586,7 +586,7 @@ export default function WatchlistPage() {
                       {filteredItems.length !== sortedItems.length && (
                         <span className="wl-filter-count">{filteredItems.length}/{sortedItems.length} stocks</span>
                       )}
-                    </div>
+                    </GlowCard>
                   )}
                 </>
               )}
@@ -598,7 +598,7 @@ export default function WatchlistPage() {
                   <p>This watchlist is empty.<br />Search and add stocks above.</p>
                 </div>
               ) : (
-                <div className="wl-table-wrap">
+                <GlowCard className="wl-table-wrap">
                   <table className="wl-table">
                     <thead>
                       <tr>
@@ -690,7 +690,7 @@ export default function WatchlistPage() {
                             {newsSymbol === item.symbol && (
                               <tr className="wl-news-row">
                                 <td colSpan={9}>
-                                  <div className="wl-news-panel">
+                                  <GlowCard className="wl-news-panel">
                                     {newsLoading ? (
                                       <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                                     ) : newsArticles.length === 0 ? (
@@ -703,7 +703,7 @@ export default function WatchlistPage() {
                                         </a>
                                       ))
                                     )}
-                                  </div>
+                                  </GlowCard>
                                 </td>
                               </tr>
                             )}
@@ -712,11 +712,11 @@ export default function WatchlistPage() {
                       })}
                     </tbody>
                   </table>
-                </div>
+                </GlowCard>
               )}
             </>
           )}
-        </div>
+        </GlowCard>
       </div>
     </div>
   )
