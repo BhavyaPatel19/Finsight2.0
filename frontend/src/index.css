@@ -2402,6 +2402,10 @@ tbody tr:hover {
 .landing-hero {
   text-align: center;
   position: relative;
+  overflow: hidden;
+}
+.landing-hero > *:not(canvas) {
+  position: relative;
   z-index: 1;
 }
 
@@ -2411,7 +2415,7 @@ tbody tr:hover {
   line-height: 1.25;
   max-width: 700px;
   margin: 24px auto 0;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #1ABC9C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2419,7 +2423,7 @@ tbody tr:hover {
 
 .landing-hero-description {
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: rgba(241, 245, 249, 0.85);
   max-width: 550px;
   margin: 16px auto 0;
   line-height: 1.6;
@@ -2442,7 +2446,7 @@ tbody tr:hover {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: var(--text-muted);
+  color: rgba(241, 245, 249, 0.45);
   font-size: 0.75rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -2575,21 +2579,54 @@ tbody tr:hover {
   margin-bottom: 16px;
 }
 
-.landing-tech-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  transition: border-color var(--trans), color var(--trans);
+.landing-tech-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.landing-tech-badge:hover {
-  border-color: var(--accent);
+
+.landing-tech-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.landing-tech-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.landing-tech-logo-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: #fff;
+  padding: 2px;
+}
+
+.landing-tech-name {
+  font-size: 0.88rem;
+  font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.landing-tech-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
 }
 
 /* ── Architecture flow ── */
