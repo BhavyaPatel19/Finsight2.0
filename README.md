@@ -1,262 +1,167 @@
 # FinSight
 
-**AI-powered financial intelligence platform for Indian retail investors**
+**Grounded question-answering and claim verification over Indian company filings — with the retrieval pipeline measured, not just built.**
 
-FinSight combines portfolio tracking, document analysis, sentiment scoring, and AI-driven insights into a single platform — designed to help retail investors make smarter, data-backed decisions.
+FinSight ingests earnings-call transcripts, press releases and annual reports, answers questions with page-level citations from a hybrid BM25 + dense retriever with cross-encoder reranking, and checks whether management *walked the talk*: it extracts forward-looking claims from one quarter's call and grades them MET / MISSED / PARTIAL against the next period's actuals. A React dashboard wraps it with market data, watchlists and FinBERT sentiment.
 
-![Dashboard](frontend/public/screenshots/dashboard.jpeg)
-
----
-
-## Features
-
-### Portfolio Management
-- **Zerodha Integration** — Connect your Zerodha Kite account via OAuth 2.0, sync holdings automatically
-- **Holdings Dashboard** — View quantity, average price, current price, P&L, and day change at a glance
-- **Portfolio Insights** — AI-generated summary of your portfolio composition and performance
-
-### Live Market Data
-- **Real-time Quotes** — Fetch live market data for any NSE/BSE instrument
-- **Historical Charts** — Candlestick charts with multiple intervals (1min, 5min, 15min, daily)
-- **Instrument Search** — Search across 100,000+ instruments by symbol or name
-- **Fundamental Metrics** — PE, ROCE, EPS, debt-to-equity, promoter holding, 52-week range, and more
-- **AI Market Insights** — Groq-powered analysis of stock fundamentals
-- **Stock News** — Google News RSS integration for stock-specific headlines
-
-![Market](frontend/public/screenshots/market.jpeg)
-
-### Document Intelligence (RAG)
-- **PDF Upload & Processing** — Upload annual reports, quarterly filings, earnings call transcripts
-- **BSE Document Scraper** — Search and download company filings directly from Screener.in
-- **Page-Aware Chunking** — Intelligent text extraction preserving page and section context
-- **Semantic Search** — ChromaDB vector store with Sentence Transformer embeddings (BAAI/bge-base-en-v1.5)
-- **RAG Chat Interface** — Ask questions about your documents with source citations and thinking trace
-- **Multi-Model Support** — Choose between Llama 3, DeepSeek R1, Qwen, or Groq cloud models
-- **RAGAS Evaluation** — Built-in evaluation for faithfulness, answer relevancy, and context precision
-
-![Chat](frontend/public/screenshots/chat.jpeg)
-
-### CrediSentiment Analysis
-- **Division-Level Sentiment** — FinBERT-powered sentiment scoring broken down by business divisions
-- **Section-Aware Processing** — Independent chunking pipeline (3500 chars) preserving document structure
-- **Walk the Talk** — Compare management claims from one period against actual results from the next
-  - Extracts specific claims (revenue targets, margin guidance, capex plans)
-  - Matches each claim against reported actuals
-  - Scores verdicts: Met, Missed, or Partial with explanations
-  - Overall credibility score (0-100)
-
-![CrediSentiment](frontend/public/screenshots/credisentiment.jpeg)
-
-### Credibility Scoring
-- **Fundamental-Based Scoring** — Live scoring based on PE ratio, ROCE, debt-to-equity, revenue growth, promoter holding, market cap, book value, and dividend yield
-- **Historical Tracking** — View credibility score trends over time
-- **Claim Extraction** — Extract and track management commitments from documents
-
-### Watchlists
-- **Multiple Watchlists** — Create and manage custom watchlists
-- **Live Quotes** — Real-time price data for all watchlist items
-- **Notes** — Add personal notes to tracked stocks
-- **AI Digest** — Generate an AI summary digest for your watchlist
-
-### Authentication & Security
-- **JWT Authentication** — Secure token-based auth with auto-refresh
-- **User Profiles** — Registration, login, profile management, account deletion
-- **Protected Routes** — Frontend route guards with automatic redirect
+[![CI](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml/badge.svg)](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 
 ---
 
-## Tech Stack
+## In numbers
 
-### Backend
-| Component | Technology |
-|-----------|-----------|
-| Framework | FastAPI (Python) |
-| Database | SQLite + SQLModel ORM |
-| Vector Store | ChromaDB |
-| Embeddings | Sentence Transformers (BAAI/bge-base-en-v1.5) |
-| Local LLM | Ollama (Llama 3, DeepSeek R1, Qwen 2.5) |
-| Cloud LLM | Groq (Llama 3.3 70B) |
-| Sentiment | FinBERT (ProsusAI/finbert) |
-| PDF Parsing | PyMuPDF + pdfplumber |
-| Broker API | Zerodha Kite Connect |
-| Scheduler | APScheduler |
+Retrieval over 8 Infosys filings (145 chunks), 64 gold questions, relevance = the retrieved chunk contains the gold evidence quote ([methodology](docs/EVALUATION.md), [history of what changed](eval/results/HISTORY.md)):
 
-### Frontend
-| Component | Technology |
-|-----------|-----------|
-| Framework | React 18.3 + Vite |
-| Routing | React Router v6 |
-| Charts | Recharts |
-| Icons | Lucide React |
-| Animations | Framer Motion |
-| HTTP Client | Axios |
-| Theme | Light/Dark mode with Context API |
+| retrieval mode | hit@1 | hit@5 | MRR@8 | nDCG@8 | ms/query |
+|---|---|---|---|---|---|
+| dense (BGE-base) | 0.328 | 0.578 | 0.450 | 0.513 | 32 |
+| BM25 | 0.312 | 0.625 | 0.449 | 0.506 | <1 |
+| hybrid (RRF) | 0.422 | 0.766 | 0.556 | 0.606 | 16 |
+| **hybrid + rerank (production)** | **0.656** | **0.844** | **0.738** | **0.764** | 641–877 |
+
+The production path started at hit@5 **0.578** — below BM25 alone — and reached **0.844** through four measured fixes, none of which changed the architecture: the reranker was scoring 512 *characters* instead of 512 tokens, BM25 hits carried no page numbers, and neither the embedder nor the reranker could tell a Q4 FY25 filing from a Q4 FY26 one until a `company · doc type · period` header was prepended at index time.
+
+Generation and Walk-the-Talk results: see [`eval/results/`](eval/results/) (`generation_latest.md`, `wtt_*.json`) — produced by `make eval-generation` and `python -m eval.wtt`.
 
 ---
 
-## Project Structure
+## What it does
 
-```
-finsight/                    # Backend package
-├── main.py                  # FastAPI app entry, router registration
-├── config.py                # Environment configuration
-├── deps.py                  # Dependency injection
-├── auth/                    # JWT authentication
-├── zerodha/                 # OAuth flow + holdings sync
-├── portfolio/               # Portfolio metrics & insights
-├── ingestion/               # PDF upload, chunking, scheduling
-├── rag/                     # Vector search + LLM inference + RAGAS evaluation
-├── sentiment/               # FinBERT sentiment scoring
-├── credibility/             # Claims extraction + scoring
-├── credisentiment/          # Division sentiment + Walk the Talk
-├── market/                  # Quotes, history, fundamentals, news
-├── scraper/                 # Screener.in document scraper
-├── watchlist/               # Watchlist CRUD + AI digest
-├── models/                  # SQLModel database tables (18 tables)
-└── database/                # Session management
+| | |
+|---|---|
+| ![Chat](frontend/public/screenshots/chat.jpeg) | **Grounded Q&A.** Ask across selected filings; answers cite `[Section > Page N]`, show the retrieved passages, and say *"Not found in the selected documents."* rather than guess. Reasoning-model traces are shown when available. |
+| ![CrediSentiment](frontend/public/screenshots/credisentiment.jpeg) | **Walk the Talk.** Pick a "claims" document and a later "actuals" document. Stage 1 extracts forward-looking commitments (revenue, margin, capex, hiring, …); stage 2 retrieves the matching actuals and grades each claim, with an overall credibility score and narrative. FinBERT scores sentiment per business division. |
+| ![Market](frontend/public/screenshots/market.jpeg) | **Market.** NSE quotes, candlesticks, instrument search, fundamentals and news. Works out of the box on free delayed data (yfinance); links a Zerodha Kite account for live broker data. |
+| ![Dashboard](frontend/public/screenshots/dashboard.jpeg) | **Portfolio & watchlists.** Holdings synced from Zerodha, multiple watchlists with notes, and an LLM digest of the day's movers. |
 
-frontend/                    # React application
-├── src/
-│   ├── pages/               # 14 page components
-│   ├── components/          # Reusable UI components
-│   ├── context/             # Auth & Theme providers
-│   ├── api/                 # Axios client with interceptors
-│   └── utils/               # Chart themes, formatters
-├── vite.config.js           # Dev server + API proxy
-└── package.json
+---
 
-documents/                   # Uploaded PDFs & extracted text
-chroma_db/                   # ChromaDB persistence
-finsight.db                  # SQLite database
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Ingest
+    A[PDF / HTML filing] --> B[extract_structured_document<br/>PyMuPDF pages + TOC · HTML → synthetic pages]
+    B --> C[chunk_smart<br/>speaker turns for calls · section/page for reports]
+    C --> D[(SQLite<br/>chunks · metadata)]
+    C --> E[(ChromaDB<br/>BGE-base embeddings<br/>+ context header)]
+  end
+  subgraph Query
+    Q[question] --> R1[dense top-20]
+    Q --> R2[BM25 top-20]
+    R1 & R2 --> F[Reciprocal Rank Fusion]
+    F --> RR[bge-reranker-base<br/>header + chunk]
+    RR --> P[strict grounding prompt<br/>cite Section > Page]
+    P --> L[LLM provider<br/>Groq · Ollama]
+    L --> ANS[answer + citations + sources]
+  end
+  E --> R1
+  E --> R2
 ```
 
+**Walk the Talk** is a separate two-stage pipeline on its own section-aware chunks (3,500 chars): keyword pre-filter → batched claim extraction (JSON mode) → per-claim semantic retrieval of actuals → verdict + explanation → credibility score.
+
+Backend: FastAPI · SQLModel/SQLite · ChromaDB · sentence-transformers · rank-bm25 · PyMuPDF · yfinance. Frontend: React 18 + Vite · Recharts · Framer Motion.
+
 ---
 
-## Getting Started
+## Quickstart
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- [Ollama](https://ollama.ai) installed and running
-- Zerodha Kite Connect API credentials (for broker features)
-- Groq API key (optional, for cloud inference)
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+. Ollama is optional.
 
-### 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/finsight.git
-cd finsight
+git clone https://github.com/BhavyaPatel19/Finsight2.0.git && cd Finsight2.0
+make install                              # uv sync + npm ci
+
+cp .env.example .env
+#   SECRET_KEY=$(openssl rand -hex 32)                 required
+#   GROQ_API_KEY=gsk_...                               recommended: free at console.groq.com; else Ollama is used
+#   EDGAR_USER_AGENT="FinSight research you@example.com"   only for the sample corpus (SEC policy)
+
+make seed                                 # download 8 public Infosys filings from SEC EDGAR, index them (~2 min, downloads BGE models on first run)
+make dev                                  # API on http://127.0.0.1:8000  (Swagger at /docs)
+cd frontend && npm run dev                # UI on http://localhost:5173
 ```
 
-### 2. Backend setup
+Register a user, open **Chat**, select the seeded documents and ask *"What FY26 guidance did Infosys give in April 2025, and what did it deliver?"*
+
+**Fully local, no keys:** install [Ollama](https://ollama.ai), `ollama pull llama3.1:8b`, leave `GROQ_API_KEY` unset. Set `OLLAMA_NUM_CTX=8192` (the default) — Ollama's stock 2k window silently truncates the ~4k-token RAG prompt.
+
+---
+
+## Evaluation
+
 ```bash
-python -m venv venv
-source venv/bin/activate        # Linux/Mac
-# or: venv\Scripts\activate     # Windows
-
-pip install -r requirements.txt
+make eval-retrieval        # 4 modes × 64 questions, ~2 min; writes eval/results/retrieval_<tag>.json + retrieval_latest.md
+make eval-generation       # answers every question, deterministic checks + LLM judge; needs Groq or Ollama
+uv run python -m eval.wtt  # Walk-the-Talk vs 15 human-labelled claims: recall, verdict accuracy, Cohen's κ
 ```
 
-Create a `.env` file in the project root:
-```env
-SECRET_KEY=your-secret-key
-ZERODHA_API_KEY=your-api-key
-ZERODHA_API_SECRET=your-api-secret
-ZERODHA_REDIRECT_URI=https://your-ngrok-url/zerodha/callback
-GROQ_API_KEY=your-groq-key          # optional
-OLLAMA_BASE_URL=http://localhost:11434
+The gold set is regenerated from an authoring script that **fails if any evidence quote is missing from the source text**, so it cannot drift. Full methodology, definitions and what is *not* measured: [docs/EVALUATION.md](docs/EVALUATION.md).
+
+---
+
+## Design decisions
+
+- **Hybrid retrieval with RRF, then a cross-encoder.** Financial questions are half keyword (`"attrition"`, `"$4,730"`) and half semantic; BM25 and dense each win on different questions and RRF needs no score calibration. The reranker is worth its ~600 ms only once it sees the full chunk *and* the period header — the eval history shows both.
+- **Contextual headers at index time, not in the stored text.** `Infosys Ltd (INFY) · earnings call transcript · Q4 FY25` is prepended to what gets embedded, BM25-tokenised and reranked; the stored chunk stays verbatim so citations quote the filing.
+- **Provider layer.** `finsight/llm/` exposes one `generate()`; Groq (hosted, free tier) and Ollama (local) are config. Responses carry model, token usage and latency; failures raise `LLMError` (the API returns 503) instead of `"[LLM error: …]"` strings that used to be parsed as answers.
+- **Market data is a provider too.** yfinance by default so a fresh clone works; Zerodha Kite is an opt-in upgrade for users who link an account. Instrument search uses a bundled public NIFTY 500 list with Yahoo search as fallback.
+- **HTML filings get synthetic pages.** EDGAR exhibits have no page breaks; text is cut into ~3,000-character pages at paragraph boundaries so citations stay locatable, and bold-only paragraphs become `Speaker:` lines so transcripts still chunk by turn.
+- **Own judge instead of RAGAS.** The RAGAS build in the lock file could not import against current LangChain and pulled in four heavy packages; the replacement is ~100 lines on the provider layer with the prompts in the repo, plus deterministic checks (number recall, abstention, citation validity) that need no judge at all.
+- **Public data only.** Everything in the sample corpus is a public SEC filing; company IR sites and BSE refuse programmatic access, and the previous User-Agent-rotating scraper was removed from the supported path.
+
+---
+
+## Configuration
+
+| variable | default | purpose |
+|---|---|---|
+| `SECRET_KEY` | — (required) | JWT signing; startup fails without it |
+| `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | CORS |
+| `LLM_PROVIDER` | `auto` | `auto` (Groq if key set, else Ollama) · `groq` · `ollama` |
+| `GROQ_API_KEY`, `GROQ_MODEL` | —, `llama-3.3-70b-versatile` | hosted inference |
+| `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_NUM_CTX` | `http://localhost:11434`, `llama3.1:8b`, `8192` | local inference |
+| `WTT_MODEL` | provider default | override for claim extraction / verification |
+| `MARKET_DATA_PROVIDER` | `auto` | `auto` (Zerodha for linked users, else yfinance) · `yfinance` · `zerodha` |
+| `ZERODHA_API_KEY`, `ZERODHA_API_SECRET`, `ZERODHA_REDIRECT_URI` | — | optional Kite Connect app |
+| `EDGAR_USER_AGENT` | — | required by SEC to download the sample corpus |
+| `DATABASE_URL`, `CHROMA_PERSIST_DIR`, `EMBEDDING_MODEL` | SQLite file, `./chroma_db`, `BAAI/bge-base-en-v1.5` | storage & embeddings |
+
+---
+
+## Repository map
+
+```
+finsight/           FastAPI backend
+  llm/              provider layer (Groq, Ollama), /llm/models
+  rag/              retrieval.py (4 modes) · service.py (index + answer) · bm25_store · reranker · vectorstore
+  ingestion/        parsers (PDF + HTML) · uploads (validated) · file_manager
+  credisentiment/   Walk the Talk pipeline + prompts · FinBERT division sentiment
+  market/           providers (yfinance, Zerodha) · fundamentals · insights · news · bundled NIFTY 500 list
+  auth/ zerodha/ portfolio/ watchlist/ credibility/ scraper/ models/
+eval/               gold sets · retrieval / generation / wtt harnesses · judge · results
+scripts/seed_demo.py  downloads + indexes the sample corpus
+frontend/           React + Vite
+tests/              125 tests (pytest); models and LLMs are stubbed, so the suite runs in ~6 s
 ```
 
-Pull the required Ollama models:
-```bash
-ollama pull llama3
-ollama pull deepseek-r1          # for Walk the Talk
-ollama pull qwen2.5:7b           # optional
-```
+---
 
-Start the backend:
-```bash
-uvicorn finsight.main:app --reload
-```
-Backend runs at **http://127.0.0.1:8000** | Swagger docs at **http://127.0.0.1:8000/docs**
+## Limitations and roadmap
 
-### 3. Frontend setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend runs at **http://localhost:5173**
+- Documents are shared across users (no per-user scoping yet); the app is single-tenant in practice.
+- Answers are not streamed; the chat's typing effect is client-side.
+- JWTs live in `localStorage`; Zerodha access tokens are stored unencrypted; the Zerodha OAuth flow lacks a `state` parameter. Fine for a local tool, not for a public deployment.
+- The Walk-the-Talk gold set is 15 claims from one company and one labeller. Extending it (more companies, a second labeller for κ) is the next evaluation step; fine-tuning a small encoder for claim detection and an NLI cross-encoder for verdicts — with the LLM as teacher and narrator — is the planned modelling step.
+- Retrieval numbers are from one corpus (Infosys, four quarters). Expect different behaviour on 200-page annual reports with real page numbers.
 
 ---
 
-## Zerodha OAuth Setup
+## Data and licence
 
-1. Create an app at [Zerodha Developers](https://developers.kite.trade/)
-2. Set the Redirect URL to an HTTPS endpoint — use [ngrok](https://ngrok.com/) for local dev: `https://your-ngrok-url/zerodha/callback`
-3. Copy your **API key** and **API secret** into `.env`
-4. In FinSight, click **Connect Zerodha** on the Dashboard to start the OAuth flow
-5. After authorization, sync holdings via the Dashboard
+Sample corpus: Form 6-K exhibits filed with the U.S. SEC by Infosys Ltd, downloaded from EDGAR at seed time (SHA-256 pinned in `eval/gold/documents.json`; not redistributed). NIFTY 500 constituent list from NSE Indices (`finsight/market/data/README.md`). Prices via Yahoo Finance (delayed) or the user's own Zerodha account.
 
----
-
-## API Overview
-
-| Module | Prefix | Key Endpoints |
-|--------|--------|---------------|
-| Auth | `/auth` | Register, login, profile CRUD, account deletion |
-| Zerodha | `/zerodha` | OAuth flow, token linking, holdings sync |
-| Portfolio | `/portfolio` | Holdings with metrics, AI insights |
-| Ingestion | `/ingestion` | PDF upload, processing, document management |
-| RAG | `/rag` | Document Q&A, document preparation, RAGAS evaluation |
-| Sentiment | `/sentiment` | FinBERT sentiment history per symbol |
-| Credibility | `/credibility` | Fundamental scoring, claim extraction |
-| CrediSentiment | `/credisentiment` | Division sentiment, Walk the Talk comparison |
-| Market | `/market` | Quotes, LTP, history, fundamentals, AI insights, news |
-| Scraper | `/scraper` | Company search, document download from Screener.in |
-| Watchlist | `/watchlist` | Multi-watchlist CRUD, live quotes, AI digest |
-
-All protected routes require: `Authorization: Bearer <token>`
-
----
-
-## Data Flow
-
-1. **Documents** — Upload PDFs or scrape from Screener.in. Text is extracted, chunked (page-aware or section-aware), embedded, and indexed in ChromaDB.
-2. **RAG Q&A** — User asks a question. Relevant chunks are retrieved via semantic search, sent with the question to an LLM (Ollama or Groq), and the answer is returned with source citations.
-3. **Sentiment** — FinBERT scores document text at the division level (positive/negative/neutral/overall).
-4. **Walk the Talk** — Management claims from period N are extracted via LLM, then compared against actuals from period N+1 to produce a credibility score.
-5. **Market** — Live quotes from Zerodha Kite, fundamentals cached in SQLite (24h TTL), AI insights via Groq.
-
----
-
-## Screenshots
-
-| Dashboard | Market |
-|-----------|--------|
-| ![Dashboard](frontend/public/screenshots/dashboard.jpeg) | ![Market](frontend/public/screenshots/market.jpeg) |
-
-| Chat | CrediSentiment |
-|------|----------------|
-| ![Chat](frontend/public/screenshots/chat.jpeg) | ![CrediSentiment](frontend/public/screenshots/credisentiment.jpeg) |
-
----
-
-## Database Schema
-
-18 tables: User, Portfolio, Holding, ZerodhaSession, Document, DocumentChunk, ComparisonChunk, PageMetadata, DocumentSection, SentimentScore, DivisionSentiment, ExtractedClaim, CredibilityScore, FinancialMetric, StockMetrics, Watchlist, WatchlistItem, WalkTheTalkResult
-
----
-
-## Notes
-
-- Zerodha OAuth requires an HTTPS redirect URI — use [ngrok](https://ngrok.com) for local development
-- CORS is currently open (`*`) — restrict for production deployment
-- FinBERT downloads a ~500MB PyTorch model on first run
-- ChromaDB and SQLite files are created automatically on first run
-- APScheduler handles periodic document fetches in the background
-
----
-
-## License
-
-This project is developed as part of an academic research project.
+Code is MIT licensed — see [LICENSE](LICENSE).
