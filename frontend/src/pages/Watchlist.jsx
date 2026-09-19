@@ -109,7 +109,7 @@ export default function WatchlistPage() {
   const [sparklines, setSparklines] = useState({})
   const [fundamentals, setFundamentals] = useState({})
   const [loading, setLoading] = useState(true)
-  const [quotesLoading, setQuotesLoading] = useState(false)
+  const [, setQuotesLoading] = useState(false)
 
   // Create / rename state
   const [creating, setCreating] = useState(false)
@@ -367,7 +367,6 @@ export default function WatchlistPage() {
     return true
   })
 
-  const selectedWl = watchlists.find(w => w.id === selectedId)
 
   // ── Render ──
   return (

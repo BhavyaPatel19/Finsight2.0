@@ -10,7 +10,6 @@ import GlowCard from '../components/GlowCard'
 
 const COLORS = ['#6366f1','#22d3a5','#f59e0b','#f43f5e','#38bdf8','#c084fc','#fb7185','#34d399']
 
-const fmt = (n) => n == null ? '—' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(n)
 const fmtCcy = (n) => n == null ? '—' : '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(n)
 
 export default function Portfolio() {

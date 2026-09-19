@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ragApi, llmApi } from '../api/client'
 import {
   Send, Bot, FileText, CheckCircle, Loader,
@@ -43,7 +43,9 @@ export default function Chat() {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY)
       if (saved) return JSON.parse(saved)
-    } catch {}
+    } catch {
+      // sessionStorage unavailable (private mode) — start with an empty conversation
+    }
     return []
   })
   const [input, setInput] = useState('')
@@ -60,7 +62,6 @@ export default function Chat() {
   // Model selection — list comes from the active provider (Groq or Ollama)
   const [models, setModels] = useState(FALLBACK_MODELS)
   const [model, setModel] = useState('')
-  const [provider, setProvider] = useState(null)
 
   // Load available documents + models on mount
   useEffect(() => {
@@ -72,7 +73,6 @@ export default function Chat() {
           setModels(list)
           setModel(r.data.default_model || list[0].value)
         }
-        setProvider(r.data.provider)
       })
       .catch(() => {})
   }, [])

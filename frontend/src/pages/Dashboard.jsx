@@ -24,8 +24,6 @@ export default function Dashboard() {
   const [syncMsg, setSyncMsg] = useState('')
   const [connecting, setConnecting] = useState(false)
   const [market, setMarket] = useState(null)
-  const [requestToken, setRequestToken] = useState('')
-  const [linking, setLinking] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -62,18 +60,6 @@ export default function Dashboard() {
     } catch (err) {
       setSyncMsg(`❌ ${err.response?.data?.detail ?? 'Sync failed. Link Zerodha first.'}`)
     } finally { setSyncing(false) }
-  }
-
-  const linkZerodha = async () => {
-    if (!requestToken.trim()) { setSyncMsg('Paste the request_token first.'); return }
-    setLinking(true); setSyncMsg('')
-    try {
-      await zerodhaApi.link(requestToken.trim())
-      setSyncMsg('✅ Zerodha linked! Now click "Sync Holdings".')
-      setRequestToken('')
-    } catch (err) {
-      setSyncMsg(`❌ ${err.response?.data?.detail ?? 'Link failed. Token may have expired — try Connect again.'}`)
-    } finally { setLinking(false) }
   }
 
   useEffect(() => {

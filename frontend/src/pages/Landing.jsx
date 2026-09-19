@@ -1,5 +1,5 @@
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView, useMotionValue, animate } from 'motion/react'
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence, useScroll, useTransform, useInView, useMotionValue, animate } from 'motion/react'
+import { useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ChevronDown, Sun, Moon, FileText, MessageSquare,

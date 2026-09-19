@@ -162,7 +162,7 @@ function loadSessionState() {
 }
 
 function saveSessionState(state) {
-    try { sessionStorage.setItem(SS_KEY, JSON.stringify(state)) } catch {}
+    try { sessionStorage.setItem(SS_KEY, JSON.stringify(state)) } catch { /* storage unavailable */ }
 }
 
 /* ── Main Page ─────────────────────────────────────────── */

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ingestionApi, scraperApi, credisentimentApi } from '../api/client'
 import GlowCard from '../components/GlowCard'
