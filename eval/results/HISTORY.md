@@ -40,3 +40,24 @@ What the first generation run changed:
 - Number recall (0.72) undercounts: it cannot equate `$19,277 million` with `$19.3 bn` or `Rs 43.00` with `₹43`; the judge can, hence correctness > number recall.
 
 Caveat: generator and judge are the same model here. A Groq run (Llama 3.3 70B generating, a different model judging) is the cross-check to do before quoting a single headline number.
+
+---
+
+# Walk the Talk (claim verification)
+
+`python -m eval.wtt` — production `walk_the_talk()` per labelled claims→actuals pair, 15 human-labelled claims (`eval/gold/wtt_claims.jsonl`), matched to system claims by content+number overlap (≥ 0.45).
+
+| run | model | claim recall | verdict accuracy (3-way) | κ (3-way) | accuracy (MET vs not) | κ (binary) | system claims / pair |
+|---|---|---|---|---|---|---|---|
+| `wtt_ollama-qwen3-14b.json` | qwen3:14b (local) | 0.80 (12/15) | 0.58 (7/12) | 0.10 | 0.75 | 0.40 | 35 (capped) |
+
+Confusion (human → system): MET→{MET 7, PARTIAL 1, MISSED 1} · PARTIAL→{MISSED 2} · MISSED→{MET 1}.
+
+What the run says, reading the system's own explanations:
+
+- **Most disagreements are missing actuals, not bad judgement.** Four of five wrong verdicts say "the actual results do not mention …" — the 70 bps acquisition contribution and the third-party-cost reduction are in the Q4 FY26 call but the per-claim retrieval (top-3 of 3,500-char chunks) did not surface them; the FY26 tax rate is not stated in any call at all (the label was derived from the fact sheet). The verdict scheme has no way to say so, so the model guesses MISSED. **Next change: an `UNVERIFIABLE` verdict**, the same abstention principle the RAG prompt already follows.
+- **PARTIAL is a policy question.** Both human-PARTIAL claims (guided range not hit, but *favourably*: tax rate 26% vs 29–30% guided) were graded MISSED. Reasonable people differ; the label guide should say which.
+- **Recall losses look structural.** Three labelled claims were never extracted: a wage-hike timing statement buried in Q&A, the Project Maximus margin remark (matched at 0.444, just under the threshold), and the FY25 dividend proposal. Stage 2 also caps at 35 claims (`WTT_MAX_CLAIMS`, now configurable), which silently drops candidates from the later batches.
+- The run first returned **no claims at all**: `WTT_PARALLEL=4` against a single-slot local Ollama queued requests until they timed out. Concurrency now follows the provider. Worth remembering that a pipeline can "work" on a hosted API and fail silently on a local one.
+
+n=12 matched claims is too few to quote κ with confidence; the number is here so the next run (Groq 70B, higher claim cap, UNVERIFIABLE verdict) has something to be compared against.

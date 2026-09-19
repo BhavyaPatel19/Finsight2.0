@@ -34,7 +34,7 @@ End-to-end answers on the same 64 questions, generated and judged by a local `qw
 
 Every "incorrect" answer was an abstention on a retrieval miss, not a fabricated number. The first generation run also caught a production bug: Ollama's default 2k context window silently truncated the 4k-token RAG prompt from the front, so local models never saw the grounding rules.
 
-Walk-the-Talk results against 15 human-labelled claims: `python -m eval.wtt` → `eval/results/wtt_*.json`.
+Walk the Talk against 15 human-labelled claims (`qwen3:14b`): **claim recall 0.80**, verdict agreement 0.58 three-way / 0.75 MET-vs-not (κ 0.10 / 0.40, n=12). Weak — and diagnosable: four of the five wrong verdicts are the model saying the actuals "do not mention" the fact, i.e. retrieval-of-actuals misses and one genuinely unverifiable claim with no `UNVERIFIABLE` verdict to reach for. That is the next change; the numbers are in [`eval/results/HISTORY.md`](eval/results/HISTORY.md) so it can be measured.
 
 ---
 
@@ -166,7 +166,7 @@ tests/              142 tests (pytest); models and LLMs are stubbed, so the suit
 - Documents are shared across users (no per-user scoping yet); the app is single-tenant in practice.
 - Answers are not streamed; the chat's typing effect is client-side.
 - JWTs live in `localStorage`; Zerodha access tokens are stored unencrypted; the Zerodha OAuth flow lacks a `state` parameter. Fine for a local tool, not for a public deployment.
-- The Walk-the-Talk gold set is 15 claims from one company and one labeller. Extending it (more companies, a second labeller for κ) is the next evaluation step; fine-tuning a small encoder for claim detection and an NLI cross-encoder for verdicts — with the LLM as teacher and narrator — is the planned modelling step.
+- Walk the Talk agrees with the human labels on 7 of 12 matched claims (κ 0.10). The gold set is 15 claims from one company and one labeller; the verdict scheme lacks `UNVERIFIABLE`; stage 2 caps at 35 claims. Extending the labels (more companies, a second labeller), adding the abstain verdict and re-measuring come first; fine-tuning a small encoder for claim detection and an NLI cross-encoder for verdicts — with the LLM as teacher and narrator — is the planned modelling step after that.
 - Retrieval numbers are from one corpus (Infosys, four quarters). Expect different behaviour on 200-page annual reports with real page numbers.
 
 ---

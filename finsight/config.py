@@ -85,3 +85,5 @@ WTT_MAX_CLAIMS_CHUNKS = int(os.getenv("WTT_MAX_CLAIMS_CHUNKS", "40"))
 WTT_BATCH_SIZE = int(os.getenv("WTT_BATCH_SIZE", "5"))
 WTT_PARALLEL = int(os.getenv("WTT_PARALLEL", "4"))
 WTT_ACTUALS_TOP_K = int(os.getenv("WTT_ACTUALS_TOP_K", "3"))
+# Stage 2 verifies at most this many extracted claims (processing-time cap; raise on hosted providers).
+WTT_MAX_CLAIMS = int(os.getenv("WTT_MAX_CLAIMS", "35"))

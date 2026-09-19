@@ -14,6 +14,7 @@ from sqlmodel import Session, select
 from finsight.config import (
     WTT_ACTUALS_TOP_K,
     WTT_BATCH_SIZE,
+    WTT_MAX_CLAIMS,
     WTT_MAX_CLAIMS_CHUNKS,
     WTT_MODEL,
     WTT_PARALLEL,
@@ -464,9 +465,9 @@ async def walk_the_talk(
     # ------------------------------------------------------------------
     # Stage 2: Batched verification — 7 claims per LLM call
     # ------------------------------------------------------------------
-    # Cap claims to top 35 for reasonable processing time
-    if len(unique_claims) > 35:
-        unique_claims = unique_claims[:35]
+    # Cap claims for reasonable processing time (WTT_MAX_CLAIMS; silently limits recall)
+    if len(unique_claims) > WTT_MAX_CLAIMS:
+        unique_claims = unique_claims[:WTT_MAX_CLAIMS]
         logger.info("WTT: capped to %d claims for Stage 2", len(unique_claims))
     STAGE2_BATCH = 7
     claim_batches = [unique_claims[i : i + STAGE2_BATCH] for i in range(0, len(unique_claims), STAGE2_BATCH)]
