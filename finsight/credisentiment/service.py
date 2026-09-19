@@ -250,7 +250,6 @@ async def _call_wtt_llm(
             max_tokens=max_tokens,
             temperature=0.0,
             json_mode=json_mode,
-            timeout=120.0,
         )
         return resp.text
     except LLMError as e:

@@ -38,6 +38,8 @@ class LLMProvider(abc.ABC):
     name: str
     #: model used when the caller does not pass one
     default_model: str
+    #: request timeout when the caller does not pass one (local reasoning models need more)
+    default_timeout: float = 120.0
 
     @abc.abstractmethod
     def generate(
@@ -49,7 +51,7 @@ class LLMProvider(abc.ABC):
         temperature: float = 0.0,
         json_mode: bool = False,
         system: str | None = None,
-        timeout: float = 120.0,
+        timeout: float | None = None,
         think: bool | None = None,
     ) -> LLMResponse: ...
 
@@ -63,7 +65,7 @@ class LLMProvider(abc.ABC):
         temperature: float = 0.0,
         json_mode: bool = False,
         system: str | None = None,
-        timeout: float = 120.0,
+        timeout: float | None = None,
         think: bool | None = None,
     ) -> LLMResponse: ...
 

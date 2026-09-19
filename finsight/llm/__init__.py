@@ -30,7 +30,7 @@ def _build(name: str) -> LLMProvider:
     if name == "groq":
         return GroqProvider(api_key=config.GROQ_API_KEY, default_model=config.GROQ_MODEL)
     if name == "ollama":
-        return OllamaProvider(base_url=config.OLLAMA_BASE_URL, default_model=config.OLLAMA_MODEL, num_ctx=config.OLLAMA_NUM_CTX)
+        return OllamaProvider(base_url=config.OLLAMA_BASE_URL, default_model=config.OLLAMA_MODEL, num_ctx=config.OLLAMA_NUM_CTX, default_timeout=config.OLLAMA_TIMEOUT_S)
     raise ValueError(f"unknown LLM_PROVIDER {name!r}; expected auto, groq or ollama")
 
 

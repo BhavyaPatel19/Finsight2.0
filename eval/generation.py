@@ -193,6 +193,8 @@ def main() -> None:
     ap.add_argument("--no-judge", action="store_true")
     ap.add_argument("--top-k", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0, help="only the first N questions (smoke test)")
+    ap.add_argument("--ids", default="", help="comma-separated question ids to (re)run")
+    ap.add_argument("--merge-into", type=Path, default=None, help="update these rows in an existing results JSON instead of writing a new file")
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--tag", default="")
     args = ap.parse_args()
@@ -205,6 +207,9 @@ def main() -> None:
     from finsight.llm import get_provider
 
     gold = load_gold(args.gold)
+    if args.ids:
+        wanted = set(args.ids.split(","))
+        gold = [g for g in gold if g["id"] in wanted]
     if args.limit:
         gold = gold[: args.limit]
     provider = get_provider()
@@ -214,18 +219,30 @@ def main() -> None:
     with Session(engine) as session:
         rows = run(session, gold, model=args.model, judge=not args.no_judge, judge_model=args.judge_model or args.model, top_k=args.top_k)
 
-    report = {
-        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
-        "provider": provider.name, "model": model, "judge_model": args.judge_model, "top_k": args.top_k,
-        "summary": summarise(rows), "rows": rows,
-    }
+    if args.merge_into:
+        # Re-run of specific questions: replace those rows, recompute the summary, keep provenance.
+        report = json.loads(args.merge_into.read_text())
+        by_id = {r["id"]: r for r in report["rows"]}
+        by_id.update({r["id"]: r for r in rows})
+        report["rows"] = [by_id[g["id"]] for g in load_gold(args.gold) if g["id"] in by_id]
+        report["summary"] = summarise(report["rows"])
+        report.setdefault("reruns", []).append({"ids": sorted(r["id"] for r in rows), "git_sha": git_sha(),
+                                                 "timestamp": datetime.now(UTC).isoformat(timespec="seconds")})
+        out = args.merge_into
+    else:
+        report = {
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
+            "provider": provider.name, "model": model, "judge_model": args.judge_model, "top_k": args.top_k,
+            "summary": summarise(rows), "rows": rows,
+        }
+        name = args.tag or f"{provider.name}-{datetime.now().strftime('%Y-%m-%d')}"
+        out = RESULTS / f"generation_{name}.json"
     RESULTS.mkdir(parents=True, exist_ok=True)
-    name = args.tag or f"{provider.name}-{datetime.now().strftime('%Y-%m-%d')}"
-    (RESULTS / f"generation_{name}.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
+    out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     write_markdown(report, RESULTS / "generation_latest.md")
     s = report["summary"]
     print(json.dumps({k: v for k, v in s.items() if k not in ("by_type",)}, indent=1))
-    print(f"wrote eval/results/generation_{name}.json")
+    print(f"wrote {out.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

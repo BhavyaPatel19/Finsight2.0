@@ -24,12 +24,14 @@ class OllamaProvider(LLMProvider):
         base_url: str = "http://localhost:11434",
         default_model: str = "llama3.1:8b",
         num_ctx: int = 8192,
+        default_timeout: float = 300.0,
         transport: httpx.BaseTransport | None = None,
         async_transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.default_model = default_model
         self.num_ctx = num_ctx
+        self.default_timeout = default_timeout
         self._transport = transport
         self._async_transport = async_transport
 
@@ -61,9 +63,9 @@ class OllamaProvider(LLMProvider):
         )
 
     def generate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                 json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
+                 json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
         started = time.perf_counter()
-        with httpx.Client(timeout=timeout, transport=self._transport) as client:
+        with httpx.Client(timeout=timeout or self.default_timeout, transport=self._transport) as client:
             r = post_with_retry(
                 client, f"{self.base_url}/api/generate",
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
@@ -71,9 +73,9 @@ class OllamaProvider(LLMProvider):
         return self._parse(r.json(), started)
 
     async def agenerate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                        json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
+                        json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
         started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=timeout, transport=self._async_transport) as client:
+        async with httpx.AsyncClient(timeout=timeout or self.default_timeout, transport=self._async_transport) as client:
             r = await apost_with_retry(
                 client, f"{self.base_url}/api/generate",
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
