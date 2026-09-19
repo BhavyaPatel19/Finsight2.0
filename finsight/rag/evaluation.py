@@ -7,7 +7,7 @@ Metrics:
   answer_relevancy  — does the answer address the question?
   context_precision — is the retrieved context on-topic?
 """
-from finsight.config import OLLAMA_BASE_URL, OLLAMA_MODEL_PRIMARY
+from finsight.config import OLLAMA_BASE_URL, OLLAMA_MODEL
 
 
 def run_ragas_evaluation(
@@ -36,7 +36,7 @@ def run_ragas_evaluation(
             "error": str | None,
         }
     """
-    model_name = ollama_model or OLLAMA_MODEL_PRIMARY
+    model_name = ollama_model or OLLAMA_MODEL
 
     try:
         from ragas import evaluate

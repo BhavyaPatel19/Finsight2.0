@@ -1,8 +1,7 @@
 from sqlmodel import Session, select
 
 from finsight.models import Document, ExtractedClaim, CredibilityScore, FinancialMetric
-from finsight.config import OLLAMA_BASE_URL, OLLAMA_MODEL
-from finsight.rag.service import call_ollama
+from finsight.llm import generate
 
 
 def extract_claims_for_document(session: Session, document_id: int) -> list[ExtractedClaim]:
@@ -10,7 +9,8 @@ def extract_claims_for_document(session: Session, document_id: int) -> list[Extr
     doc = session.get(Document, document_id)
     if not doc or not doc.text_path:
         return []
-    text = open(doc.text_path, encoding="utf-8").read()[:8000]
+    from pathlib import Path
+    text = Path(doc.text_path).read_text(encoding="utf-8")[:8000]
     if not text.strip():
         return []
 
@@ -21,7 +21,7 @@ Document excerpt:
 
 JSON array:"""
     try:
-        raw = call_ollama(prompt, max_tokens=512)
+        raw = generate(prompt, max_tokens=512, temperature=0.0).text
         import json
         # Try to parse JSON from response (might be wrapped in markdown)
         start = raw.find("[")

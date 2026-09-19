@@ -35,11 +35,18 @@ ZERODHA_API_SECRET = os.getenv("ZERODHA_API_SECRET", "")
 # Must match the Redirect URL you set in Zerodha app (e.g. https://yourdomain.com/zerodha/callback)
 ZERODHA_REDIRECT_URI = os.getenv("ZERODHA_REDIRECT_URI", "")
 
-# Ollama
+# LLM provider — "auto" picks Groq when GROQ_API_KEY is set, else Ollama.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")
+
+# Groq — hosted inference (free tier at https://console.groq.com)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+# Ollama — local inference
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
-OLLAMA_MODEL_PRIMARY = os.getenv("OLLAMA_MODEL_PRIMARY", "deepseek-r1:14b")
-OLLAMA_MODEL_FAST = os.getenv("OLLAMA_MODEL_FAST", "llama3.1:8b-instruct-q8_0")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+
+# Embeddings (local, via sentence-transformers)
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 
 # ChromaDB
@@ -63,12 +70,9 @@ FINBERT_BATCH_SIZE = int(os.getenv("FINBERT_BATCH_SIZE", "32"))
 FINBERT_MAX_SENTENCES = int(os.getenv("FINBERT_MAX_SENTENCES", "500"))
 
 # Walking the Talk — optimized pipeline settings
-WTT_MODEL = os.getenv("WTT_MODEL", "qwen2.5:7b")
+# WTT_MODEL overrides the provider default for claim extraction / verification only.
+WTT_MODEL = os.getenv("WTT_MODEL", "")
 WTT_MAX_CLAIMS_CHUNKS = int(os.getenv("WTT_MAX_CLAIMS_CHUNKS", "40"))
 WTT_BATCH_SIZE = int(os.getenv("WTT_BATCH_SIZE", "5"))
 WTT_PARALLEL = int(os.getenv("WTT_PARALLEL", "4"))
 WTT_ACTUALS_TOP_K = int(os.getenv("WTT_ACTUALS_TOP_K", "3"))
-
-# Groq — fast cloud inference for market insights
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")

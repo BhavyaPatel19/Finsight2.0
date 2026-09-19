@@ -65,3 +65,46 @@ def sample_document(test_db_session):
     test_db_session.commit()
     test_db_session.refresh(doc)
     return doc
+
+
+@pytest.fixture()
+def api_client(monkeypatch):
+    """FastAPI TestClient on a private in-memory DB shared across request threads.
+
+    Patches the app engine so lifespan init_db() never touches finsight.db.
+    """
+    from fastapi.testclient import TestClient
+    from sqlalchemy.pool import StaticPool
+
+    import finsight.database.session as db
+    from finsight.main import app
+
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    monkeypatch.setattr(db, "engine", engine)
+    monkeypatch.setattr("finsight.main.run_migrations", lambda: None)
+
+    def _session():
+        with Session(engine) as s:
+            yield s
+
+    app.dependency_overrides[db.get_session] = _session
+    try:
+        with TestClient(app) as client:
+            yield client
+    finally:
+        app.dependency_overrides.clear()
+        engine.dispose()
+
+
+@pytest.fixture()
+def auth_headers(api_client):
+    """Register + login a throwaway user; returns Bearer headers."""
+    api_client.post("/auth/register", json={
+        "first_name": "Test", "last_name": "User",
+        "email": "test@example.com", "password": "secret-123",
+    })
+    r = api_client.post("/auth/login", json={"email": "test@example.com", "password": "secret-123"})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}

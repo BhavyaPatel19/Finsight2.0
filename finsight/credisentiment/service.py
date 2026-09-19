@@ -209,22 +209,20 @@ def analyze_division_sentiment(
 
 
 # ---------------------------------------------------------------------------
-# Feature 2 — "Walking the Talk" Optimized Pipeline (Qwen 2.5)
+# Feature 2 — "Walking the Talk" two-stage claim verification
 # ---------------------------------------------------------------------------
 
 import asyncio
 import logging
 
-import httpx
-
 from finsight.config import (
-    OLLAMA_BASE_URL,
     WTT_MODEL,
     WTT_MAX_CLAIMS_CHUNKS,
     WTT_BATCH_SIZE,
     WTT_PARALLEL,
     WTT_ACTUALS_TOP_K,
 )
+from finsight.llm import LLMError, agenerate
 
 logger = logging.getLogger(__name__)
 
@@ -244,29 +242,24 @@ async def _call_wtt_llm(
     max_tokens: int = 2048,
     json_mode: bool = True,
 ) -> str:
-    """WTT-specific async LLM call — isolated from RAG pipeline.
+    """WTT-specific async LLM call via the configured provider.
 
-    Uses WTT_MODEL (qwen2.5:7b by default), Ollama JSON mode,
-    and a 120s timeout tuned for faster models.
+    Uses WTT_MODEL when set, else the provider default. Returns "" on
+    failure so the JSON parsers yield nothing rather than a bogus verdict.
     """
-    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-    payload: dict = {
-        "model": WTT_MODEL,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"num_predict": max_tokens, "temperature": 0},
-    }
-    if json_mode:
-        payload["format"] = "json"
-
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            r = await client.post(url, json=payload)
-            r.raise_for_status()
-            return r.json().get("response", "").strip()
-    except Exception as e:
+        resp = await agenerate(
+            prompt,
+            model=WTT_MODEL or None,
+            max_tokens=max_tokens,
+            temperature=0.0,
+            json_mode=json_mode,
+            timeout=120.0,
+        )
+        return resp.text
+    except LLMError as e:
         logger.error("WTT LLM call failed: %s", e)
-        return f"[LLM error: {e}]"
+        return ""
 
 
 def _score_chunk_for_claims(text: str) -> float:
@@ -376,7 +369,7 @@ async def walk_the_talk(
 
     logger.info(
         "WTT: %d claims chunks, %d actuals chunks (model=%s)",
-        len(claims_chunks), len(actuals_chunks), WTT_MODEL,
+        len(claims_chunks), len(actuals_chunks), WTT_MODEL or "provider-default",
     )
 
     # ------------------------------------------------------------------

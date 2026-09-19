@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { ragApi } from '../api/client'
+import { ragApi, llmApi } from '../api/client'
 import {
   Send, Bot, FileText, CheckCircle, Loader,
   ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
@@ -11,10 +11,8 @@ import AnimatedCheckbox from '../components/AnimatedCheckbox'
 import { useAuth } from '../context/AuthContext'
 import TextGenerateEffect from '../components/TextGenerateEffect'
 
-const MODELS = [
-  { value: 'deepseek-r1:14b', label: 'DeepSeek-R1 14B (Reasoning)' },
-  { value: 'llama3.1:8b-instruct-q8_0', label: 'Llama 3.1 8B (Fast)' },
-]
+// Shown until /llm/models answers; the backend picks the real default.
+const FALLBACK_MODELS = [{ value: '', label: 'Default model' }]
 
 const PROMPT_CHIPS = [
   { icon: FileSearch, label: 'Summarize', prompt: 'Give me a concise summary of the selected documents.' },
@@ -59,12 +57,24 @@ export default function Chat() {
   const [preparing, setPreparing] = useState(false)
   const [docsLoading, setDocsLoading] = useState(true)
 
-  // Model selection
-  const [model, setModel] = useState(MODELS[0].value)
+  // Model selection — list comes from the active provider (Groq or Ollama)
+  const [models, setModels] = useState(FALLBACK_MODELS)
+  const [model, setModel] = useState('')
+  const [provider, setProvider] = useState(null)
 
-  // Load available documents on mount
+  // Load available documents + models on mount
   useEffect(() => {
     loadDocuments()
+    llmApi.models()
+      .then(r => {
+        const list = (r.data.models || []).map(m => ({ value: m.id, label: m.label }))
+        if (list.length) {
+          setModels(list)
+          setModel(r.data.default_model || list[0].value)
+        }
+        setProvider(r.data.provider)
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -171,7 +181,7 @@ export default function Chat() {
 
     try {
       setStatusText('Analyzing with AI...')
-      const r = await ragApi.query(q, docIds, model)
+      const r = await ragApi.query(q, docIds, model || undefined)
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'ai',
@@ -186,7 +196,7 @@ export default function Chat() {
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'ai',
-        text: `Error: ${err.response?.data?.detail ?? 'Failed to get answer. Is Ollama running?'}`,
+        text: `Error: ${err.response?.data?.detail ?? 'Failed to get answer. Is the LLM provider configured?'}`,
         sources: [], navigations: [], thinking: null,
       }])
       setStatusText('')
@@ -351,7 +361,7 @@ export default function Chat() {
                       padding: '4px 10px', cursor: 'pointer', outline: 'none',
                     }}
                   >
-                    {MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                    {models.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                   </select>
                 </div>
 
@@ -501,7 +511,7 @@ export default function Chat() {
                         padding: '3px 8px', cursor: 'pointer', outline: 'none',
                       }}
                     >
-                      {MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                      {models.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
                   </div>
                 </div>

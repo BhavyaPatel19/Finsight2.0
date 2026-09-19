@@ -19,6 +19,7 @@ from finsight.market.router import router as market_router
 from finsight.scraper.router import router as scraper_router
 from finsight.credisentiment.router import router as credisentiment_router
 from finsight.watchlist.router import router as watchlist_router
+from finsight.llm.router import router as llm_router
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -90,3 +91,4 @@ app.include_router(market_router, prefix="/market", tags=["market"])
 app.include_router(scraper_router, prefix="/scraper", tags=["scraper"])
 app.include_router(credisentiment_router, prefix="/credisentiment", tags=["credisentiment"])
 app.include_router(watchlist_router, prefix="/watchlist", tags=["watchlist"])
+app.include_router(llm_router, prefix="/llm", tags=["llm"])

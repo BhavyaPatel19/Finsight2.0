@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from sqlmodel import Session, select
 
@@ -16,6 +16,7 @@ from finsight.rag.schemas import (
     EvaluateRequest,
     EvaluateResponse,
 )
+from finsight.llm import LLMError
 from finsight.rag.service import answer_question, process_for_rag
 
 router = APIRouter()
@@ -107,15 +108,18 @@ def rag_query(
     current_user: User = Depends(get_current_user),
 ):
     """Query against selected documents with navigation and thinking trace."""
-    result = answer_question(
-        session=session,
-        question=payload.question,
-        document_ids=payload.document_ids,
-        symbol=payload.symbol,
-        period=payload.period,
-        top_k=payload.top_k,
-        model=payload.model,
-    )
+    try:
+        result = answer_question(
+            session=session,
+            question=payload.question,
+            document_ids=payload.document_ids,
+            symbol=payload.symbol,
+            period=payload.period,
+            top_k=payload.top_k,
+            model=payload.model,
+        )
+    except LLMError as e:
+        raise HTTPException(status_code=503, detail=f"LLM unavailable: {e}") from e
     return RAGQueryResponse(
         answer=result["answer"],
         thinking=result.get("thinking"),

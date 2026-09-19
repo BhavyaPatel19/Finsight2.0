@@ -93,6 +93,11 @@ export const ingestionApi = {
   },
 }
 
+// ── LLM ───────────────────────────────────────────────
+export const llmApi = {
+  models: () => client.get('/llm/models'),
+}
+
 // ── RAG ───────────────────────────────────────────────
 export const ragApi = {
   availableDocuments: () => client.get('/rag/available-documents'),

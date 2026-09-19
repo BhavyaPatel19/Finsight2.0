@@ -8,9 +8,8 @@ import logging
 import time
 from typing import Optional
 
-import httpx
 
-from finsight.config import GROQ_API_KEY, GROQ_MODEL
+from finsight.llm import LLMError, generate, llm_configured
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,6 @@ COMPANY_NAMES: dict[str, str] = {
     "ASIANPAINT": "Asian Paints",
 }
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def _format_metric(value, suffix="", prefix="", decimals=2):
@@ -111,7 +109,7 @@ def get_company_insight(
     sector: Optional[str] = None,
     fundamentals: Optional[dict] = None,
 ) -> str:
-    if not GROQ_API_KEY:
+    if not llm_configured():
         return ""
 
     sym = symbol.upper()
@@ -144,25 +142,9 @@ KEY METRIC: Highlight one standout number from the data above and what it signal
 VERDICT: One sentence overall assessment — is it looking strong, fair, or weak for a retail investor?"""
 
     try:
-        resp = httpx.post(
-            GROQ_API_URL,
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GROQ_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 400,
-                "temperature": 0.3,
-            },
-            timeout=15.0,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        insight = data["choices"][0]["message"]["content"].strip()
+        insight = generate(prompt, max_tokens=400, temperature=0.3, timeout=30.0).text
         _cache[sym] = (insight, time.time() + _CACHE_TTL)
         return insight
-    except Exception as e:
-        logger.warning("Groq insight failed for %s: %s", sym, e)
+    except LLMError as e:
+        logger.warning("LLM insight failed for %s: %s", sym, e)
         return ""

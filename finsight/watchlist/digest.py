@@ -7,16 +7,14 @@ In-memory cache with 2-hour TTL.
 import logging
 import time
 
-import httpx
 
-from finsight.config import GROQ_API_KEY, GROQ_MODEL
+from finsight.llm import LLMError, generate, llm_configured
 
 logger = logging.getLogger(__name__)
 
 _digest_cache: dict[int, tuple[str, float]] = {}
 _DIGEST_TTL = 2 * 60 * 60  # 2 hours
 
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
 def _build_stock_line(symbol: str, quote: dict, fund: dict) -> str:
@@ -56,8 +54,8 @@ def generate_digest(
     quotes: dict,
     fundamentals: dict,
 ) -> str:
-    if not GROQ_API_KEY:
-        return "AI digest unavailable (no Groq API key)."
+    if not llm_configured():
+        return "AI digest unavailable (no LLM provider configured)."
 
     if watchlist_id in _digest_cache:
         text, expires = _digest_cache[watchlist_id]
@@ -85,25 +83,9 @@ Write a 3-5 sentence digest summarizing:
 Be specific — use stock names and numbers. No disclaimers."""
 
     try:
-        resp = httpx.post(
-            GROQ_API_URL,
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GROQ_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 300,
-                "temperature": 0.3,
-            },
-            timeout=15.0,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        digest = data["choices"][0]["message"]["content"].strip()
+        digest = generate(prompt, max_tokens=300, temperature=0.3, timeout=30.0).text
         _digest_cache[watchlist_id] = (digest, time.time() + _DIGEST_TTL)
         return digest
-    except Exception as e:
+    except LLMError as e:
         logger.warning("Digest generation failed for watchlist %d: %s", watchlist_id, e)
         return "Could not generate digest. Please try again later."

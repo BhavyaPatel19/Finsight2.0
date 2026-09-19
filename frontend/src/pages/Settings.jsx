@@ -37,8 +37,8 @@ export default function Settings() {
     }
 
     if (password) {
-      if (password.length < 6) {
-        setError('New password must be at least 6 characters.')
+      if (password.length < 8) {
+        setError('New password must be at least 8 characters.')
         return
       }
       if (password !== confirmPassword) {

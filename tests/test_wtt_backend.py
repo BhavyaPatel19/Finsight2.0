@@ -128,33 +128,34 @@ class TestPromptTemplates:
 
 
 # ---------------------------------------------------------------------------
-# Async Ollama tests
+# _call_wtt_llm goes through the provider layer
 # ---------------------------------------------------------------------------
 
-from finsight.rag.service import call_ollama_async
+from finsight.credisentiment.service import _call_wtt_llm
 
 
-class TestCallOllamaAsync:
+class TestCallWttLlm:
     def test_is_coroutine_function(self):
-        assert inspect.iscoroutinefunction(call_ollama_async)
+        assert inspect.iscoroutinefunction(_call_wtt_llm)
 
-    def test_uses_async_client(self):
-        """Verify call_ollama_async invokes httpx.AsyncClient (mocked)."""
-        from unittest.mock import AsyncMock, patch, MagicMock
+    def test_returns_provider_text(self, monkeypatch):
+        from finsight.llm import LLMResponse
 
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"response": "test reply"}
-        mock_response.raise_for_status = MagicMock()
+        async def fake(prompt, **kw):
+            assert kw["json_mode"] is True and kw["temperature"] == 0.0
+            return LLMResponse(text='{"claims": []}', model="m", provider="test")
 
-        mock_client_instance = AsyncMock()
-        mock_client_instance.post.return_value = mock_response
-        mock_client_instance.__aenter__ = AsyncMock(return_value=mock_client_instance)
-        mock_client_instance.__aexit__ = AsyncMock(return_value=False)
+        monkeypatch.setattr("finsight.credisentiment.service.agenerate", fake)
+        assert asyncio.run(_call_wtt_llm("hello")) == '{"claims": []}'
 
-        with patch("httpx.AsyncClient", return_value=mock_client_instance) as mock_cls:
-            result = asyncio.run(call_ollama_async("hello"))
-            mock_cls.assert_called_once_with(timeout=180.0)
-            assert result == "test reply"
+    def test_returns_empty_string_on_llm_error(self, monkeypatch):
+        from finsight.llm import LLMError
+
+        async def boom(prompt, **kw):
+            raise LLMError("down")
+
+        monkeypatch.setattr("finsight.credisentiment.service.agenerate", boom)
+        assert asyncio.run(_call_wtt_llm("hello")) == ""
 
 
 # ---------------------------------------------------------------------------

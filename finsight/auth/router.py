@@ -20,8 +20,6 @@ def register(
         raise HTTPException(status_code=400, detail="First name cannot be empty")
     if not data.last_name.strip():
         raise HTTPException(status_code=400, detail="Last name cannot be empty")
-    if len(data.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     if get_user_by_email(session, data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
     user = create_user(session, data)
@@ -59,8 +57,6 @@ def update_me(
         raise HTTPException(status_code=400, detail="First name cannot be empty")
     if data.last_name is not None and not data.last_name.strip():
         raise HTTPException(status_code=400, detail="Last name cannot be empty")
-    if data.password is not None and len(data.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
 
     return update_user(session, current_user, data)
 

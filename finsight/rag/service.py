@@ -7,12 +7,11 @@ import re
 from sqlmodel import Session, select
 
 from finsight.config import (
-    OLLAMA_BASE_URL,
-    OLLAMA_MODEL_PRIMARY,
     EMBEDDING_MODEL,
     RAG_CHUNK_SIZE,
     RAG_CHUNK_OVERLAP,
 )
+from finsight.llm import generate
 from finsight.models import DocumentChunk, Document, PageMetadata, DocumentSection
 from finsight.rag.vectorstore import (
     query as chroma_query,
@@ -270,56 +269,8 @@ def _count_sections(sections):
 
 
 # ---------------------------------------------------------------------------
-# LLM
+# Response parsing
 # ---------------------------------------------------------------------------
-
-def call_ollama(prompt: str, model: str | None = None, max_tokens: int = 2048) -> str:
-    import httpx
-    model_name = model or OLLAMA_MODEL_PRIMARY
-    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-    payload = {
-        "model": model_name,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"num_predict": max_tokens},
-    }
-    try:
-        with httpx.Client(timeout=120.0) as client:
-            r = client.post(url, json=payload)
-            r.raise_for_status()
-            return r.json().get("response", "").strip()
-    except Exception as e:
-        return f"[LLM error: {e}]"
-
-
-async def call_ollama_async(
-    prompt: str,
-    model: str | None = None,
-    max_tokens: int = 2048,
-) -> str:
-    """Async version of call_ollama using httpx.AsyncClient.
-
-    Does not block the FastAPI event loop. Timeout raised to 180s
-    to accommodate longer two-stage WTT prompts.
-    """
-    import httpx
-
-    model_name = model or OLLAMA_MODEL_PRIMARY
-    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
-    payload = {
-        "model": model_name,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"num_predict": max_tokens},
-    }
-    try:
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            r = await client.post(url, json=payload)
-            r.raise_for_status()
-            return r.json().get("response", "").strip()
-    except Exception as e:
-        return f"[LLM error: {e}]"
-
 
 def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
     """Extract <think>...</think> reasoning trace from DeepSeek-R1 output."""
@@ -403,7 +354,7 @@ def answer_question(
     4. Reciprocal Rank Fusion → merged top-30
     5. BGE-reranker cross-encoder → top-k
     6. Strict grounded prompt
-    7. DeepSeek-R1 / Llama 3.1 inference
+    7. LLM inference via the configured provider (Groq or Ollama)
     8. Parse thinking trace + navigation breadcrumbs
     """
     from finsight.rag.bm25_store import bm25_search, build_bm25_index, is_built
@@ -447,12 +398,12 @@ def answer_question(
         question=question,
     )
 
-    # 8. Call LLM
-    model_name = model or OLLAMA_MODEL_PRIMARY
-    raw_response = call_ollama(prompt, model=model_name, max_tokens=2048)
+    # 8. Call LLM (raises LLMError if the provider is unavailable)
+    response = generate(prompt, model=model, max_tokens=2048, temperature=0.0)
+    model_name = response.model
 
-    # 9. Parse thinking trace
-    answer, thinking = _parse_deepseek_thinking(raw_response)
+    # 9. Parse thinking trace (reasoning models wrap it in <think> tags)
+    answer, thinking = _parse_deepseek_thinking(response.text)
 
     # 10. Build navigation breadcrumbs (deduplicated)
     navigations = []
@@ -495,4 +446,9 @@ def answer_question(
         "navigations": navigations,
         "sources": sources,
         "model_used": model_name,
+        "usage": {
+            "prompt_tokens": response.prompt_tokens,
+            "completion_tokens": response.completion_tokens,
+            "latency_ms": round(response.latency_ms, 1),
+        },
     }
