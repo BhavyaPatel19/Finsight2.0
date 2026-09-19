@@ -156,7 +156,7 @@ finsight/           FastAPI backend
 eval/               gold sets · retrieval / generation / wtt harnesses · judge · results
 scripts/seed_demo.py  downloads + indexes the sample corpus
 frontend/           React + Vite
-tests/              125 tests (pytest); models and LLMs are stubbed, so the suite runs in ~6 s
+tests/              142 tests (pytest); models and LLMs are stubbed, so the suite runs in ~10 s
 ```
 
 ---
