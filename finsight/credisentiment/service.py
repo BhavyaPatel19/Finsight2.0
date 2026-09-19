@@ -253,6 +253,16 @@ _CLAIM_KEYWORDS = [
 ]
 
 
+def _effective_parallel() -> int:
+    """Concurrent LLM calls. A local Ollama serves one request at a time by
+    default, so parallel requests just queue and time each other out."""
+    from finsight.llm import get_provider
+
+    if get_provider().name == "ollama":
+        return 1
+    return max(1, WTT_PARALLEL)
+
+
 async def _call_wtt_llm(
     prompt: str,
     max_tokens: int = 2048,
@@ -270,6 +280,7 @@ async def _call_wtt_llm(
             max_tokens=max_tokens,
             temperature=0.0,
             json_mode=json_mode,
+            think=False,  # structured extraction; a reasoning trace only slows it down and leaks into JSON
         )
         return resp.text
     except LLMError as e:
@@ -393,9 +404,10 @@ async def walk_the_talk(
         return None
 
     batched_prompts = _batch_chunks(filtered)
-    logger.info("WTT Stage 1: %d batched prompts, %d parallel", len(batched_prompts), WTT_PARALLEL)
+    parallel = _effective_parallel()
+    logger.info("WTT Stage 1: %d batched prompts, %d parallel", len(batched_prompts), parallel)
 
-    semaphore = asyncio.Semaphore(WTT_PARALLEL)
+    semaphore = asyncio.Semaphore(parallel)
 
     def _parse_claims_response(raw: str) -> list[dict]:
         """Parse LLM response into list of claim dicts with 'claim' field."""
@@ -469,7 +481,7 @@ async def walk_the_talk(
         batch_actuals.append(actuals_text)
     logger.info("WTT Stage 2: pre-retrieved actuals for %d batches", len(batch_actuals))
 
-    stage2_semaphore = asyncio.Semaphore(2)  # fewer parallel for longer prompts
+    stage2_semaphore = asyncio.Semaphore(min(2, parallel))  # fewer parallel for longer prompts
 
     async def _verify_batch(batch_claims: list[dict], actuals_text: str) -> list[dict]:
         async with stage2_semaphore:

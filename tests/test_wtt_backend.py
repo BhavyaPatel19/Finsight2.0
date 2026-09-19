@@ -226,3 +226,19 @@ class TestRouterEndpoints:
         source = inspect.getsource(get_wtt_documents)
         assert "cs_status" in source
         assert '"indexed"' in source
+
+
+class TestEffectiveParallel:
+    def test_ollama_serialises(self, monkeypatch):
+        from finsight import config
+        from finsight.credisentiment import service
+        from finsight.llm import reset_provider
+
+        reset_provider()
+        monkeypatch.setattr(config, "LLM_PROVIDER", "ollama")
+        assert service._effective_parallel() == 1
+        reset_provider()
+        monkeypatch.setattr(config, "LLM_PROVIDER", "groq")
+        monkeypatch.setattr(config, "GROQ_API_KEY", "k")
+        assert service._effective_parallel() == service.WTT_PARALLEL
+        reset_provider()
