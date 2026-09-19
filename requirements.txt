@@ -7,7 +7,6 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
 email-validator
-apscheduler
 chromadb
 sentence-transformers
 pymupdf

@@ -1,6 +1,11 @@
 """Shared test fixtures for the FinSight test suite."""
 
-import pytest
+import os
+
+# Config refuses to load without a signing key; tests never mint real tokens.
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
+
+import pytest  # noqa: E402
 from sqlmodel import SQLModel, Session, create_engine
 
 # Import all models so SQLModel registers their tables

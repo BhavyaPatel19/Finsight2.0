@@ -5,6 +5,8 @@
 
 # Python
 __pycache__/
+.pytest_cache/
+.ruff_cache/
 *.py[cod]
 *.pyo
 .venv/
@@ -32,11 +34,13 @@ desktop.ini
 chroma_data/
 chroma_db/
 
-# Claude Code
+# Claude Code / MCP (may contain API keys)
 .claude/
+.mcp.json
 
-# Uploaded documents
+# Uploaded documents & extracted text
 uploads/
+documents/
 
 # Node / Frontend
 frontend/node_modules/

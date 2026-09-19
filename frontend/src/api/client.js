@@ -91,8 +91,6 @@ export const ingestionApi = {
     if (fiscalYear) fd.append('fiscal_year', fiscalYear)
     return client.post('/ingestion/documents/upload', fd)
   },
-  run: (documentId) =>
-    client.post('/ingestion/run', { document_id: documentId }),
 }
 
 // ── RAG ───────────────────────────────────────────────

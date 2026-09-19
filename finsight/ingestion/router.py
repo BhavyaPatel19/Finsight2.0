@@ -14,7 +14,6 @@ from finsight.ingestion.service import (
     register_document,
     ensure_dirs,
 )
-from finsight.ingestion.scheduler import scheduled_fetch_documents
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
@@ -128,12 +127,3 @@ async def upload_and_index(
         pdf_path=str(path),
     )
     return {"document_id": doc.id, "status": "pending"}
-
-
-@router.post("/run")
-def run_ingestion(
-    current_user: User = Depends(get_current_user),
-):
-    """Trigger scheduled fetch manually (admin/convenience)."""
-    scheduled_fetch_documents()
-    return {"status": "triggered"}

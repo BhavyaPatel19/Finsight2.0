@@ -1,10 +1,13 @@
+import logging
+import os
+import sqlite3
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from finsight.config import ALLOWED_ORIGINS
 from finsight.database.session import init_db
-from finsight.ingestion.scheduler import start_scheduler
 from finsight.auth.router import router as auth_router
 from finsight.zerodha.router import router as zerodha_router
 from finsight.portfolio.router import router as portfolio_router
@@ -17,9 +20,11 @@ from finsight.scraper.router import router as scraper_router
 from finsight.credisentiment.router import router as credisentiment_router
 from finsight.watchlist.router import router as watchlist_router
 
-
-import sqlite3
-import os
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 def run_migrations():
@@ -40,34 +45,29 @@ def run_migrations():
             try:
                 conn.execute(sql)
                 conn.commit()
-                print(f"[migration] Applied: {sql}")
+                logger.info("migration applied: %s", sql)
             except sqlite3.OperationalError as e:
                 if "duplicate column name" in str(e):
                     pass  # column already exists, skip
                 else:
                     raise
         conn.close()
-    except Exception as e:
-        print(f"[migration] Warning: {e}")
+    except Exception:
+        logger.exception("migration failed")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     run_migrations()
     init_db()
-    start_scheduler()
     yield
-    from finsight.ingestion.scheduler import get_scheduler
-    s = get_scheduler()
-    if s.running:
-        s.shutdown(wait=False)
 
 
 app = FastAPI(title="FinSight", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

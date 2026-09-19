@@ -13,10 +13,21 @@ load_dotenv(PROJECT_ROOT / ".env")
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'finsight.db').as_posix()}")
 
-# JWT
-SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production-use-openssl-rand-hex-32")
+# JWT — no fallback: a known default key makes every token forgeable.
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if not SECRET_KEY or SECRET_KEY.startswith("change-me"):
+    raise RuntimeError(
+        "SECRET_KEY is not set. Generate one with `openssl rand -hex 32` and put it in .env"
+    )
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
+# CORS — comma-separated list of allowed frontend origins. Default is the Vite dev server.
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if o.strip()
+]
 
 # Zerodha (set in env in production)
 ZERODHA_API_KEY = os.getenv("ZERODHA_API_KEY", "")
