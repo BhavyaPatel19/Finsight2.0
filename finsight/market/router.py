@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.market.providers import MarketNotLinked, get_market_provider, market_status
-from finsight.models import User, Holding, Portfolio
+from finsight.models import Holding, Portfolio, User
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

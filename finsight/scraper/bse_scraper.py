@@ -10,10 +10,9 @@ Anti-bot measures:
 - Session-based cookies
 """
 import os
+import random
 import re
 import time
-import random
-from typing import Any
 from datetime import datetime, timedelta
 
 import httpx

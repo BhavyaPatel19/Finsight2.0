@@ -1,26 +1,25 @@
-from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlmodel import Session, select
 
-from finsight.database.session import get_session
-from finsight.deps import get_current_user
-from finsight.ingestion.uploads import save_upload
-from finsight.models import User, Document
 from finsight.credisentiment.schemas import (
     AnalyzeSentimentRequest,
     AnalyzeSentimentResponse,
+    AvailableDocumentResponse,
+    ClaimComparison,
     DivisionSentimentItem,
+    ProcessResponse,
     WalkTheTalkRequest,
     WalkTheTalkResponse,
-    ClaimComparison,
-    AvailableDocumentResponse,
-    ProcessResponse,
 )
 from finsight.credisentiment.service import (
     analyze_division_sentiment,
     walk_the_talk,
 )
+from finsight.database.session import get_session
+from finsight.deps import get_current_user
+from finsight.ingestion.uploads import save_upload
+from finsight.models import Document, User
 
 router = APIRouter()
 

@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlmodel import Session
 
+from finsight.auth.schemas import Token, UserCreate, UserLogin, UserResponse, UserUpdate
+from finsight.auth.service import create_user, delete_user, get_user_by_email, login_user, update_user
 from finsight.database.session import get_session
-from finsight.auth.schemas import UserCreate, UserLogin, Token, UserResponse, UserUpdate
-from finsight.auth.service import create_user, login_user, get_user_by_email, update_user, delete_user
 from finsight.deps import get_current_user
 from finsight.models import User
 

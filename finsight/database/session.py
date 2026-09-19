@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import Session, SQLModel, create_engine
 
 from finsight.config import DATABASE_URL
 
@@ -10,29 +10,8 @@ engine = create_engine(
 
 
 def init_db() -> None:
-    """
-    Import models and create tables.
-    """
-    from finsight.models import (
-        User,
-        Portfolio,
-        Holding,
-        Document,
-        DocumentChunk,
-        FinancialMetric,
-        SentimentScore,
-        ExtractedClaim,
-        CredibilityScore,
-        ZerodhaSession,
-        PageMetadata,
-        DocumentSection,
-        StockMetrics,
-        DivisionSentiment,
-        WalkTheTalkResult,
-        ComparisonChunk,
-        Watchlist,
-        WatchlistItem,
-    )  # noqa: F401
+    """Create all tables. Importing the models package registers them on SQLModel.metadata."""
+    import finsight.models  # noqa: F401
 
     SQLModel.metadata.create_all(bind=engine)
 

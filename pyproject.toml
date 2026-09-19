@@ -1,0 +1,67 @@
+[project]
+name = "finsight"
+version = "0.2.0"
+description = "Grounded RAG and claim verification over Indian company filings, with a measured retrieval pipeline"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "sqlmodel",
+    "sqlalchemy",
+    "python-jose[cryptography]",
+    "bcrypt>=4.1",
+    "python-multipart",
+    "email-validator",
+    "httpx",
+    "chromadb",
+    "sentence-transformers",
+    "transformers",
+    "torch",
+    "rank-bm25>=0.2.2",
+    "pymupdf",
+    "pdfplumber",
+    "beautifulsoup4",
+    "yfinance>=0.2.36",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["frontend", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = [
+    "E501",  # line length: handled loosely; long prompt strings are fine
+    "B008",  # FastAPI Depends()/File() in defaults is the framework idiom
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["finsight", "eval", "scripts", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+]
+
+# CI runs on Linux where PyPI's torch wheel bundles CUDA (~800 MB); use the CPU index there.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

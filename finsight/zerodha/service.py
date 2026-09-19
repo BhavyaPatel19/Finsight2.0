@@ -2,11 +2,9 @@ from datetime import datetime
 
 from sqlmodel import Session, select
 
-from finsight.models import Portfolio, Holding, User, ZerodhaSession
+from finsight.models import Holding, Portfolio, ZerodhaSession
 from finsight.zerodha.client import (
     fetch_holdings,
-    get_oauth_login_url,
-    exchange_request_token,
 )
 
 

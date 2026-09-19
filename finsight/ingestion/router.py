@@ -1,23 +1,22 @@
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-
 from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
-from finsight.models import User, Document
-from finsight.ingestion.service import (
-    list_documents,
-    register_document,
-)
-from finsight.ingestion.uploads import MEDIA_TYPES, save_upload
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
     process_document,
 )
+from finsight.ingestion.service import (
+    list_documents,
+    register_document,
+)
+from finsight.ingestion.uploads import MEDIA_TYPES, save_upload
+from finsight.models import Document, User
 
 router = APIRouter()
 

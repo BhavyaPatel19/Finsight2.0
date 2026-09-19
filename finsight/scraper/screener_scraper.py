@@ -9,11 +9,10 @@ Anti-bot measures:
 - Rate limiting between requests
 - Session cookies from homepage
 """
-import re
 import os
-import time
 import random
-from datetime import datetime
+import re
+import time
 
 import httpx
 from bs4 import BeautifulSoup

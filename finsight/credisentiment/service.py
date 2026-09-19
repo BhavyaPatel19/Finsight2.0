@@ -3,31 +3,39 @@ CrediSentiment service — combines:
   Feature 1: Division-level FinBERT sentiment analysis
   Feature 2: 'Walking the Talk' LLM credibility comparison
 """
+import asyncio
 import json
+import logging
 import re
-from datetime import datetime
 
 from sqlmodel import Session, select
 
-from finsight.models import (
-    Document,
-    DivisionSentiment,
-    WalkTheTalkResult,
-    PageMetadata,
-    DocumentSection,
+from finsight.config import (
+    WTT_ACTUALS_TOP_K,
+    WTT_BATCH_SIZE,
+    WTT_MAX_CLAIMS_CHUNKS,
+    WTT_MODEL,
+    WTT_PARALLEL,
 )
-from finsight.models import ComparisonChunk
-from finsight.rag.service import process_for_rag
 from finsight.credisentiment.prompts import (
     STAGE1_BATCH_EXTRACT_PROMPT,
     STAGE2_VERIFY_CLAIMS_PROMPT,
-    strip_think_tags,
+    deduplicate_claims,
     parse_json_array,
     parse_json_object,
-    deduplicate_claims,
+    strip_think_tags,
 )
+from finsight.llm import LLMError, agenerate
 from finsight.ml.finbert import analyze_batch, split_financial_sentences
-
+from finsight.models import (
+    ComparisonChunk,
+    DivisionSentiment,
+    Document,
+    DocumentSection,
+    PageMetadata,
+    WalkTheTalkResult,
+)
+from finsight.rag.service import process_for_rag
 
 # ---------------------------------------------------------------------------
 # Feature 1 — Division-level FinBERT Sentiment
@@ -212,18 +220,6 @@ def analyze_division_sentiment(
 # Feature 2 — "Walking the Talk" two-stage claim verification
 # ---------------------------------------------------------------------------
 
-import asyncio
-import logging
-
-from finsight.config import (
-    WTT_MODEL,
-    WTT_MAX_CLAIMS_CHUNKS,
-    WTT_BATCH_SIZE,
-    WTT_PARALLEL,
-    WTT_ACTUALS_TOP_K,
-)
-from finsight.llm import LLMError, agenerate
-
 logger = logging.getLogger(__name__)
 
 # Forward-looking keywords for pre-filtering claim-rich chunks
@@ -298,8 +294,8 @@ def _retrieve_relevant_actuals(
     top_k: int = WTT_ACTUALS_TOP_K,
 ) -> str:
     """Use ChromaDB semantic search to find actuals chunks relevant to claims."""
-    from finsight.rag.service import get_embedding_model
     from finsight.credisentiment.vectorstore import query_by_document_id
+    from finsight.rag.service import get_embedding_model
 
     model = get_embedding_model()
 
@@ -478,7 +474,7 @@ async def walk_the_talk(
             logger.info("WTT Stage 2 batch: %d/%d claims verified", len(verified), len(batch_claims))
             return verified
 
-    verify_tasks = [_verify_batch(bc, ba) for bc, ba in zip(claim_batches, batch_actuals)]
+    verify_tasks = [_verify_batch(bc, ba) for bc, ba in zip(claim_batches, batch_actuals, strict=True)]
     verify_results = await asyncio.gather(*verify_tasks, return_exceptions=True)
 
     claims_list: list[dict] = []

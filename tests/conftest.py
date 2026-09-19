@@ -6,25 +6,25 @@ import os
 os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 
 import pytest  # noqa: E402
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import Session, SQLModel, create_engine
 
 # Import all models so SQLModel registers their tables
 from finsight.models import (  # noqa: F401
-    User,
-    Portfolio,
-    Holding,
+    ComparisonChunk,
+    CredibilityScore,
+    DivisionSentiment,
     Document,
     DocumentChunk,
-    FinancialMetric,
-    SentimentScore,
-    ExtractedClaim,
-    CredibilityScore,
-    ZerodhaSession,
-    PageMetadata,
     DocumentSection,
-    DivisionSentiment,
+    ExtractedClaim,
+    FinancialMetric,
+    Holding,
+    PageMetadata,
+    Portfolio,
+    SentimentScore,
+    User,
     WalkTheTalkResult,
-    ComparisonChunk,
+    ZerodhaSession,
 )
 
 

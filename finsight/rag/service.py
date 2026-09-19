@@ -8,14 +8,12 @@ from sqlmodel import Session, select
 
 from finsight.config import (
     EMBEDDING_MODEL,
-    RAG_CHUNK_SIZE,
     RAG_CHUNK_OVERLAP,
+    RAG_CHUNK_SIZE,
 )
 from finsight.llm import generate
-from finsight.models import DocumentChunk, Document, PageMetadata, DocumentSection
+from finsight.models import Document, DocumentChunk, DocumentSection, PageMetadata
 from finsight.rag.vectorstore import (
-    query as chroma_query,
-    query_by_document_ids,
     add_chunks,
     delete_by_document_id,
 )
@@ -132,7 +130,7 @@ def process_for_rag(session: Session, document_id: int) -> dict:
     On-demand: extract structured text → page-aware chunks → embed → ChromaDB.
     Uses smart chunking (concall-aware).
     """
-    from finsight.ingestion.parsers import extract_structured_document, chunk_smart
+    from finsight.ingestion.parsers import chunk_smart, extract_structured_document
 
     doc = session.get(Document, document_id)
     if not doc or not doc.pdf_path:

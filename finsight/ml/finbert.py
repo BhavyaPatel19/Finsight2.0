@@ -23,7 +23,7 @@ def get_finbert():
     if _tokenizer is not None:
         return _tokenizer, _model, _device
 
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
     name = "ProsusAI/finbert"
     _tokenizer = AutoTokenizer.from_pretrained(name)

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import bcrypt
 from jose import JWTError, jwt
 
-from finsight.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from finsight.config import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 
 # bcrypt hashes at most 72 bytes; longer input is rejected at the schema layer.
 PASSWORD_MAX_BYTES = 72

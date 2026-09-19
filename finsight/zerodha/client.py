@@ -2,8 +2,8 @@
 Zerodha Kite Connect API: OAuth login, token exchange, portfolio holdings, and market data.
 """
 import hashlib
-from typing import Any
 from datetime import datetime
+from typing import Any
 
 import httpx
 
@@ -265,7 +265,8 @@ def fetch_instruments(access_token: str, exchange: str = "NSE") -> list[dict]:
                 headers=_kite_headers(access_token),
             )
             r.raise_for_status()
-            import csv, io
+            import csv
+            import io
             reader = csv.DictReader(io.StringIO(r.text))
             return list(reader)
     except Exception:

@@ -1,8 +1,6 @@
 from datetime import datetime
 
-from sqlmodel import SQLModel, Field
-
-from .enums import ClaimCategory
+from sqlmodel import Field, SQLModel
 
 
 class ExtractedClaim(SQLModel, table=True):

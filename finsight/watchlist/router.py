@@ -2,13 +2,12 @@
 Watchlist CRUD endpoints: create, list, update, delete watchlists and their items.
 """
 
+import logging
 from datetime import datetime
 
-import logging
-
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlmodel import Session, select, func
+from sqlmodel import Session, func, select
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
@@ -78,7 +77,7 @@ def create_watchlist(
         # Unset any existing default
         stmt = select(Watchlist).where(
             Watchlist.user_id == current_user.id,
-            Watchlist.is_default == True,
+            Watchlist.is_default.is_(True),
         )
         for existing in session.exec(stmt).all():
             existing.is_default = False
@@ -141,7 +140,7 @@ def update_watchlist(
         # Unset other defaults
         stmt = select(Watchlist).where(
             Watchlist.user_id == current_user.id,
-            Watchlist.is_default == True,
+            Watchlist.is_default.is_(True),
             Watchlist.id != watchlist_id,
         )
         for existing in session.exec(stmt).all():
@@ -303,8 +302,8 @@ def get_watchlist_digest(
     current_user: User = Depends(get_current_user),
 ):
     """Generate AI digest for all stocks in a watchlist."""
-    from finsight.market.providers import MarketNotLinked, get_market_provider
     from finsight.market.fundamentals import get_fundamentals
+    from finsight.market.providers import MarketNotLinked, get_market_provider
     from finsight.watchlist.digest import generate_digest
 
     wl = _get_owned_watchlist(session, watchlist_id, current_user.id)

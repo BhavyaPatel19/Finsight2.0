@@ -3,10 +3,17 @@
 import asyncio
 import inspect
 
-import pytest
-
+from finsight.credisentiment.prompts import (
+    STAGE1_EXTRACT_CLAIMS_PROMPT,
+    STAGE2_VERIFY_CLAIMS_PROMPT,
+    deduplicate_claims,
+    parse_json_array,
+    parse_json_object,
+    strip_think_tags,
+)
+from finsight.credisentiment.router import get_wtt_documents, walk_the_talk_endpoint
+from finsight.credisentiment.service import _call_wtt_llm, get_document_chunks, walk_the_talk
 from finsight.models.enums import ClaimCategory
-
 
 # ---------------------------------------------------------------------------
 # ClaimCategory enum tests
@@ -37,14 +44,6 @@ class TestClaimCategory:
 # strip_think_tags tests
 # ---------------------------------------------------------------------------
 
-from finsight.credisentiment.prompts import (
-    strip_think_tags,
-    parse_json_array,
-    parse_json_object,
-    deduplicate_claims,
-    STAGE1_EXTRACT_CLAIMS_PROMPT,
-    STAGE2_VERIFY_CLAIMS_PROMPT,
-)
 
 
 class TestStripThinkTags:
@@ -131,7 +130,6 @@ class TestPromptTemplates:
 # _call_wtt_llm goes through the provider layer
 # ---------------------------------------------------------------------------
 
-from finsight.credisentiment.service import _call_wtt_llm
 
 
 class TestCallWttLlm:
@@ -162,14 +160,14 @@ class TestCallWttLlm:
 # get_document_chunks tests
 # ---------------------------------------------------------------------------
 
-from finsight.credisentiment.service import get_document_chunks, walk_the_talk
 
 
 class TestGetDocumentChunks:
     def test_returns_ordered_texts(self):
         """Create 3 ComparisonChunk rows with different chunk_index values,
         verify get_document_chunks returns them in order."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
+
         from finsight.models import ComparisonChunk
 
         # Create mock chunks out of order
@@ -215,7 +213,6 @@ class TestWalkTheTalkPipeline:
 # Router endpoint tests
 # ---------------------------------------------------------------------------
 
-from finsight.credisentiment.router import walk_the_talk_endpoint, get_wtt_documents
 
 
 class TestRouterEndpoints:

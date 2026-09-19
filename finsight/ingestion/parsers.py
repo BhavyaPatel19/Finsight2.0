@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from finsight.config import DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
+from finsight.config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
 
 # ---------------------------------------------------------------------------
 # Concall transcript detection

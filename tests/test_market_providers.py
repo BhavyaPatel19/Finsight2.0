@@ -6,10 +6,9 @@ import pytest
 
 from finsight import config
 from finsight.market.providers import MarketNotLinked, get_market_provider, market_status
-from finsight.market.providers.yfinance_provider import YFinanceProvider, _to_yahoo, _from_yahoo
+from finsight.market.providers.yfinance_provider import YFinanceProvider, _from_yahoo, _to_yahoo
 from finsight.market.providers.zerodha_provider import ZerodhaProvider
 from finsight.models import User, ZerodhaSession
-
 
 _BASES = {"INFY.NS": 100.0, "TCS.NS": 200.0}
 

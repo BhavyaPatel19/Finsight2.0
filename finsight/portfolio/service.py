@@ -1,7 +1,6 @@
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from finsight.models import Holding, Portfolio
-from finsight.zerodha.service import get_or_create_default_portfolio, get_holdings
+from finsight.zerodha.service import get_holdings
 
 
 def get_holdings_with_metrics(session: Session, user_id: int) -> list[dict]:
@@ -26,9 +25,9 @@ def get_holdings_with_metrics(session: Session, user_id: int) -> list[dict]:
 def get_portfolio_insights(session: Session, user_id: int) -> dict:
     """Compute portfolio credibility from live financial fundamentals (P/E, ROCE, D/E, etc.)."""
     import logging
-    import time
     from concurrent.futures import ThreadPoolExecutor, as_completed
-    from finsight.credibility.fundamentals import fetch_and_score, _score_cache
+
+    from finsight.credibility.fundamentals import fetch_and_score
 
     logger = logging.getLogger(__name__)
 

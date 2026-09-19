@@ -42,8 +42,8 @@ def cohen_kappa(a: list[str], b: list[str]) -> float:
         raise ValueError("need two equal-length, non-empty label lists")
     labels = sorted(set(a) | set(b))
     n = len(a)
-    po = sum(1 for x, y in zip(a, b) if x == y) / n
-    pe = sum((a.count(l) / n) * (b.count(l) / n) for l in labels)
+    po = sum(1 for x, y in zip(a, b, strict=True) if x == y) / n
+    pe = sum((a.count(lab) / n) * (b.count(lab) / n) for lab in labels)
     if pe == 1.0:
         return 1.0
     return (po - pe) / (1 - pe)

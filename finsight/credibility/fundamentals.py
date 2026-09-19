@@ -16,7 +16,7 @@ Scoring rubric (each factor 0-20, total 0-100):
 import logging
 import re
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import httpx

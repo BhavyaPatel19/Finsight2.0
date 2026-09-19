@@ -1,20 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlmodel import Session, select
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
-from finsight.models import User, Document
+from finsight.llm import LLMError
+from finsight.models import Document, User
 from finsight.rag.schemas import (
-    RAGQueryRequest,
-    RAGQueryResponse,
-    RAGSource,
+    AvailableDocument,
     NavigationStep,
     PrepareRequest,
     PrepareResponse,
-    AvailableDocument,
+    RAGQueryRequest,
+    RAGQueryResponse,
+    RAGSource,
 )
-from finsight.llm import LLMError
 from finsight.rag.service import answer_question, process_for_rag
 
 router = APIRouter()

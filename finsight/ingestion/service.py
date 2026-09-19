@@ -1,12 +1,10 @@
 from pathlib import Path
-from datetime import datetime
 
 from sqlmodel import Session, select
 
-from finsight.config import DOCUMENTS_DIR, CHROMA_PERSIST_DIR
+from finsight.config import CHROMA_PERSIST_DIR, DOCUMENTS_DIR
+from finsight.ingestion.parsers import chunk_text, extract_text_from_pdf
 from finsight.models import Document, DocumentChunk
-from finsight.models.enums import DocType
-from finsight.ingestion.parsers import extract_text_from_pdf, chunk_text
 
 
 def ensure_dirs() -> None:

@@ -1,0 +1,30 @@
+name: Retrieval eval
+
+# Heavier than CI (downloads the sample corpus from SEC EDGAR and ~1.5 GB of
+# models), so it runs on demand rather than on every push. Results are
+# uploaded as an artifact; compare against eval/results/retrieval_current.json.
+on:
+  workflow_dispatch:
+
+jobs:
+  retrieval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --group dev
+      - name: Seed corpus and run retrieval eval
+        env:
+          SECRET_KEY: ci-only-not-a-real-secret
+          LLM_PROVIDER: ollama
+          EDGAR_USER_AGENT: ${{ secrets.EDGAR_USER_AGENT }}
+        run: |
+          uv run python -m scripts.seed_demo
+          uv run python -m eval.retrieval --tag ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: retrieval-eval
+          path: eval/results/retrieval_ci.json

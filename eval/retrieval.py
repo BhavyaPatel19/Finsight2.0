@@ -21,7 +21,7 @@ import os
 import re
 import subprocess
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -218,7 +218,7 @@ def main() -> None:
                   f"{r['latency_ms'].get('total', 0):.0f} ms/q  ({time.time() - t0:.0f}s)")
 
     report = {
-        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_sha": git_sha(), "tag": args.tag,
         "k": args.k, "candidates": args.candidates,
         "embedding_model": config.EMBEDDING_MODEL, "reranker": "BAAI/bge-reranker-base",

@@ -2,9 +2,9 @@ from datetime import datetime
 
 from sqlmodel import Session, select
 
-from finsight.models import User, Watchlist, WatchlistItem, Portfolio, Holding, ZerodhaSession
-from finsight.auth.security import get_password_hash, verify_password, create_access_token
 from finsight.auth.schemas import UserCreate, UserUpdate
+from finsight.auth.security import create_access_token, get_password_hash, verify_password
+from finsight.models import Holding, Portfolio, User, Watchlist, WatchlistItem, ZerodhaSession
 
 
 def get_user_by_email(session: Session, email: str) -> User | None:

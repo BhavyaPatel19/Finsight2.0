@@ -7,7 +7,6 @@ In-memory cache with 2-hour TTL.
 import logging
 import time
 
-
 from finsight.llm import LLMError, generate, llm_configured
 
 logger = logging.getLogger(__name__)

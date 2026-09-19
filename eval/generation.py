@@ -23,7 +23,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -83,7 +83,7 @@ def run(session, gold: list[dict], *, model: str | None, judge: bool, judge_mode
     from finsight.rag.service import answer_question
 
     rows = []
-    for i, item in enumerate(gold, 1):
+    for item in gold:
         t0 = time.perf_counter()
         try:
             res = answer_question(session, item["question"], top_k=top_k, model=model)
@@ -200,9 +200,9 @@ def main() -> None:
     os.environ.setdefault("SECRET_KEY", "eval")
     from sqlmodel import Session
 
+    from eval.retrieval import git_sha, load_gold
     from finsight.database.session import engine
     from finsight.llm import get_provider
-    from eval.retrieval import git_sha, load_gold
 
     gold = load_gold(args.gold)
     if args.limit:
@@ -215,7 +215,7 @@ def main() -> None:
         rows = run(session, gold, model=args.model, judge=not args.no_judge, judge_model=args.judge_model or args.model, top_k=args.top_k)
 
     report = {
-        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
         "provider": provider.name, "model": model, "judge_model": args.judge_model, "top_k": args.top_k,
         "summary": summarise(rows), "rows": rows,
     }

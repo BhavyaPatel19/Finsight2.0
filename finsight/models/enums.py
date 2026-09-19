@@ -1,13 +1,13 @@
 import enum
 
 
-class DocType(str, enum.Enum):
+class DocType(enum.StrEnum):
     EARNINGS_CALL = "earnings_call"
     QUARTERLY = "quarterly"
     ANNUAL = "annual"
 
 
-class ClaimCategory(str, enum.Enum):
+class ClaimCategory(enum.StrEnum):
     REVENUE_GROWTH = "revenue_growth"
     MARGIN_EXPANSION = "margin_expansion"
     CAPEX = "capex"

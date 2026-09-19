@@ -3,21 +3,20 @@ Scraper API endpoints — uses Screener.in for company search and document disco
 Flow: search company → view available docs → user picks → download selected → process → index.
 """
 import os
-import uuid
 import threading
+import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import select
 
-from finsight.database.session import get_session
 from finsight.deps import get_current_user
-from finsight.models import User, Document
+from finsight.models import Document, User
 from finsight.scraper.screener_scraper import (
-    search_company,
-    get_company_documents,
     download_document,
+    get_company_documents,
+    search_company,
 )
 
 router = APIRouter()

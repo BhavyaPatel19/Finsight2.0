@@ -1,8 +1,6 @@
 from datetime import datetime
 
-from sqlmodel import SQLModel, Field
-
-from .enums import DocType
+from sqlmodel import Field, SQLModel
 
 
 class Document(SQLModel, table=True):

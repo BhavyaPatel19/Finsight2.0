@@ -6,8 +6,6 @@ In-memory cache with 2-hour TTL to keep insights fresh during market hours.
 
 import logging
 import time
-from typing import Optional
-
 
 from finsight.llm import LLMError, generate, llm_configured
 
@@ -106,8 +104,8 @@ def _build_data_context(fundamentals: dict) -> str:
 
 def get_company_insight(
     symbol: str,
-    sector: Optional[str] = None,
-    fundamentals: Optional[dict] = None,
+    sector: str | None = None,
+    fundamentals: dict | None = None,
 ) -> str:
     if not llm_configured():
         return ""

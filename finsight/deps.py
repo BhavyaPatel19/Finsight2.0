@@ -2,9 +2,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 
+from finsight.auth.security import decode_access_token
 from finsight.database.session import get_session
 from finsight.models import User
-from finsight.auth.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
@@ -29,7 +29,7 @@ def get_current_user(
     try:
         uid = int(user_id)
     except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from None
     stmt = select(User).where(User.id == uid)
     user = session.exec(stmt).first()
     if not user:

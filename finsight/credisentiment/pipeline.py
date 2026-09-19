@@ -11,12 +11,11 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
-from finsight.config import CREDISENTIMENT_CHUNK_SIZE, CREDISENTIMENT_CHUNK_OVERLAP
-from finsight.models import Document, ComparisonChunk
+from finsight.config import CREDISENTIMENT_CHUNK_OVERLAP, CREDISENTIMENT_CHUNK_SIZE
 from finsight.credisentiment.vectorstore import add_chunks, delete_by_document_id
-from finsight.rag.service import embed_documents
 from finsight.ingestion.parsers import extract_structured_document
-
+from finsight.models import ComparisonChunk, Document
+from finsight.rag.service import embed_documents
 
 # ---------------------------------------------------------------------------
 # Section-aware chunking

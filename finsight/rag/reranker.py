@@ -41,7 +41,7 @@ def rerank(query: str, candidates: list[dict], top_k: int = 8) -> list[dict]:
         # Fallback: return candidates unchanged if reranker fails
         return candidates[:top_k]
 
-    for candidate, score in zip(candidates, scores):
+    for candidate, score in zip(candidates, scores, strict=True):
         candidate["reranker_score"] = float(score)
 
     reranked = sorted(candidates, key=lambda x: x.get("reranker_score", 0.0), reverse=True)

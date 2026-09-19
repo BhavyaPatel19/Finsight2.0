@@ -8,11 +8,11 @@ from pathlib import Path
 
 from sqlmodel import Session, select
 
-from finsight.config import DOCUMENTS_DIR, CHROMA_PERSIST_DIR
+from finsight.config import CHROMA_PERSIST_DIR, DOCUMENTS_DIR
+from finsight.ingestion.parsers import chunk_text, extract_text_from_pdf
 from finsight.models import Document, DocumentChunk
-from finsight.ingestion.parsers import extract_text_from_pdf, chunk_text
-from finsight.rag.vectorstore import delete_by_document_id
 from finsight.rag.service import index_chunks_for_document
+from finsight.rag.vectorstore import delete_by_document_id
 
 
 def ensure_dirs() -> None:
@@ -142,7 +142,7 @@ def process_document(session: Session, document_id: int) -> Document | None:
         session.commit()
 
         # Index to ChromaDB
-        indexed = index_chunks_for_document(session, document_id)
+        index_chunks_for_document(session, document_id)
 
         doc.chunk_count = len(created)
         doc.status = "indexed"

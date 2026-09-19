@@ -1,10 +1,8 @@
 """Tests for CrediSentiment processing pipeline (vectorstore + chunking + orchestrator)."""
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-from finsight.models import Document, ComparisonChunk
-
+from finsight.models import Document
 
 # ---------------------------------------------------------------------------
 # Chunking tests

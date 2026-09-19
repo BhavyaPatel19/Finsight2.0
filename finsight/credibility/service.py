@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 
-from finsight.models import Document, ExtractedClaim, CredibilityScore, FinancialMetric
 from finsight.llm import generate
+from finsight.models import CredibilityScore, Document, ExtractedClaim, FinancialMetric
 
 
 def extract_claims_for_document(session: Session, document_id: int) -> list[ExtractedClaim]:

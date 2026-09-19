@@ -6,20 +6,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from finsight.config import ALLOWED_ORIGINS
-from finsight.database.session import init_db
 from finsight.auth.router import router as auth_router
-from finsight.zerodha.router import router as zerodha_router
-from finsight.portfolio.router import router as portfolio_router
-from finsight.ingestion.router import router as ingestion_router
-from finsight.rag.router import router as rag_router
-from finsight.sentiment.router import router as sentiment_router
+from finsight.config import ALLOWED_ORIGINS
 from finsight.credibility.router import router as credibility_router
-from finsight.market.router import router as market_router
-from finsight.scraper.router import router as scraper_router
 from finsight.credisentiment.router import router as credisentiment_router
-from finsight.watchlist.router import router as watchlist_router
+from finsight.database.session import init_db
+from finsight.ingestion.router import router as ingestion_router
 from finsight.llm.router import router as llm_router
+from finsight.market.router import router as market_router
+from finsight.portfolio.router import router as portfolio_router
+from finsight.rag.router import router as rag_router
+from finsight.scraper.router import router as scraper_router
+from finsight.sentiment.router import router as sentiment_router
+from finsight.watchlist.router import router as watchlist_router
+from finsight.zerodha.router import router as zerodha_router
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),

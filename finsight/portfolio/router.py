@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends
-
 from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
-from finsight.portfolio.schemas import PortfolioMetrics, HoldingMetric, InsightSummary
+from finsight.portfolio.schemas import HoldingMetric, InsightSummary, PortfolioMetrics
 from finsight.portfolio.service import get_holdings_with_metrics, get_portfolio_insights
 
 router = APIRouter()

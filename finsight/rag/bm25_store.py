@@ -35,7 +35,7 @@ def build_bm25_index(session=None) -> None:
 
     corpus = [
         {"id": cid, "text": text or "", "metadata": dict(meta or {})}
-        for cid, text, meta in zip(ids, got["documents"], got["metadatas"])
+        for cid, text, meta in zip(ids, got["documents"], got["metadatas"], strict=True)
     ]
     # Index the same contextual header the embeddings saw (company, doc type, period).
     tokenized = [
@@ -62,7 +62,7 @@ def bm25_search(
     scores = _bm25_index.get_scores(tokens)
 
     results = []
-    for item, score in zip(_bm25_corpus, scores):
+    for item, score in zip(_bm25_corpus, scores, strict=True):
         if document_ids and item["metadata"]["document_id"] not in document_ids:
             continue
         if score <= 0:

@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
 from finsight.sentiment.schemas import SentimentScoreResponse
-from finsight.sentiment.service import get_sentiment_history, compute_sentiment_for_document
+from finsight.sentiment.service import compute_sentiment_for_document, get_sentiment_history
 
 router = APIRouter()
 

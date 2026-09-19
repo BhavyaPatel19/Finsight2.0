@@ -61,7 +61,8 @@ def retrieve(
 
     from finsight.rag.bm25_store import bm25_search, build_bm25_index, is_built
     from finsight.rag.service import embed_query
-    from finsight.rag.vectorstore import query as chroma_query, query_by_document_ids
+    from finsight.rag.vectorstore import query as chroma_query
+    from finsight.rag.vectorstore import query_by_document_ids
 
     timings: dict[str, float] = {}
     dense_hits: list[dict] = []

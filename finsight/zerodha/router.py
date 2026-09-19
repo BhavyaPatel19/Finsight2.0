@@ -1,20 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse, HTMLResponse
-
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
-from finsight.zerodha.schemas import ZerodhaLoginUrl, ZerodhaLinkBody, HoldingItem, PortfolioSummary
+from finsight.zerodha.client import exchange_request_token, get_oauth_login_url
+from finsight.zerodha.schemas import HoldingItem, PortfolioSummary, ZerodhaLinkBody, ZerodhaLoginUrl
 from finsight.zerodha.service import (
-    get_oauth_login_url,
     get_holdings,
-    get_zerodha_token_for_user,
     save_zerodha_token,
     sync_holdings_for_user,
 )
-from finsight.zerodha.client import exchange_request_token
 
 router = APIRouter()
 
@@ -37,8 +34,8 @@ def connect_url(current_user: User = Depends(get_current_user)):
     Return the full connect-redirect URL using the ngrok base URL.
     The frontend should open this URL in a new tab.
     """
-    from finsight.config import ZERODHA_REDIRECT_URI
     from finsight.auth.security import create_access_token
+    from finsight.config import ZERODHA_REDIRECT_URI
 
     if not ZERODHA_REDIRECT_URI:
         raise HTTPException(status_code=503, detail="ZERODHA_REDIRECT_URI not configured")

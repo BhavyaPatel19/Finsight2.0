@@ -3,8 +3,8 @@ import re
 import torch
 from sqlmodel import Session, select
 
-from finsight.models import Document, SentimentScore
 from finsight.ml.finbert import get_finbert
+from finsight.models import Document, SentimentScore
 
 
 def compute_sentiment_for_document(session: Session, document_id: int) -> SentimentScore | None:

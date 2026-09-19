@@ -1,17 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlmodel import Session
 
+from finsight.credibility.fundamentals import fetch_and_score
+from finsight.credibility.schemas import CredibilityScoreResponse, FundamentalsScoreResponse
+from finsight.credibility.service import (
+    compute_credibility_for_symbol_period,
+    extract_claims_for_document,
+    get_credibility_history,
+)
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
-from finsight.credibility.schemas import CredibilityScoreResponse, FundamentalsScoreResponse
-from finsight.credibility.service import (
-    get_credibility_history,
-    compute_credibility_for_symbol_period,
-    extract_claims_for_document,
-)
-from finsight.credibility.fundamentals import fetch_and_score
 
 router = APIRouter()
 
