@@ -221,3 +221,12 @@ class TestModelsEndpoint:
         assert data["configured"] is False
         assert data["default_model"] == "llama-3.3-70b-versatile"
         assert data["models"] and all({"id", "label"} <= set(m) for m in data["models"])
+
+    def test_default_falls_back_to_an_installed_model(self, api_client, auth_headers, monkeypatch):
+        monkeypatch.setattr(config, "LLM_PROVIDER", "ollama")
+        monkeypatch.setattr(config, "OLLAMA_MODEL", "llama3.1:8b")
+        monkeypatch.setattr(
+            OllamaProvider, "available_models", lambda self: [{"id": "qwen3:14b", "label": "qwen3:14b (local)"}]
+        )
+        r = api_client.get("/llm/models", headers=auth_headers)
+        assert r.json()["default_model"] == "qwen3:14b"
