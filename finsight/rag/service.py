@@ -426,6 +426,7 @@ def answer_question(
         "thinking": thinking,
         "navigations": navigations,
         "sources": sources,
+        "context": [c.get("text", "") for c in top_chunks],  # full chunk texts (eval/judge; not in the API response)
         "model_used": model_name,
         "usage": {
             "prompt_tokens": response.prompt_tokens,

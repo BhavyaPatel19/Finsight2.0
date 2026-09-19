@@ -23,25 +23,29 @@ class OllamaProvider(LLMProvider):
         self,
         base_url: str = "http://localhost:11434",
         default_model: str = "llama3.1:8b",
+        num_ctx: int = 8192,
         transport: httpx.BaseTransport | None = None,
         async_transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.default_model = default_model
+        self.num_ctx = num_ctx
         self._transport = transport
         self._async_transport = async_transport
 
-    def _payload(self, prompt, model, max_tokens, temperature, json_mode, system) -> dict:
+    def _payload(self, prompt, model, max_tokens, temperature, json_mode, system, think=None) -> dict:
         payload = {
             "model": model or self.default_model,
             "prompt": prompt,
             "stream": False,
-            "options": {"num_predict": max_tokens, "temperature": temperature},
+            "options": {"num_predict": max_tokens, "temperature": temperature, "num_ctx": self.num_ctx},
         }
         if system:
             payload["system"] = system
         if json_mode:
             payload["format"] = "json"
+        if think is not None:
+            payload["think"] = think
         return payload
 
     def _parse(self, data: dict, started: float) -> LLMResponse:
@@ -57,22 +61,22 @@ class OllamaProvider(LLMProvider):
         )
 
     def generate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                 json_mode=False, system=None, timeout=120.0) -> LLMResponse:
+                 json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
         started = time.perf_counter()
         with httpx.Client(timeout=timeout, transport=self._transport) as client:
             r = post_with_retry(
                 client, f"{self.base_url}/api/generate",
-                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
+                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)
 
     async def agenerate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                        json_mode=False, system=None, timeout=120.0) -> LLMResponse:
+                        json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
         started = time.perf_counter()
         async with httpx.AsyncClient(timeout=timeout, transport=self._async_transport) as client:
             r = await apost_with_retry(
                 client, f"{self.base_url}/api/generate",
-                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
+                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)
 

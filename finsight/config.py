@@ -48,6 +48,9 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 # Ollama — local inference
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+# Ollama's default context window (2048–4096) silently truncates RAG prompts
+# (~4k tokens for 8 chunks) from the front, dropping the instructions.
+OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "8192"))
 
 # SEC EDGAR downloads (sample corpus). SEC requires an identifying User-Agent with a contact email.
 EDGAR_USER_AGENT = os.getenv("EDGAR_USER_AGENT", "FinSight research (set EDGAR_USER_AGENT)")

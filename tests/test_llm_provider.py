@@ -165,7 +165,7 @@ class TestOllama:
         assert seen["url"] == "http://ollama:11434/api/generate"
         body = seen["body"]
         assert body["model"] == "llama3.1:8b" and body["stream"] is False
-        assert body["options"] == {"num_predict": 50, "temperature": 0.0}
+        assert body["options"] == {"num_predict": 50, "temperature": 0.0, "num_ctx": 8192}
         assert body["format"] == "json" and body["system"] == "sys"
         assert r.text == "hi" and r.provider == "ollama"
         assert r.prompt_tokens == 5 and r.completion_tokens == 2

@@ -56,18 +56,3 @@ class AvailableDocument(BaseModel):
     status: str = "pending"
     chunk_count: int = 0
     file_size: int | None = None
-
-
-class EvaluateRequest(BaseModel):
-    questions: list[str]
-    document_ids: list[int] | None = None
-    top_k: int = 8
-    model: str | None = None
-
-
-class EvaluateResponse(BaseModel):
-    faithfulness: float | None = None
-    answer_relevancy: float | None = None
-    context_precision: float | None = None
-    per_question: list[dict] = []
-    error: str | None = None

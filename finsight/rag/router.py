@@ -13,8 +13,6 @@ from finsight.rag.schemas import (
     PrepareRequest,
     PrepareResponse,
     AvailableDocument,
-    EvaluateRequest,
-    EvaluateResponse,
 )
 from finsight.llm import LLMError
 from finsight.rag.service import answer_question, process_for_rag
@@ -62,43 +60,6 @@ def prepare_documents(
         result = process_for_rag(session, doc_id)
         results.append(result)
     return PrepareResponse(results=results)
-
-
-@router.post("/evaluate", response_model=EvaluateResponse)
-def evaluate_rag(
-    payload: EvaluateRequest,
-    session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Run RAGAS evaluation on a list of test questions.
-    For each question, runs the full RAG pipeline, then feeds
-    questions + answers + retrieved contexts to RAGAS (judge: Ollama).
-    Returns faithfulness, answer_relevancy, context_precision scores.
-    """
-    from finsight.rag.evaluation import run_ragas_evaluation
-
-    answers: list[str] = []
-    contexts: list[list[str]] = []
-
-    for question in payload.questions:
-        result = answer_question(
-            session=session,
-            question=question,
-            document_ids=payload.document_ids,
-            top_k=payload.top_k,
-            model=payload.model,
-        )
-        answers.append(result["answer"])
-        # Use chunk snippets as context strings for RAGAS
-        contexts.append([s["snippet"] for s in result.get("sources", []) if s.get("snippet")])
-
-    scores = run_ragas_evaluation(
-        questions=payload.questions,
-        answers=answers,
-        contexts=contexts,
-    )
-    return EvaluateResponse(**scores)
 
 
 @router.post("/query", response_model=RAGQueryResponse)

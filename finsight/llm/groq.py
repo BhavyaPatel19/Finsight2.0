@@ -83,7 +83,7 @@ class GroqProvider(LLMProvider):
     # -- public API ----------------------------------------------------------
 
     def generate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                 json_mode=False, system=None, timeout=120.0) -> LLMResponse:
+                 json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
         if not self.api_key:
             raise LLMError("GROQ_API_KEY is not set")
         started = time.perf_counter()
@@ -96,7 +96,7 @@ class GroqProvider(LLMProvider):
         return self._parse(r.json(), started)
 
     async def agenerate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                        json_mode=False, system=None, timeout=120.0) -> LLMResponse:
+                        json_mode=False, system=None, timeout=120.0, think=None) -> LLMResponse:
         if not self.api_key:
             raise LLMError("GROQ_API_KEY is not set")
         started = time.perf_counter()

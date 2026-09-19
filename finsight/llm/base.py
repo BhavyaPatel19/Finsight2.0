@@ -50,6 +50,7 @@ class LLMProvider(abc.ABC):
         json_mode: bool = False,
         system: str | None = None,
         timeout: float = 120.0,
+        think: bool | None = None,
     ) -> LLMResponse: ...
 
     @abc.abstractmethod
@@ -63,7 +64,11 @@ class LLMProvider(abc.ABC):
         json_mode: bool = False,
         system: str | None = None,
         timeout: float = 120.0,
+        think: bool | None = None,
     ) -> LLMResponse: ...
+
+    # `think`: for reasoning models that expose a switch (Ollama qwen3/deepseek-r1),
+    # None keeps the model default, False disables the reasoning trace. Ignored elsewhere.
 
     def available_models(self) -> list[dict]:
         """Models the UI may offer, as [{"id": ..., "label": ...}]. Best effort."""
