@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
+from finsight import config
+from finsight.auth.security import create_access_token, decode_access_token
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User
+from finsight.zerodha import state as link_state
 from finsight.zerodha.client import exchange_request_token, get_oauth_login_url
 from finsight.zerodha.schemas import HoldingItem, PortfolioSummary, ZerodhaLinkBody, ZerodhaLoginUrl
 from finsight.zerodha.service import (
@@ -15,9 +18,30 @@ from finsight.zerodha.service import (
 
 router = APIRouter()
 
-# Cookie used to associate Zerodha redirect with the user who started the flow
-ZERODHA_LINK_COOKIE = "zerodha_link_uid"
-ZERODHA_LINK_MAX_AGE = 600  # 10 minutes
+CONNECT_TOKEN_MINUTES = 5
+
+
+def _cookie_secure() -> bool:
+    return config.ZERODHA_REDIRECT_URI.lower().startswith("https://")
+
+
+def _start_link(user_id: int) -> RedirectResponse:
+    """Set the signed state cookie and send the browser to Kite's login page."""
+    cookie_value, nonce = link_state.issue(user_id)
+    url = get_oauth_login_url(state=nonce)
+    if not url:
+        raise HTTPException(status_code=503, detail="Zerodha API not configured")
+    redirect = RedirectResponse(url=url, status_code=302)
+    redirect.set_cookie(
+        link_state.COOKIE,
+        cookie_value,
+        max_age=link_state.MAX_AGE,
+        httponly=True,
+        secure=_cookie_secure(),
+        samesite="lax",
+        path="/zerodha/",
+    )
+    return redirect
 
 
 @router.get("/login-url", response_model=ZerodhaLoginUrl)
@@ -31,78 +55,33 @@ def login_url():
 @router.get("/connect-url")
 def connect_url(current_user: User = Depends(get_current_user)):
     """
-    Return the full connect-redirect URL using the ngrok base URL.
-    The frontend should open this URL in a new tab.
+    URL the frontend opens in a new tab to start linking. It carries a
+    5-minute token that is only good for /connect-redirect — not an API
+    credential — because a navigation cannot send the Bearer header.
     """
-    from finsight.auth.security import create_access_token
-    from finsight.config import ZERODHA_REDIRECT_URI
-
-    if not ZERODHA_REDIRECT_URI:
+    if not config.ZERODHA_REDIRECT_URI:
         raise HTTPException(status_code=503, detail="ZERODHA_REDIRECT_URI not configured")
-
-    # Derive the ngrok base URL from the redirect URI
-    # e.g. https://xxx.ngrok-free.dev/zerodha/callback → https://xxx.ngrok-free.dev
-    base_url = ZERODHA_REDIRECT_URI.rsplit("/zerodha/", 1)[0]
-
-    token = create_access_token(data={"sub": str(current_user.id)})
-    full_url = f"{base_url}/zerodha/connect-redirect?token={token}"
-    return {"connect_url": full_url}
+    base_url = config.ZERODHA_REDIRECT_URI.rsplit("/zerodha/", 1)[0]
+    token = create_access_token(
+        data={"sub": str(current_user.id), "purpose": "zerodha_connect"},
+        expires_minutes=CONNECT_TOKEN_MINUTES,
+    )
+    return {"connect_url": f"{base_url}/zerodha/connect-redirect?token={token}"}
 
 
 @router.get("/connect")
-def connect_zerodha(
-    response: Response,
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Start Zerodha OAuth: set cookie with user id and redirect to Zerodha login.
-    After login Zerodha redirects to your Redirect URL; our callback exchanges the token and stores it.
-    """
-    url = get_oauth_login_url()
-    if not url:
-        raise HTTPException(status_code=503, detail="Zerodha API not configured")
-    redirect = RedirectResponse(url=url, status_code=302)
-    redirect.set_cookie(
-        ZERODHA_LINK_COOKIE,
-        str(current_user.id),
-        max_age=ZERODHA_LINK_MAX_AGE,
-        httponly=True,
-        samesite="lax",
-        path="/",
-    )
-    return redirect
+def connect_zerodha(current_user: User = Depends(get_current_user)):
+    """Start Zerodha OAuth for the authenticated user (API clients)."""
+    return _start_link(current_user.id)
 
 
 @router.get("/connect-redirect")
-def connect_redirect(
-    token: str,
-    session: Session = Depends(get_session),
-):
-    """
-    Frontend-friendly: pass JWT as ?token= query param.
-    Sets cookie with user id, then redirects to Zerodha login.
-    The callback will read the cookie and auto-link the access token.
-    """
-    from finsight.auth.security import decode_access_token
-
+def connect_redirect(token: str):
+    """Browser entry point: validates the short-lived connect token, then starts OAuth."""
     payload = decode_access_token(token)
-    if not payload or "sub" not in payload:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    url = get_oauth_login_url()
-    if not url:
-        raise HTTPException(status_code=503, detail="Zerodha API not configured")
-
-    redirect = RedirectResponse(url=url, status_code=302)
-    redirect.set_cookie(
-        ZERODHA_LINK_COOKIE,
-        str(payload["sub"]),
-        max_age=ZERODHA_LINK_MAX_AGE,
-        httponly=True,
-        samesite="lax",
-        path="/",
-    )
-    return redirect
+    if not payload or payload.get("purpose") != "zerodha_connect" or "sub" not in payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired connect token")
+    return _start_link(int(payload["sub"]))
 
 
 @router.get("/callback", response_class=HTMLResponse)
@@ -110,49 +89,33 @@ def zerodha_callback(
     request: Request,
     request_token: str | None = None,
     status: str | None = None,
+    state: str | None = None,
     session: Session = Depends(get_session),
 ):
     """
-    Zerodha redirects here after login with ?request_token=...&status=success.
-    If we have a cookie (user started from /zerodha/connect), we exchange the token and store it.
-    Otherwise we show the request_token so you can POST it to /zerodha/link with your Bearer token.
+    Kite redirects here with ?request_token=…&status=success&state=<nonce>.
+    The link is accepted only if the signed cookie from /connect verifies and
+    its nonce matches `state`.
     """
     if not request_token or status != "success":
+        return HTMLResponse("<h1>Zerodha callback</h1><p>Missing request_token or status.</p>", status_code=400)
+
+    user_id = link_state.verify(request.cookies.get(link_state.COOKIE), state)
+    if user_id is None:
         return HTMLResponse(
-            content="<h1>Zerodha callback</h1><p>Missing request_token or status.</p>",
+            "<h1>Link not accepted</h1><p>This login was not started from FinSight, or it expired. "
+            "Go back to the app and click Connect again.</p>",
             status_code=400,
         )
-    user_id_str = request.cookies.get(ZERODHA_LINK_COOKIE)
-    response = HTMLResponse()
-    # Clear cookie in any case
-    response.delete_cookie(ZERODHA_LINK_COOKIE, path="/")
 
     data = exchange_request_token(request_token)
     if not data or not data.get("access_token"):
-        return HTMLResponse(
-            content="<h1>Token exchange failed</h1><p>Invalid request_token or API config.</p>",
-            status_code=400,
-        )
-    access_token = data["access_token"]
+        return HTMLResponse("<h1>Token exchange failed</h1><p>Invalid request_token or API config.</p>", status_code=400)
 
-    if user_id_str:
-        try:
-            user_id = int(user_id_str)
-            save_zerodha_token(session, user_id, access_token)
-            return HTMLResponse(
-                content="<h1>Zerodha linked</h1><p>You can close this window and use the app.</p>"
-            )
-        except ValueError:
-            pass
-
-    # No cookie: show token for manual link
-    html = f"""
-    <h1>Zerodha login successful</h1>
-    <p>To link this session to your FinSight account, call:</p>
-    <pre>POST /zerodha/link\nContent-Type: application/json\nAuthorization: Bearer YOUR_JWT\n\n{{ "request_token": "{request_token}" }}</pre>
-    <p>Or use the same flow again after clicking "Connect Zerodha" in the app (so the cookie is set).</p>
-    """
-    return HTMLResponse(content=html)
+    save_zerodha_token(session, user_id, data["access_token"])
+    response = HTMLResponse("<h1>Zerodha linked</h1><p>You can close this window and use the app.</p>")
+    response.delete_cookie(link_state.COOKIE, path="/zerodha/")
+    return response
 
 
 @router.post("/link")
@@ -161,9 +124,7 @@ def link_zerodha(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Exchange a request_token (from Zerodha redirect) and store access_token for the current user.
-    """
+    """Exchange a request_token obtained out-of-band and store it for the current user."""
     request_token = (body.request_token or "").strip()
     if not request_token:
         raise HTTPException(status_code=400, detail="request_token required")

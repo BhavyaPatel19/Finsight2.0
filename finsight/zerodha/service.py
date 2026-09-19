@@ -3,29 +3,34 @@ from datetime import datetime
 from sqlmodel import Session, select
 
 from finsight.models import Holding, Portfolio, ZerodhaSession
-from finsight.zerodha.client import (
-    fetch_holdings,
-)
+from finsight.zerodha.client import fetch_holdings
+from finsight.zerodha.crypto import decrypt_token, encrypt_token
 
 
 def get_zerodha_token_for_user(session: Session, user_id: int) -> str | None:
     stmt = select(ZerodhaSession).where(ZerodhaSession.user_id == user_id).limit(1)
     row = session.exec(stmt).first()
-    return row.access_token if row else None
+    if not row:
+        return None
+    try:
+        return decrypt_token(row.access_token)
+    except ValueError:
+        return None
 
 
 def save_zerodha_token(session: Session, user_id: int, access_token: str) -> ZerodhaSession:
     stmt = select(ZerodhaSession).where(ZerodhaSession.user_id == user_id).limit(1)
     row = session.exec(stmt).first()
     now = datetime.utcnow()
+    stored = encrypt_token(access_token)
     if row:
-        row.access_token = access_token
+        row.access_token = stored
         row.updated_at = now
         session.add(row)
         session.commit()
         session.refresh(row)
         return row
-    row = ZerodhaSession(user_id=user_id, access_token=access_token)
+    row = ZerodhaSession(user_id=user_id, access_token=stored)
     session.add(row)
     session.commit()
     session.refresh(row)

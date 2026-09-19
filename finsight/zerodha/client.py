@@ -4,6 +4,7 @@ Zerodha Kite Connect API: OAuth login, token exchange, portfolio holdings, and m
 import hashlib
 from datetime import datetime
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -19,11 +20,15 @@ KITE_HISTORICAL_URL = "https://api.kite.trade/instruments/historical"
 KITE_INSTRUMENTS_URL = "https://api.kite.trade/instruments"
 
 
-def get_oauth_login_url() -> str:
-    """Return Zerodha OAuth login URL. User must be sent here; after login Zerodha redirects to your Redirect URL with request_token."""
+def get_oauth_login_url(state: str | None = None) -> str:
+    """Zerodha OAuth login URL. Kite appends `redirect_params` to the redirect
+    URL, which is how the CSRF `state` nonce round-trips back to /callback."""
     if not ZERODHA_API_KEY:
         return ""
-    return f"{KITE_LOGIN_BASE}?api_key={ZERODHA_API_KEY}&v=3"
+    url = f"{KITE_LOGIN_BASE}?api_key={ZERODHA_API_KEY}&v=3"
+    if state:
+        url += "&redirect_params=" + quote(f"state={state}", safe="")
+    return url
 
 
 def _checksum(request_token: str) -> str:

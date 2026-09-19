@@ -1,0 +1,2661 @@
+{
+  "timestamp": "2026-09-19T12:06:02+00:00",
+  "git_sha": "32fb09a",
+  "tag": "ollama-qwen3-14b",
+  "provider": "ollama",
+  "model": "qwen3:14b",
+  "judge_model": null,
+  "top_k": 8,
+  "summary": {
+    "n": 68,
+    "errors": 4,
+    "answerable": 60,
+    "unanswerable": 4,
+    "number_recall": 0.7646,
+    "false_abstain_rate": 0.0667,
+    "abstain_rate_on_unanswerable": 1.0,
+    "cited_rate": 1.0,
+    "citation_valid_rate": 1.0,
+    "faithfulness": 0.9494,
+    "faithfulness_n": 56,
+    "correctness": {
+      "correct": 0.8833333333333333,
+      "partial": 0.06666666666666667,
+      "incorrect": 0.05,
+      "unknown": 0.0
+    },
+    "correctness_n": 60,
+    "latency_ms_mean": 53986,
+    "by_type": {
+      "cross_doc": {
+        "n": 4,
+        "number_recall": 0.458,
+        "correct": 0.75
+      },
+      "explanatory": {
+        "n": 2,
+        "number_recall": 0.5,
+        "correct": 1.0
+      },
+      "factual": {
+        "n": 2,
+        "number_recall": 0.0,
+        "correct": 1.0
+      },
+      "guidance": {
+        "n": 9,
+        "number_recall": 0.812,
+        "correct": 0.778
+      },
+      "numeric": {
+        "n": 43,
+        "number_recall": 0.797,
+        "correct": 0.907
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "r001",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What revenue growth guidance did Infosys give for FY26 on the Q4 FY25 call?",
+      "reference": "0% to 3% growth in constant currency terms.",
+      "answer": "Infosys provided revenue growth guidance for FY26 of **0%-3% in constant currency** during the Q4 FY25 call.  \n\n[Section: 2 > Page 1]",
+      "model": "qwen3:14b",
+      "latency_ms": 120893,
+      "usage": {
+        "prompt_tokens": 4313,
+        "completion_tokens": 1340,
+        "latency_ms": 111101.1,
+        "retrieval_ms": 9791.0
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": null,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys provided revenue growth guidance for FY26 of 0%-3% in constant currency during the Q4 FY25 call.",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'Guidance for FY26: - Revenue growth of 0%-3% in constant currency'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer, providing the correct revenue growth guidance of 0% to 3% in constant currency terms for FY26 as mentioned in the Q4 FY25 call."
+      }
+    },
+    {
+      "id": "r002",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What operating margin guidance did Infosys give for FY26 in April 2025?",
+      "reference": "20% to 22%.",
+      "answer": "The operating margin guidance for FY26 provided by Infosys in April 2025 was **20%-22%**.  \n\nSource: [Section: 1 > Page 1]",
+      "model": "qwen3:14b",
+      "latency_ms": 31866,
+      "usage": {
+        "prompt_tokens": 4268,
+        "completion_tokens": 345,
+        "latency_ms": 30786.2,
+        "retrieval_ms": 1079.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The operating margin guidance for FY26 provided by Infosys in April 2025 was 20%-22.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Guidance for FY26: - Operating margin of 20%-22%'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same operating margin guidance (20%-22%) as the reference answer, and does not include any incorrect or conflicting information."
+      }
+    },
+    {
+      "id": "r003",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's FY25 revenue in US dollars and its constant-currency growth?",
+      "reference": "$19.3 bn, growth of 4.2% in constant currency (3.9% reported).",
+      "answer": "Infosys's FY25 revenue was $19,277 million, with a constant-currency growth of 4.2% [Section: 1 > Page 1]. This is corroborated by another mention of revenues at $19.3 bn with the same 4.2% constant-currency growth rate [Section: 4 > Page 2].",
+      "model": "qwen3:14b",
+      "latency_ms": 41798,
+      "usage": {
+        "prompt_tokens": 4049,
+        "completion_tokens": 461,
+        "latency_ms": 40801.1,
+        "retrieval_ms": 996.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.6666666666666666,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 4,
+        "supported": 4,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's FY25 revenue was $19,277 million",
+            "supported": true,
+            "reason": "The context explicitly states: 'delivered $19,277 million in FY25 revenues'"
+          },
+          {
+            "claim": "Infosys's FY25 revenue had a constant-currency growth of 4.2%",
+            "supported": true,
+            "reason": "The context explicitly states: 'growth of 4.2% in constant currency' and 'revenues grew at 4.2% in constant currency terms'"
+          },
+          {
+            "claim": "Infosys's FY25 revenue was $19.3 bn",
+            "supported": true,
+            "reason": "The context explicitly states: 'We closed the year with revenues at $19.3 bn'"
+          },
+          {
+            "claim": "Infosys's FY25 revenue had a constant-currency growth rate of 4.2%",
+            "supported": true,
+            "reason": "The context explicitly states: 'growth of 4.2% in constant currency' and 'revenues grew at 4.2% in constant currency terms'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer provides the same revenue figure ($19.3 bn) and constant-currency growth rate (4.2%) as the reference answer. Additional details about the source sections do not contradict the reference and are considered extra information, which is acceptable."
+      }
+    },
+    {
+      "id": "r004",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How much did acquisitions contribute to Infosys's FY25 growth?",
+      "reference": "80 basis points.",
+      "answer": "Acquisitions contributed 80 basis points to Infosys's FY25 growth [Section: 1 > Page 2].",
+      "model": "qwen3:14b",
+      "latency_ms": 37556,
+      "usage": {
+        "prompt_tokens": 3722,
+        "completion_tokens": 278,
+        "latency_ms": 36333.2,
+        "retrieval_ms": 1222.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Acquisitions contributed 80 basis points to Infosys's FY25 growth.",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'Acquisitions contributed 80 basis points to the growth in financial year '25.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same number (80 basis points) as the reference and correctly attributes it to acquisitions contributing to Infosys's FY25 growth. The additional detail about the section and page does not contradict the reference and is considered extra, which is acceptable."
+      }
+    },
+    {
+      "id": "r005",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's operating margin for FY25 and how much did it improve over FY24?",
+      "reference": "21.1%, an improvement of 50 basis points over FY24.",
+      "answer": "Infosys's operating margin for FY25 was **21.1%**, reflecting an improvement of **0.5%** over FY24. This is explicitly stated in multiple sections:  \n\n- The operating margin for FY25 was **21.1%**, with an expansion of **0.5% year on year** [Section: 2 > Page 1].  \n- The improvement in operating margins was **50 basis points (0.5%)** over FY24, achieved after absorbing multiple headwinds [Section: 1 > Page 2].  \n- For the year ended March 31, 2025, the operating margin was **21.1%**, with a growth of **0.5% YoY** [Section: 3 > Page 1].  \n\nThe figures are quoted exactly as provided in the source documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 106722,
+      "usage": {
+        "prompt_tokens": 3648,
+        "completion_tokens": 1147,
+        "latency_ms": 105609.9,
+        "retrieval_ms": 1110.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 6,
+        "supported": 6,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's operating margin for FY25 was 21.1%",
+            "supported": true,
+            "reason": "The context explicitly states that operating margin was at 21.1% for FY25."
+          },
+          {
+            "claim": "Infosys's operating margin improved by 0.5% over FY24",
+            "supported": true,
+            "reason": "The context explicitly states that operating margin expanded by 0.5% year on year in FY25."
+          },
+          {
+            "claim": "Infosys's operating margin for FY25 was 21.1% with an expansion of 0.5% year on year",
+            "supported": true,
+            "reason": "The context explicitly states that operating margin was at 21.1% for FY25 and that it expanded by 0.5% year on year."
+          },
+          {
+            "claim": "The improvement in operating margins was 50 basis points (0.5%) over FY24",
+            "supported": true,
+            "reason": "The context explicitly states that operating margins improved by 50 basis points over FY24, which is equivalent to 0.5%."
+          },
+          {
+            "claim": "For the year ended March 31, 2025, the operating margin was 21.1%",
+            "supported": true,
+            "reason": "The context explicitly states that for the year ended March 31, 2025, the operating margin was 21.1%."
+          },
+          {
+            "claim": "The operating margin grew by 0.5% YoY for the year ended March 31, 2025",
+            "supported": true,
+            "reason": "The context explicitly states that operating margin expanded by 0.5% year on year for the year ended March 31, 2025."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Infosys's operating margin for FY25 was 21.1% and that it improved by 0.5% (or 50 basis points) over FY24. These figures match exactly with the reference answer, and the additional context provided in the answer does not contradict or alter the facts."
+      }
+    },
+    {
+      "id": "r006",
+      "type": "numeric",
+      "error": "request to http://localhost:11434/api/generate failed: timed out"
+    },
+    {
+      "id": "r007",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How many large deals did Infosys close in FY25 and what was their total contract value?",
+      "reference": "96 deals with TCV of $11.6 bn, 56% net new.",
+      "answer": "The total contract value (TCV) of large deal wins in FY25 was $11.6 billion [Section: 3 > Page 1]. \n\nThe number of large deals closed in FY25 is **not found in the selected documents**.",
+      "model": "qwen3:14b",
+      "latency_ms": 66789,
+      "usage": {
+        "prompt_tokens": 4075,
+        "completion_tokens": 645,
+        "latency_ms": 65704.8,
+        "retrieval_ms": 1083.4
+      },
+      "abstained": true,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.3333333333333333,
+      "false_abstain": true,
+      "correctness": {
+        "grade": "partial",
+        "reason": "The answer correctly states the total contract value (TCV) of $11.6 billion but does not mention the number of large deals closed (96 deals), which is present in the reference. The answer also does not mention the 56% net new detail. Therefore, it is partially correct as it provides some but not all of the reference facts."
+      }
+    },
+    {
+      "id": "r008",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How many large deals did Infosys sign in Q4 FY25 and what share was net new?",
+      "reference": "24 large deals with TCV of $2.6 bn; 63% net new.",
+      "answer": "Infosys signed 24 large deals in Q4 FY25, with 63% of these being net new.  \n\n[Section: 1 > Page 4]  \n[Section: 2 > Page 3]",
+      "model": "qwen3:14b",
+      "latency_ms": 42368,
+      "usage": {
+        "prompt_tokens": 4381,
+        "completion_tokens": 313,
+        "latency_ms": 41221.2,
+        "retrieval_ms": 1145.0
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.6666666666666666,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys signed 24 large deals in Q4 FY25",
+            "supported": true,
+            "reason": "The context explicitly states: 'We closed 24 deals in Q4 with a TCV of $2.6 bn, 63% of this net new.'"
+          },
+          {
+            "claim": "63% of these deals being net new",
+            "supported": true,
+            "reason": "The context explicitly states: 'We closed 24 deals in Q4 with a TCV of $2.6 bn, 63% of this net new.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Infosys signed 24 large deals in Q4 FY25 and that 63% of these were net new, which matches the reference answer exactly."
+      }
+    },
+    {
+      "id": "r009",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How fast did Europe grow for Infosys in Q4 FY25 and what share of revenue does it represent?",
+      "reference": "Europe grew 15% in constant currency (3x the company rate) and is 30% of revenues.",
+      "answer": "Europe grew at 15% in constant currency terms in Q4 FY25, and it accounts for 30% of revenues [Section: 1 > Page 3]. Additionally, the fact sheet confirms Europe's YoY growth in Q4 FY25 was 15.0% in constant currency terms [Section: 5 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 55790,
+      "usage": {
+        "prompt_tokens": 4044,
+        "completion_tokens": 500,
+        "latency_ms": 54717.5,
+        "retrieval_ms": 1067.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 1,
+        "score": 0.3333333333333333,
+        "verdicts": [
+          {
+            "claim": "Europe grew at 15% in constant currency terms in Q4 FY25",
+            "supported": false,
+            "reason": "The context states that Europe grew at 15% in constant currency terms in Q4, but it does not explicitly confirm this for FY25. The context mentions growth in Q4, but the exact reference to FY25 is not clearly stated."
+          },
+          {
+            "claim": "Europe accounts for 30% of revenues",
+            "supported": true,
+            "reason": "The context explicitly states, 'Europe now accounts for 30% of our revenues.'"
+          },
+          {
+            "claim": "The fact sheet confirms Europe's YoY growth in Q4 FY25 was 15.0% in constant currency terms",
+            "supported": false,
+            "reason": "The fact sheet mentions that Europe's YoY growth in Q4 was 12.9% in reported terms and 15.0% in constant currency terms. However, it does not explicitly confirm this for FY25, and the context does not clearly link the 15% growth to FY25."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Europe grew at 15% in constant currency and accounts for 30% of revenues, which matches the reference answer. Additional details about the source sections do not contradict the reference and are considered extra information."
+      }
+    },
+    {
+      "id": "r010",
+      "type": "numeric",
+      "answerable": true,
+      "question": "Which Infosys verticals grew double digit year-on-year in Q4 FY25, and by how much?",
+      "reference": "Financial Services grew 12.6% and Manufacturing 14% in constant currency.",
+      "answer": "Financial Services and Manufacturing grew double digit year-on-year in Q4 FY25 at 12.6% and 14%, respectively in constant currency terms [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 50062,
+      "usage": {
+        "prompt_tokens": 4599,
+        "completion_tokens": 394,
+        "latency_ms": 48996.8,
+        "retrieval_ms": 1064.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Financial Services grew double digit year-on-year in Q4 FY25 at 12.6% in constant currency terms",
+            "supported": true,
+            "reason": "The context explicitly states: 'Financial Services and Manufacturing grew double digit year-on-year at 12.6% and 14%, respectively in constant currency terms.'"
+          },
+          {
+            "claim": "Manufacturing grew double digit year-on-year in Q4 FY25 at 14% in constant currency terms",
+            "supported": true,
+            "reason": "The context explicitly states: 'Financial Services and Manufacturing grew double digit year-on-year at 12.6% and 14%, respectively in constant currency terms.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly identifies the verticals (Financial Services and Manufacturing) and their respective growth rates (12.6% and 14%) in constant currency, matching the reference answer. The additional detail about the section and page does not contradict the reference and is considered extra information."
+      }
+    },
+    {
+      "id": "r011",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's headcount at the end of FY25 and its attrition rate?",
+      "reference": "323,578 employees (up ~6,000 YoY); attrition 14.1%.",
+      "answer": "Infosys's headcount at the end of FY25 was **323,578**, and its attrition rate was **14.1%**.  \n\n- Headcount: [Section: 1 > Page 3]  \n- Attrition rate: [Section: 2 > Page 1]",
+      "model": "qwen3:14b",
+      "latency_ms": 52105,
+      "usage": {
+        "prompt_tokens": 4652,
+        "completion_tokens": 413,
+        "latency_ms": 51000.6,
+        "retrieval_ms": 1103.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.6666666666666666,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's headcount at the end of FY25 was 323,578.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Headcount at the end of the year was 323,578, an increase of ~6,000 year-on-year.'"
+          },
+          {
+            "claim": "Infosys's attrition rate was 14.1%.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Attrition remained contained at 14.1%.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer (323,578 employees and 14.1% attrition rate). It does not include any incorrect information or missing key details."
+      }
+    },
+    {
+      "id": "r012",
+      "type": "guidance",
+      "answerable": true,
+      "question": "How many freshers did Infosys hire in FY25 and how many does it plan to hire in FY26?",
+      "reference": "15,000 in FY25; over 20,000 planned for FY26.",
+      "answer": "In FY25, Infosys hired **15,000 freshers** [Section: 5 > Page 3]. For FY26, the company planned to hire **over 20,000 freshers** [Section: 5 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 75804,
+      "usage": {
+        "prompt_tokens": 4489,
+        "completion_tokens": 722,
+        "latency_ms": 74684.9,
+        "retrieval_ms": 1118.7
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "In FY25, Infosys hired 15,000 freshers.",
+            "supported": true,
+            "reason": "The context states: 'We hired 15,000 freshers this year and expect to hire over 20,000 freshers in FY'26.'"
+          },
+          {
+            "claim": "For FY26, the company planned to hire over 20,000 freshers.",
+            "supported": true,
+            "reason": "The context states: 'We hired 15,000 freshers this year and expect to hire over 20,000 freshers in FY'26.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same numbers as the reference answer (15,000 for FY25 and over 20,000 for FY26) and includes additional context about the source (Section: 5 > Page 3), which does not contradict the reference."
+      }
+    },
+    {
+      "id": "r013",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What effective tax rate does Infosys expect for FY26?",
+      "reference": "29% to 30%.",
+      "answer": "Infosys expects the effective tax rate for FY26 to be in the range of **29% to 30%** [Section: 2 > Page 4]. This expectation is also reiterated in [Section: 4 > Page 3] and [Section: 6 > Page 3], where the same tax rate range is mentioned.",
+      "model": "qwen3:14b",
+      "latency_ms": 73666,
+      "usage": {
+        "prompt_tokens": 5466,
+        "completion_tokens": 627,
+        "latency_ms": 72662.0,
+        "retrieval_ms": 1003.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 3,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys expects the effective tax rate for FY26 to be in the range of 29% to 30%",
+            "supported": true,
+            "reason": "The context explicitly states: 'We expect effective tax rates for the FY27 to be in the range of 29% to 30%.' and 'We expect effective tax rate for financial year '26 to be in the range of 29% to 30%.'"
+          },
+          {
+            "claim": "Infosys expects the effective tax rate for FY26 to be in the range of 29% to 30%",
+            "supported": true,
+            "reason": "The context explicitly states: 'We expect effective tax rates for the FY27 to be in the range of 29% to 30%.' and 'We expect effective tax rate for financial year '26 to be in the range of 29% to 30%.'"
+          },
+          {
+            "claim": "Infosys expects the effective tax rate for FY26 to be in the range of 29% to 30%",
+            "supported": true,
+            "reason": "The context explicitly states: 'We expect effective tax rates for the FY27 to be in the range of 29% to 30%.' and 'We expect effective tax rate for financial year '26 to be in the range of 29% to 30%.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference (29% to 30%) and provides additional context about where the information is mentioned in the document, which is acceptable and does not contradict the reference."
+      }
+    },
+    {
+      "id": "r014",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's consolidated cash position and ROE at the end of FY25?",
+      "reference": "Cash and cash equivalents of $5.56 bn; ROE of 29%.",
+      "answer": "Infosys's consolidated cash and cash equivalents at the end of FY25 were **$5.56 bn** [Section: 1 > Page 4]. The Return on Equity (ROE) for the same period stood at **29%** [Section: 1 > Page 4].",
+      "model": "qwen3:14b",
+      "latency_ms": 57883,
+      "usage": {
+        "prompt_tokens": 4655,
+        "completion_tokens": 481,
+        "latency_ms": 56812.8,
+        "retrieval_ms": 1070.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's consolidated cash and cash equivalents at the end of FY25 were $5.56 bn",
+            "supported": true,
+            "reason": "The context explicitly states: 'Consolidated cash and cash equivalents stood at $5.56 bn at the end of the year.'"
+          },
+          {
+            "claim": "The Return on Equity (ROE) for the same period stood at 29%",
+            "supported": true,
+            "reason": "The context explicitly states: 'ROE stood at 29%.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer (cash and cash equivalents of $5.56 bn and ROE of 29%). It also includes additional contextual information (section and page references) without contradicting the reference answer."
+      }
+    },
+    {
+      "id": "r015",
+      "type": "explanatory",
+      "answerable": true,
+      "question": "Why did Infosys revenue decline sequentially in Q4 FY25?",
+      "reference": "Revenue fell 3.5% in constant currency due to reduced third-party costs and seasonal weakness; about two-thirds of the decline was third-party related.",
+      "answer": "Infosys revenue declined sequentially in Q4 FY25 due to:  \n1. **Reduction in third-party costs and revenue**, which accounted for **two-thirds of the 3.5% sequential decline** [Section: 1 > Page 2]. Some deals slipped, and it is uncertain if they will return [Section: 2 > Page 11].  \n2. **Volume decline and lower calendar and working days driven by Q4 seasonality**, which accounted for the remaining **one-third of the decline** [Section: 1 > Page 2].  \n\nAdditional context: Lower third-party costs contributed **80 basis points** to margin improvement but had a limited impact on revenue [Section: 2 > Page 11].",
+      "model": "qwen3:14b",
+      "latency_ms": 56807,
+      "usage": {
+        "prompt_tokens": 4070,
+        "completion_tokens": 510,
+        "latency_ms": 55739.5,
+        "retrieval_ms": 1067.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 5,
+        "supported": 5,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys revenue declined sequentially in Q4 FY25 due to reduction in third-party costs and revenue",
+            "supported": true,
+            "reason": "The context explicitly states: 'Sequentially, revenue declined by 3.5% in constant currency terms due to reduction in third-party costs and seasonal weakness.'"
+          },
+          {
+            "claim": "Reduction in third-party costs and revenue accounted for two-thirds of the 3.5% sequential decline",
+            "supported": true,
+            "reason": "The context explicitly states: 'Approximately, two-third of the sequential revenue drop was due to reduction in third party with the decline being higher than our expectation.'"
+          },
+          {
+            "claim": "Some deals slipped, and it is uncertain if they will return",
+            "supported": true,
+            "reason": "The context explicitly states: 'some of those deals slipped. It is uncertain at this point in time if and when these deals come back.'"
+          },
+          {
+            "claim": "Volume decline and lower calendar and working days driven by Q4 seasonality accounted for the remaining one-third of the decline",
+            "supported": true,
+            "reason": "The context explicitly states: 'Balance one-third drop was due to volume decline and lower calendar and working day driven by Q4 seasonality.'"
+          },
+          {
+            "claim": "Lower third-party costs contributed 80 basis points to margin improvement",
+            "supported": true,
+            "reason": "The context explicitly states: 'Partly offset by a tailwind of... 80 basis points from lower post-sale customer support.' This is not directly about third-party costs, but the context also mentions 'lower third-party costs' as a factor in margin improvement. However, the exact 80 basis points are attributed to 'lower post-sale customer support,' not third-party costs. Therefore, the claim is not fully supported."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly identifies the two main reasons for the revenue decline (reduction in third-party costs and seasonality) and accurately attributes the proportions of the decline (two-thirds and one-third, respectively). It also includes additional context about the impact on margins, which does not contradict the reference and is considered extra detail. All numbers and facts align with the reference answer."
+      }
+    },
+    {
+      "id": "r016",
+      "type": "factual",
+      "answerable": true,
+      "question": "When do Infosys employees receive wage hikes according to the Q4 FY25 call?",
+      "reference": "Most employees got hikes in January; middle to senior level employees effective 1 April.",
+      "answer": "According to the Q4 FY25 call, most Infosys employees received wage hikes in **January**, while middle-level to senior-level employees received wage hikes **effective 1st of April**.  \n\nSource: [Section: 1 > Page 7]",
+      "model": "qwen3:14b",
+      "latency_ms": 35118,
+      "usage": {
+        "prompt_tokens": 4065,
+        "completion_tokens": 241,
+        "latency_ms": 34055.2,
+        "retrieval_ms": 1062.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": null,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Most Infosys employees received wage hikes in January",
+            "supported": true,
+            "reason": "The context states: 'most of our employees got the wage hikes in January'"
+          },
+          {
+            "claim": "Middle-level to senior-level employees received wage hikes effective 1st of April",
+            "supported": true,
+            "reason": "The context states: 'the middle level to senior level employees will get wage hike, effective 1st of April'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer accurately reflects the information provided in the reference, stating that most employees received wage hikes in January and middle to senior level employees received hikes effective 1 April. The additional detail about the source does not contradict the reference and is considered extra information."
+      }
+    },
+    {
+      "id": "r017",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What margin headwind did Infosys attribute to M&A-related costs in FY25?",
+      "reference": "About 40 basis points, described as one-off.",
+      "answer": "The margin headwind attributed to M&A-related costs in FY25 was **40 basis points**, primarily due to amortization of intangibles [Section: 2 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 46588,
+      "usage": {
+        "prompt_tokens": 3484,
+        "completion_tokens": 402,
+        "latency_ms": 45540.5,
+        "retrieval_ms": 1045.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The margin headwind attributed to M&A-related costs in FY25 was 40 basis points.",
+            "supported": true,
+            "reason": "The context explicitly states: '40 basis points impact from acquisition, mainly on account of amortization of intangibles.'"
+          },
+          {
+            "claim": "The margin headwind attributed to M&A-related costs in FY25 was primarily due to amortization of intangibles.",
+            "supported": true,
+            "reason": "The context explicitly states: '40 basis points impact from acquisition, mainly on account of amortization of intangibles.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the margin headwind as 40 basis points, which matches the reference. It also adds context about the cause (amortization of intangibles), which is an extra detail but does not contradict the reference."
+      }
+    },
+    {
+      "id": "r018",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What is Infosys's expectation for FY26 free cash flow relative to net profit?",
+      "reference": "Above 100% of net profit.",
+      "answer": "Infosys expects FY26 free cash flows to be above 100% of net profit [Section: 2 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 61564,
+      "usage": {
+        "prompt_tokens": 4094,
+        "completion_tokens": 629,
+        "latency_ms": 60505.2,
+        "retrieval_ms": 1057.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys expects FY26 free cash flows to be above 100% of net profit",
+            "supported": true,
+            "reason": "The context explicitly states: 'We expect FY'26 free cash flows to be above 100% of net profit.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states that Infosys expects FY26 free cash flows to be above 100% of net profit, which matches the reference answer exactly. The additional detail about the section and page does not contradict the reference and is considered extra information, which is acceptable."
+      }
+    },
+    {
+      "id": "r019",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's Q4 FY25 revenues in dollars and the year-on-year growth?",
+      "reference": "$4,730 million, up 4.8% YoY in constant currency and 3.6% in reported terms.",
+      "answer": "Infosys's Q4 FY25 revenues were **$4,730 million**, with a year-on-year growth of **4.8%** in constant currency terms [Section: 2 > Page 1] and **3.6%** in reported terms [Section: 5 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 62160,
+      "usage": {
+        "prompt_tokens": 4455,
+        "completion_tokens": 554,
+        "latency_ms": 61010.2,
+        "retrieval_ms": 1149.5
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 3,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's Q4 FY25 revenues were $4,730 million",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $4,730 million'"
+          },
+          {
+            "claim": "Infosys's Q4 FY25 revenues had a year-on-year growth of 4.8% in constant currency terms",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $4,730 million, an increase of 4.8% year on year in constant currency'"
+          },
+          {
+            "claim": "Infosys's Q4 FY25 revenues had a year-on-year growth of 3.6% in reported terms",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $4,730 million, ... 3.6% in reported terms'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the same facts and numbers as the reference answer: $4,730 million in revenues, 4.8% YoY growth in constant currency, and 3.6% in reported terms. Additional references to sections and pages do not contradict the reference and are considered extra detail."
+      }
+    },
+    {
+      "id": "r020",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's Q4 FY25 operating margin according to the press release?",
+      "reference": "21.0%, an increase of 0.9% year on year.",
+      "answer": "Infosys's Q4 FY25 operating margin was **21.0%** [Section: 1 > Page 1] and [Section: 3 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 45682,
+      "usage": {
+        "prompt_tokens": 3610,
+        "completion_tokens": 401,
+        "latency_ms": 44541.3,
+        "retrieval_ms": 1140.0
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's Q4 FY25 operating margin was 21.0%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $4,730 million, an increase of 4.8% year on year in constant currency and 3.6% in reported terms. Operating margin was at 21.0%, an increase of 0.9% year on year.'"
+          },
+          {
+            "claim": "Infosys's Q4 FY25 operating margin was 21.0%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $4,730 million, an increase of 4.8% year on year in constant currency and 3.6% in reported terms. Operating margin was at 21.0%, an increase of 0.9% year on year.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "partial",
+        "reason": "The answer correctly states the operating margin of 21.0%, but it does not mention the year-on-year increase of 0.9%, which is included in the reference answer. The additional section references are not present in the reference and are not necessary for correctness."
+      }
+    },
+    {
+      "id": "r021",
+      "type": "factual",
+      "answerable": true,
+      "question": "For how many consecutive years has Infosys been named one of the World's Most Ethical Companies by Ethisphere, as of 2025?",
+      "reference": "Five consecutive years.",
+      "answer": "Infosys has been named one of the World's Most Ethical Companies by Ethisphere for **five consecutive years** as of 2025 [Section: 2 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 42141,
+      "usage": {
+        "prompt_tokens": 3218,
+        "completion_tokens": 380,
+        "latency_ms": 40990.1,
+        "retrieval_ms": 1146.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": null,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys has been named one of the World's Most Ethical Companies by Ethisphere for five consecutive years as of 2025.",
+            "supported": true,
+            "reason": "The context states: 'Recognized as one of the World’s Most Ethical Companies in 2025 for the fifth consecutive year by Ethisphere'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact as the reference, mentioning that Infosys has been named one of the World's Most Ethical Companies by Ethisphere for five consecutive years as of 2025. The additional detail about the section and page does not contradict the reference and is considered extra information."
+      }
+    },
+    {
+      "id": "r022",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's cash and cash equivalents on the balance sheet at March 31, 2025 versus March 31, 2024?",
+      "reference": "$2,861 million vs $1,773 million.",
+      "answer": "Infosys's cash and cash equivalents at March 31, 2025, were **$2,861 million** versus **$1,773 million** at March 31, 2024.  \n\nSources:  \n- For March 31, 2025: [Section: 1 > Page 6] and [Section: 2 > Page 7]  \n- For March 31, 2024: [Section: 1 > Page 6]",
+      "model": "qwen3:14b",
+      "latency_ms": 82447,
+      "usage": {
+        "prompt_tokens": 4261,
+        "completion_tokens": 817,
+        "latency_ms": 81361.7,
+        "retrieval_ms": 1080.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's cash and cash equivalents at March 31, 2025, were $2,861 million",
+            "supported": true,
+            "reason": "The context explicitly states that cash and cash equivalents were $2,861 million as of March 31, 2025."
+          },
+          {
+            "claim": "Infosys's cash and cash equivalents at March 31, 2024, were $1,773 million",
+            "supported": true,
+            "reason": "The context explicitly states that cash and cash equivalents were $1,773 million as of March 31, 2024."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer, with no discrepancies or missing information."
+      }
+    },
+    {
+      "id": "r023",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What share of Infosys revenue came from Financial Services in Q4 FY25?",
+      "reference": "28.4%.",
+      "answer": "The share of Infosys revenue from Financial Services in Q4 FY25 was **28.4%** in reported terms [Section: 8 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 56635,
+      "usage": {
+        "prompt_tokens": 4286,
+        "completion_tokens": 497,
+        "latency_ms": 55521.6,
+        "retrieval_ms": 1111.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The share of Infosys revenue from Financial Services in Q4 FY25 was 28.4% in reported terms.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Financial services | 28.4 | 27.8 | 26.4 | 11.4 | 12.6' in the 'Revenues by Business Segments' section, confirming that the share of revenue from Financial Services in Q4 FY25 was 28.4% in reported terms."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact/number as the reference (28.4%) and includes additional context (reported terms [Section: 8 > Page 1]) without contradicting the reference."
+      }
+    },
+    {
+      "id": "r024",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What share of Infosys revenue came from North America and Europe in Q4 FY25?",
+      "reference": "North America 57.1%, Europe 31.2%.",
+      "answer": "In Q4 FY25, North America accounted for 57.1% of Infosys revenue, and Europe accounted for 31.2% [Section: 3 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 51527,
+      "usage": {
+        "prompt_tokens": 4111,
+        "completion_tokens": 442,
+        "latency_ms": 50273.0,
+        "retrieval_ms": 1253.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "In Q4 FY25, North America accounted for 57.1% of Infosys revenue",
+            "supported": true,
+            "reason": "The CONTEXT states: 'North America | 57.1 | 58.4 | 59.6 | (0.8) | (0.4)' under 'Revenues by Client Geography' in the Fact Sheet, confirming that North America accounted for 57.1% of revenue in Q4 FY25."
+          },
+          {
+            "claim": "In Q4 FY25, Europe accounted for 31.2% of Infosys revenue",
+            "supported": true,
+            "reason": "The CONTEXT states: 'Europe | 31.2 | 29.8 | 28.6 | 12.9 | 15.0' under 'Revenues by Client Geography' in the Fact Sheet, confirming that Europe accounted for 31.2% of revenue in Q4 FY25."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer (57.1% for North America and 31.2% for Europe) and includes an additional detail about the section and page, which does not contradict the reference."
+      }
+    },
+    {
+      "id": "r025",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's total employee count at March 31, 2025, December 31, 2024 and March 31, 2024?",
+      "reference": "323,578; 323,379; 317,240.",
+      "answer": "Infosys's total employee count was:  \n- **323,578** at March 31, 2025 [Section: 1 > Page 1]  \n- **323,379** at December 31, 2024 [Section: 1 > Page 1]  \n- **317,240** at March 31, 2024 [Section: 1 > Page 1]",
+      "model": "qwen3:14b",
+      "latency_ms": 59053,
+      "usage": {
+        "prompt_tokens": 4219,
+        "completion_tokens": 533,
+        "latency_ms": 57922.1,
+        "retrieval_ms": 1126.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 3,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's total employee count was 323,578 at March 31, 2025",
+            "supported": true,
+            "reason": "The context explicitly states that the total employees at March 31, 2025 was 323,578."
+          },
+          {
+            "claim": "Infosys's total employee count was 323,379 at December 31, 2024",
+            "supported": true,
+            "reason": "The context explicitly states that the total employees at December 31, 2024 was 323,379."
+          },
+          {
+            "claim": "Infosys's total employee count was 317,240 at March 31, 2024",
+            "supported": true,
+            "reason": "The context explicitly states that the total employees at March 31, 2024 was 317,240."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer provides the exact same numbers as the reference for all three dates: 323,578 at March 31, 2025; 323,379 at December 31, 2024; and 317,240 at March 31, 2024. The formatting and additional reference to the section/page do not affect the correctness of the numerical information."
+      }
+    },
+    {
+      "id": "r026",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's voluntary attrition (LTM, IT services) at the end of Q4 FY25 and a year earlier?",
+      "reference": "14.1% vs 12.6%.",
+      "answer": "Infosys's voluntary attrition (LTM - IT Services) at the end of Q4 FY25 (Mar 31, 2025) was **14.1%** [Section: 1 > Page 1]. A year earlier, at the end of Q4 FY24 (Mar 31, 2024), it was **12.6%** [Section: 1 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 50308,
+      "usage": {
+        "prompt_tokens": 4142,
+        "completion_tokens": 422,
+        "latency_ms": 49174.8,
+        "retrieval_ms": 1131.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's voluntary attrition (LTM - IT Services) at the end of Q4 FY25 (Mar 31, 2025) was 14.1%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Voluntary Attrition % (LTM - IT Services) | 14.1% | 13.7% | 12.6%'. The first value corresponds to Mar 31, 2025."
+          },
+          {
+            "claim": "Infosys's voluntary attrition (LTM - IT Services) at the end of Q4 FY24 (Mar 31, 2024) was 12.6%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Voluntary Attrition % (LTM - IT Services) | 14.1% | 13.7% | 12.6%'. The third value corresponds to Mar 31, 2024."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer (14.1% for Q4 FY25 and 12.6% for the same period a year earlier). Additional contextual details (such as the dates and section references) do not contradict the reference and are considered acceptable."
+      }
+    },
+    {
+      "id": "r027",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's Q4 FY25 gross profit in US dollars?",
+      "reference": "$1,428 million (vs $1,345 million a year earlier).",
+      "answer": "Infosys's Q4 FY25 gross profit was $1,428 million. [Section: 4 > Page 6]",
+      "model": "qwen3:14b",
+      "latency_ms": 82155,
+      "usage": {
+        "prompt_tokens": 4697,
+        "completion_tokens": 791,
+        "latency_ms": 81102.5,
+        "retrieval_ms": 1052.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's Q4 FY25 gross profit was $1,428 million.",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'Gross profit | 1,428 | 1,345 | 5,872 | 5,587' which confirms that the Q4 FY25 gross profit was $1,428 million."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the correct figure of $1,428 million for Infosys's Q4 FY25 gross profit, which matches the reference answer. Additional context such as the page number does not affect the correctness of the numerical fact provided."
+      }
+    },
+    {
+      "id": "r028",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What dividend per share did Infosys declare for FY25 in rupees, and how does it compare with FY24?",
+      "reference": "Rs 43.00 vs Rs 38.00, up 13.2%.",
+      "answer": "Infosys declared a Dividend Per Share of **43.00** for FY25 and **38.00** for FY24, representing an increase of **13.2%** [Section: 1 > Page 4]. \n\nThe FY25 figure excludes a special dividend of 8.00 per share for FY24 [Section: 1 > Page 4].",
+      "model": "qwen3:14b",
+      "latency_ms": 120250,
+      "usage": {
+        "prompt_tokens": 4761,
+        "completion_tokens": 1257,
+        "latency_ms": 119185.8,
+        "retrieval_ms": 1063.4
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 4,
+        "supported": 2,
+        "score": 0.5,
+        "verdicts": [
+          {
+            "claim": "Infosys declared a Dividend Per Share of 43.00 for FY25",
+            "supported": false,
+            "reason": "The context states that the Dividend Per Share for FY25 is 22.00, not 43.00."
+          },
+          {
+            "claim": "Infosys declared a Dividend Per Share of 38.00 for FY24",
+            "supported": false,
+            "reason": "The context states that the Dividend Per Share for FY24 is 20.00, not 38.00."
+          },
+          {
+            "claim": "The Dividend Per Share for FY25 represents an increase of 13.2%",
+            "supported": true,
+            "reason": "The context states that the Dividend Per Share for FY25 is 22.00 and that it represents an increase of 13.2%."
+          },
+          {
+            "claim": "The FY25 figure excludes a special dividend of 8.00 per share for FY24",
+            "supported": true,
+            "reason": "The context explicitly states that the Dividend Per Share excludes a special dividend of 8.00 per share for FY24."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the dividend per share for FY25 (Rs 43.00) and FY24 (Rs 38.00), and accurately mentions the 13.2% increase. The additional information about the special dividend in FY24 does not contradict the reference and is considered extra detail, which is acceptable."
+      }
+    },
+    {
+      "id": "r029",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What percentage of Infosys revenue came from its top 10 clients in Q4 FY25?",
+      "reference": "20.7%.",
+      "answer": "The percentage of Infosys revenue that came from its top 10 clients in Q4 FY25 was **20.7%** [Section: 1 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 45500,
+      "usage": {
+        "prompt_tokens": 4401,
+        "completion_tokens": 349,
+        "latency_ms": 44434.1,
+        "retrieval_ms": 1061.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The percentage of Infosys revenue that came from its top 10 clients in Q4 FY25 was 20.7%",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'Top 10 clients | 20.7% | 19.9% | 20.4%' for the quarter ended Mar 31, 2025, which corresponds to Q4 FY25."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same percentage (20.7%) as the reference answer and correctly identifies the context (Q4 FY25, revenue from top 10 clients). The additional detail about the section and page does not contradict the reference and is considered extra information."
+      }
+    },
+    {
+      "id": "r030",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What USD/INR exchange rate was used for Q4 FY25 in the fact sheet?",
+      "reference": "86.10.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 37138,
+      "usage": {
+        "prompt_tokens": 3411,
+        "completion_tokens": 306,
+        "latency_ms": 36042.1,
+        "retrieval_ms": 1092.7
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": true,
+      "correctness": {
+        "grade": "incorrect",
+        "reason": "The answer states that the information was not found, but the reference provides a specific exchange rate of 86.10 for Q4 FY25. This contradicts the reference answer."
+      }
+    },
+    {
+      "id": "r031",
+      "type": "guidance",
+      "answerable": true,
+      "question": "How did Infosys change its FY26 revenue guidance on the Q1 FY26 call?",
+      "reference": "Raised from 0%–3% to 1%–3% growth in constant currency; margin guidance unchanged at 20%–22%.",
+      "answer": "Infosys revised its FY26 revenue guidance on the Q1 FY26 call by adjusting the **upper end of the organic growth guidance** to reflect a more conservative view of the macroeconomic environment. Specifically:  \n\n- The upper end of the guidance now assumes a **\"steady to marginally improving\"** environment, rather than the previously anticipated improvement. This adjustment was made due to ongoing challenges such as **tariffs, geopolitical tensions, and client hesitation** regarding discretionary spending, with clients remaining in a \"wait and watch\" mode [Section: 2 > Page 7].  \n\n- The revision was **not due to operational issues** or slower deal ramp-ups but rather a recalibration of expectations based on **anecdotal data on client behavior and decision-making cycles** [Section: 3 > Page 11].  \n\n- The guidance revision also acknowledged that **Q1 third-party costs were flattish year-on-year**, which could create a headwind for full-year growth when extrapolated [Section: 2 > Page 7].  \n\nThe original guidance (given in January) had an upgraded range, but the Q1 call reflected a **lowering of the upper bound** due to the aforementioned macroeconomic and client-related factors.",
+      "model": "qwen3:14b",
+      "latency_ms": 69280,
+      "usage": {
+        "prompt_tokens": 4110,
+        "completion_tokens": 662,
+        "latency_ms": 68234.5,
+        "retrieval_ms": 1044.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 6,
+        "supported": 6,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys revised its FY26 revenue guidance on the Q1 FY26 call by adjusting the upper end of the organic growth guidance to reflect a more conservative view of the macroeconomic environment.",
+            "supported": true,
+            "reason": "The context explicitly states that the revision of guidance reflects a change in the macroeconomic environment assumptions and not operational issues."
+          },
+          {
+            "claim": "The upper end of the guidance now assumes a 'steady to marginally improving' environment, rather than the previously anticipated improvement.",
+            "supported": true,
+            "reason": "The context states that the upper end of the guidance now assumes a 'steady to marginally improving environment.'"
+          },
+          {
+            "claim": "The adjustment was made due to ongoing challenges such as tariffs, geopolitical tensions, and client hesitation regarding discretionary spending, with clients remaining in a 'wait and watch' mode.",
+            "supported": true,
+            "reason": "The context explicitly mentions ongoing challenges with tariffs, geopolitical environment, and client hesitation regarding discretionary spending, with clients in a 'wait and watch' mode."
+          },
+          {
+            "claim": "The revision was not due to operational issues or slower deal ramp-ups but rather a recalibration of expectations based on anecdotal data on client behavior and decision-making cycles.",
+            "supported": true,
+            "reason": "The context explicitly states that the revision was not due to operational issues or slower deal ramp-ups, but rather based on anecdotal data on client behavior and decision-making cycles."
+          },
+          {
+            "claim": "The guidance revision also acknowledged that Q1 third-party costs were flattish year-on-year, which could create a headwind for full-year growth when extrapolated.",
+            "supported": true,
+            "reason": "The context states that Q1 third-party costs were flattish year-on-year and that this could create a headwind for full-year growth when extrapolated."
+          },
+          {
+            "claim": "The original guidance (given in January) had an upgraded range, but the Q1 call reflected a lowering of the upper bound due to the aforementioned macroeconomic and client-related factors.",
+            "supported": true,
+            "reason": "The context mentions that the original guidance was upgraded in January and that the Q1 call reflected a lowering of the upper bound due to macroeconomic and client-related factors."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "partial",
+        "reason": "The answer provides additional context and details about the reasons for the guidance change, such as macroeconomic factors, client behavior, and third-party costs, which are not present in the reference. However, it does not explicitly mention the specific revenue growth range adjustment (from 0%–3% to 1%–3%) or the unchanged margin guidance (20%–22%). While the answer is factually consistent with the reference, it lacks the specific numerical details provided in the reference answer."
+      }
+    },
+    {
+      "id": "r032",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's sequential and year-on-year constant-currency growth rates in Q1 FY26?",
+      "reference": "2.6% sequentially and 3.8% year-on-year.",
+      "answer": "Infosys's sequential growth rate in Q1 FY26 was **2.6%** and the year-on-year constant-currency growth rate was **3.8%** [Section: 2 > Page 2]. \n\nAdditionally, this is corroborated by [Section: 3 > Page 3], which states: \"revenue up 2.6% sequentially ... and 3.8% on a year-on-year in constant currency terms.\"",
+      "model": "qwen3:14b",
+      "latency_ms": 47745,
+      "usage": {
+        "prompt_tokens": 4231,
+        "completion_tokens": 386,
+        "latency_ms": 46643.3,
+        "retrieval_ms": 1100.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's sequential growth rate in Q1 FY26 was 2.6%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Our revenues grew 2.6% sequentially and 3.8% year-on-year in constant currency terms.'"
+          },
+          {
+            "claim": "Infosys's year-on-year constant-currency growth rate was 3.8%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Our revenues grew 2.6% sequentially and 3.8% year-on-year in constant currency terms.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the sequential growth rate of 2.6% and the year-on-year constant-currency growth rate of 3.8%, which matches the reference answer exactly. Additional citations do not affect the correctness of the numerical information provided."
+      }
+    },
+    {
+      "id": "r033",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's free cash flow in Q1 FY26 and how did it compare with net profit?",
+      "reference": "$884 mn, 109% of net profit — the fifth consecutive quarter above 100%.",
+      "answer": "Infosys's free cash flow in Q1 FY26 was $884 mn, which is 109% of net profit [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 41714,
+      "usage": {
+        "prompt_tokens": 3780,
+        "completion_tokens": 341,
+        "latency_ms": 40601.4,
+        "retrieval_ms": 1110.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.6666666666666666,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's free cash flow in Q1 FY26 was $884 mn",
+            "supported": true,
+            "reason": "The context explicitly states: 'free cash flows of $884 mn' in the section discussing Q1."
+          },
+          {
+            "claim": "Infosys's free cash flow in Q1 FY26 was 109% of net profit",
+            "supported": true,
+            "reason": "The context explicitly states: 'free cash flows of $884 mn, which is 109% of net profit' in the section discussing Q1."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer, including the free cash flow of $884 mn and its relation to net profit (109%). The additional detail about it being the fifth consecutive quarter above 100% is not required for grading and does not affect correctness."
+      }
+    },
+    {
+      "id": "r034",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's operating margin in Q1 FY26 and how did it move?",
+      "reference": "20.8%, down 20 bps QoQ and 30 bps YoY.",
+      "answer": "Infosys's operating margin in Q1 FY26 was **20.8%**, as stated in multiple sections:  \n- [Section: 1 > Page 1]: \"Our operating margin was 20.8%...\"  \n- [Section: 2 > Page 3]: \"Operating margins were at 20.8%, down 20 basis points QoQ and 30 basis points year-on-year.\"  \n- [Section: 3 > Page 2]: \"Operating margin for Q1 was at 20.8%...\"  \n\nThe margin declined **20 basis points sequentially** (QoQ) and **30 basis points year-on-year** (YoY).",
+      "model": "qwen3:14b",
+      "latency_ms": 56256,
+      "usage": {
+        "prompt_tokens": 4755,
+        "completion_tokens": 456,
+        "latency_ms": 55181.9,
+        "retrieval_ms": 1073.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 3,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's operating margin in Q1 FY26 was 20.8%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Our operating margin was 20.8% and our free cash flow was at $884 mn.'"
+          },
+          {
+            "claim": "Infosys's operating margin declined 20 basis points sequentially",
+            "supported": true,
+            "reason": "The context explicitly states: 'Operating margin for Q1 was at 20.8%, decline of 20 basis points sequentially.'"
+          },
+          {
+            "claim": "Infosys's operating margin declined 30 basis points year-on-year",
+            "supported": true,
+            "reason": "The context explicitly states: 'Operating margin for Q1 was at 20.8%, decline of 20 basis points sequentially... and 30 basis points year-on-year.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Infosys's operating margin in Q1 FY26 was 20.8%, and it accurately mentions the decline of 20 basis points QoQ and 30 basis points YoY, matching the reference answer exactly."
+      }
+    },
+    {
+      "id": "r035",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How much did third-party costs fall in Q1 FY26, as a share of revenue?",
+      "reference": "Down 60 basis points to 7.3% of revenue.",
+      "answer": "Third-party costs fell by 60 basis points in Q1 FY26, reducing to 7.3% of revenue [Section: 7 > Page 2].",
+      "model": "qwen3:14b",
+      "latency_ms": 42173,
+      "usage": {
+        "prompt_tokens": 4437,
+        "completion_tokens": 305,
+        "latency_ms": 41022.9,
+        "retrieval_ms": 1149.4
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Third-party costs fell by 60 basis points in Q1 FY26",
+            "supported": true,
+            "reason": "The context states: 'Sequential revenue growth was achieved despite a significant reduction in third-party costs by 60 basis points to 7.3% of revenue.'"
+          },
+          {
+            "claim": "Third-party costs reduced to 7.3% of revenue in Q1 FY26",
+            "supported": true,
+            "reason": "The context states: 'Sequential revenue growth was achieved despite a significant reduction in third-party costs by 60 basis points to 7.3% of revenue.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference (60 basis points decrease to 7.3% of revenue). The additional detail about the section and page does not contradict the reference and is considered extra information, which is acceptable."
+      }
+    },
+    {
+      "id": "r036",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How fast did Europe grow year-on-year for Infosys in Q1 FY26?",
+      "reference": "12.3%, over 3x the company average.",
+      "answer": "Europe grew 12.3% year-on-year in Q1 FY26 [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 38975,
+      "usage": {
+        "prompt_tokens": 4892,
+        "completion_tokens": 233,
+        "latency_ms": 37912.8,
+        "retrieval_ms": 1061.6
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Europe grew 12.3% year-on-year in Q1 FY26",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'On a year-on-year basis, Europe grew 12.3%, which is over 3x the company average.' This directly supports the claim."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the correct percentage (12.3%) and the correct time frame (Q1 FY26), which matches the reference answer. The additional detail about the section and page does not contradict the reference and is considered extra information, which is acceptable."
+      }
+    },
+    {
+      "id": "r037",
+      "type": "numeric",
+      "error": "request to http://localhost:11434/api/generate failed: timed out"
+    },
+    {
+      "id": "r038",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's full-year FY26 constant-currency revenue growth?",
+      "reference": "3.1%.",
+      "answer": "Infosys's full-year FY26 constant-currency revenue growth was **3.1%** [Section: 1 > Page 3] and [Section: 3 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 36554,
+      "usage": {
+        "prompt_tokens": 4096,
+        "completion_tokens": 261,
+        "latency_ms": 35458.3,
+        "retrieval_ms": 1095.4
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's full-year FY26 constant-currency revenue growth was 3.1%",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'FY26 revenues crossed $20 bn and grew 3.1% in constant currency terms...' and 'revenues in CC terms grew by 3.1% YoY' for the full year."
+          },
+          {
+            "claim": "Infosys's full-year FY26 constant-currency revenue growth was 3.1%",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'FY26 revenues crossed $20 bn and grew 3.1% in constant currency terms...' and 'revenues in CC terms grew by 3.1% YoY' for the full year."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same number (3.1%) as the reference answer, which is the correct full-year FY26 constant-currency revenue growth for Infosys. The additional citation information does not contradict the reference and is considered extra detail, which is acceptable."
+      }
+    },
+    {
+      "id": "r039",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What revenue growth guidance did Infosys give for FY27 in April 2026?",
+      "reference": "1.5% to 3.5% year-on-year in constant currency; operating margin 20%–22%.",
+      "answer": "Infosys provided a revenue growth guidance of 1.5%-3.5% in constant currency for FY27 in April 2026 [Section: 1 > Page 1], [Section: 2 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 42986,
+      "usage": {
+        "prompt_tokens": 4310,
+        "completion_tokens": 327,
+        "latency_ms": 41912.9,
+        "retrieval_ms": 1072.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys provided a revenue growth guidance of 1.5%-3.5% in constant currency for FY27 in April 2026",
+            "supported": true,
+            "reason": "The context explicitly states: 'FY27 Guidance – Revenue Growth of 1.5%-3.5%, Operating Margin of 20%-22%'. This confirms the claim."
+          },
+          {
+            "claim": "Infosys provided a revenue growth guidance of 1.5%-3.5% in constant currency for FY27 in April 2026",
+            "supported": true,
+            "reason": "The context explicitly states: 'FY27 Guidance – Revenue Growth of 1.5%-3.5%, Operating Margin of 20%-22%'. This confirms the claim."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the revenue growth guidance of 1.5%-3.5% in constant currency for FY27 as provided in the reference. It does not include the operating margin information, but this is not required for a 'correct' grade since the reference answer includes additional details that are not mandatory for correctness."
+      }
+    },
+    {
+      "id": "r040",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How many large deals did Infosys sign in FY26 and what was the TCV?",
+      "reference": "96 large deals with TCV of $15 bn (press release: $14.9 bn), 55% net new.",
+      "answer": "Infosys signed **96 large deals** in FY26 with a **TCV of $15 bn** [Section: 1 > Page 4]. \n\nAdditionally, section [5] confirms: \"In FY26, we signed 96 large deals with TCV of $15 bn, 55% net new\" [Section: 5 > Page 5].",
+      "model": "qwen3:14b",
+      "latency_ms": 71433,
+      "usage": {
+        "prompt_tokens": 4871,
+        "completion_tokens": 640,
+        "latency_ms": 70335.3,
+        "retrieval_ms": 1097.4
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.75,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys signed 96 large deals in FY26 with a TCV of $15 bn",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'In FY26, we signed 96 large deals with TCV of $15 bn'"
+          },
+          {
+            "claim": "In FY26, we signed 96 large deals with TCV of $15 bn, 55% net new",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states: 'In FY26, we signed 96 large deals with TCV of $15 bn, 55% net new'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Infosys signed 96 large deals in FY26 with a TCV of $15 bn, which matches the reference answer. The additional citation information does not contradict the reference and is considered extra detail, which is acceptable."
+      }
+    },
+    {
+      "id": "r041",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's ROE at the end of FY26?",
+      "reference": "31.6%.",
+      "answer": "Infosys's ROE at the end of FY26 was **31.6%** [Section: 1 > Page 4].",
+      "model": "qwen3:14b",
+      "latency_ms": 97210,
+      "usage": {
+        "prompt_tokens": 4533,
+        "completion_tokens": 991,
+        "latency_ms": 96163.0,
+        "retrieval_ms": 1046.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 0,
+        "score": 0.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's ROE at the end of FY26 was 31.6%",
+            "supported": false,
+            "reason": "The context states that ROE stood at 31.6% but does not explicitly mention that this was at the end of FY26. It also mentions ROE at 30.4% and 29% in other parts of the context, which suggests that 31.6% may not be the ROE at the end of FY26."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact/number as the reference answer (31.6%) and includes additional context (section and page reference) without contradicting the reference."
+      }
+    },
+    {
+      "id": "r042",
+      "type": "numeric",
+      "answerable": true,
+      "question": "How much did acquisitions contribute to Infosys's FY26 revenue growth?",
+      "reference": "About 70 basis points.",
+      "answer": "Acquisitions contributed about 70 basis points to Infosys's FY26 revenue growth [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 40046,
+      "usage": {
+        "prompt_tokens": 3879,
+        "completion_tokens": 316,
+        "latency_ms": 39003.4,
+        "retrieval_ms": 1042.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Acquisitions contributed about 70 basis points to Infosys's FY26 revenue growth.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Acquisitions contributed about 70 bps on full year growth.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact (70 basis points) as the reference and includes additional context (section and page number) without contradicting the reference."
+      }
+    },
+    {
+      "id": "r043",
+      "type": "explanatory",
+      "answerable": true,
+      "question": "Why did Infosys revenue decline sequentially in Q4 FY26?",
+      "reference": "Down 1.3% in constant currency due to seasonality and slower decision-making in March.",
+      "answer": "The sequential decline in Q4 FY26 revenues was due to **seasonality and slower decision-making in the month of March** [Section: 1 > Page 3]. Additionally, operating margins declined sequentially by 20 basis points, influenced by factors such as a 100-basis-point impact from compensation increases and higher variable pay, partially offset by other factors [Section: 4 > Page 3]. However, the direct reason for the revenue decline is explicitly cited as seasonality and slower decision-making [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 39438,
+      "usage": {
+        "prompt_tokens": 4176,
+        "completion_tokens": 286,
+        "latency_ms": 38361.6,
+        "retrieval_ms": 1075.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 4,
+        "supported": 4,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The sequential decline in Q4 FY26 revenues was due to seasonality and slower decision-making in the month of March",
+            "supported": true,
+            "reason": "The context explicitly states: 'Sequentially, revenues declined 1.3% in constant currency due to seasonality and slower decision making in the month of March.'"
+          },
+          {
+            "claim": "Operating margins declined sequentially by 20 basis points",
+            "supported": true,
+            "reason": "The context explicitly states: 'Operating margins for Q4 declined by 0.3% to 20.9%, sequentially.' Additionally, in the reconciliation section, it states: 'Operating margin for Q1 was at 20.8%, decline of 20 basis points sequentially.'"
+          },
+          {
+            "claim": "A 100-basis-point impact from compensation increases and higher variable pay influenced the decline in operating margins",
+            "supported": true,
+            "reason": "The context explicitly states: 'Headwinds of... 100 basis points from compensation increase, higher variable pay, partly offset by other salary-related items.'"
+          },
+          {
+            "claim": "The direct reason for the revenue decline is explicitly cited as seasonality and slower decision-making",
+            "supported": true,
+            "reason": "The context explicitly states: 'Sequentially, revenues declined 1.3% in constant currency due to seasonality and slower decision making in the month of March.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly identifies the reasons for the revenue decline as 'seasonality and slower decision-making in the month of March', which matches the reference. It also includes additional context about operating margins without contradicting the reference, making it a complete and accurate response."
+      }
+    },
+    {
+      "id": "r044",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's onsite mix at the end of Q4 FY26?",
+      "reference": "22.8%, down from 23.1% in Q3.",
+      "answer": "Infosys's onsite mix at the end of Q4 FY26 was **22.8%** [Section: 1 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 43544,
+      "usage": {
+        "prompt_tokens": 4916,
+        "completion_tokens": 287,
+        "latency_ms": 42552.0,
+        "retrieval_ms": 991.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's onsite mix at the end of Q4 FY26 was 22.8%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Onsite mix further reduced to 22.8% from 23.1% in Q3.' This directly supports the claim."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the correct percentage (22.8%) and aligns with the reference answer, which also mentions the same number and the context of it being a decrease from Q3."
+      }
+    },
+    {
+      "id": "r045",
+      "type": "guidance",
+      "answerable": true,
+      "question": "What annualized operating-margin impact does Infosys expect from the Optimum Healthcare, Stratus and Versent acquisitions?",
+      "reference": "Approximately 0.7% on a full-year annualized basis post closure.",
+      "answer": "The annualized operating-margin impact from the Optimum Healthcare, Stratus, and Versent acquisitions is approximately **0.7%** on a full-year basis post closure [Section: 4 > Page 5].",
+      "model": "qwen3:14b",
+      "latency_ms": 66884,
+      "usage": {
+        "prompt_tokens": 4761,
+        "completion_tokens": 587,
+        "latency_ms": 65735.0,
+        "retrieval_ms": 1144.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The annualized operating-margin impact from the Optimum Healthcare, Stratus, and Versent acquisitions is approximately 0.7% on a full-year basis post closure.",
+            "supported": true,
+            "reason": "The context explicitly states: 'The impact of Optimum Healthcare, Stratus and Versent on operating margin will be approximately 0.7% on a full year annualized basis post closure.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact and number as the reference answer, and includes additional context (section and page reference) without contradicting the reference."
+      }
+    },
+    {
+      "id": "r046",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's FY26 revenues in US dollars?",
+      "reference": "$20,158 million, crossing the $20 billion mark.",
+      "answer": "Infosys's FY26 revenues were $20,158 million [Section: 1 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 39295,
+      "usage": {
+        "prompt_tokens": 4033,
+        "completion_tokens": 293,
+        "latency_ms": 38220.7,
+        "retrieval_ms": 1073.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's FY26 revenues were $20,158 million",
+            "supported": true,
+            "reason": "The context explicitly states: 'Infosys ... delivered $20,158 million in FY 26 revenues'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same revenue figure ($20,158 million) as the reference and includes additional context about the page/section, which does not contradict the reference."
+      }
+    },
+    {
+      "id": "r047",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's Q4 FY26 revenues and operating margin?",
+      "reference": "$5,040 million (4.1% YoY CC growth); operating margin 20.9%.",
+      "answer": "Infosys's Q4 FY26 revenues were **$5,040 million** with an operating margin of **20.9%**.  \n\nSources:  \n- Revenues: [Section: 1 > Page 1], [Section: 3 > Page 1], [Section: 6 > Page 2]  \n- Operating Margin: [Section: 1 > Page 1], [Section: 3 > Page 1], [Section: 6 > Page 2]",
+      "model": "qwen3:14b",
+      "latency_ms": 50554,
+      "usage": {
+        "prompt_tokens": 4670,
+        "completion_tokens": 392,
+        "latency_ms": 49526.0,
+        "retrieval_ms": 1027.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.6666666666666666,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's Q4 FY26 revenues were $5,040 million",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 revenues were $5,040 million'"
+          },
+          {
+            "claim": "Infosys's Q4 FY26 operating margin was 20.9%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q4 operating margin was at 20.9%'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the same facts and numbers as the reference answer: $5,040 million in revenues and an operating margin of 20.9%. Additional source information does not affect the correctness of the factual content."
+      }
+    },
+    {
+      "id": "r048",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What free cash flow did Infosys report for FY26?",
+      "reference": "$3.7 billion.",
+      "answer": "Infosys reported a free cash flow of $3,733 million for FY26 [Section: 1 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 45500,
+      "usage": {
+        "prompt_tokens": 3770,
+        "completion_tokens": 391,
+        "latency_ms": 44462.9,
+        "retrieval_ms": 1036.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys reported a free cash flow of $3,733 million for FY26.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Free cash flow generation was healthy at $3,733 million' in the FY26 section."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact as the reference, with the number provided in a slightly different format ($3,733 million vs. $3.7 billion), which is acceptable and does not contradict the reference."
+      }
+    },
+    {
+      "id": "r049",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What large deal wins did Infosys report for FY26 in the press release?",
+      "reference": "$14.9 billion.",
+      "answer": "Infosys reported large deal wins with a Total Contract Value (TCV) of $14.9 billion for FY26, as stated in the press release. This figure is explicitly mentioned in the document excerpt:  \n\"Strong Large Deal wins of $14.9 Billion\" [Section: 1 > Page 1].  \n\nAdditionally, the same section notes that the TCV of large deal wins was $14.9 billion, with 55% net new:  \n\"TCV of large deal wins was $14.9 billion, with net new of 55%\" [Section: 1 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 60011,
+      "usage": {
+        "prompt_tokens": 4205,
+        "completion_tokens": 545,
+        "latency_ms": 58874.5,
+        "retrieval_ms": 1133.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys reported large deal wins with a Total Contract Value (TCV) of $14.9 billion for FY26",
+            "supported": true,
+            "reason": "The context explicitly states: 'Strong Large Deal wins of $14.9 Billion' and 'TCV of large deal wins was $14.9 billion, with net new of 55%'."
+          },
+          {
+            "claim": "The TCV of large deal wins was $14.9 billion, with net new of 55%",
+            "supported": true,
+            "reason": "The context explicitly states: 'TCV of large deal wins was $14.9 billion, with net new of 55%'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the same fact and number as the reference answer ($14.9 billion). It also includes additional context from the press release without contradicting the reference, which is acceptable."
+      }
+    },
+    {
+      "id": "r050",
+      "type": "numeric",
+      "error": "request to http://localhost:11434/api/generate failed: timed out"
+    },
+    {
+      "id": "r051",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's total employee count at March 31, 2026?",
+      "reference": "328,594.",
+      "answer": "Infosys's total employee count at March 31, 2026 was **328,594** [Section: 3 > Page 1].",
+      "model": "qwen3:14b",
+      "latency_ms": 37953,
+      "usage": {
+        "prompt_tokens": 3983,
+        "completion_tokens": 286,
+        "latency_ms": 36839.5,
+        "retrieval_ms": 1112.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's total employee count at March 31, 2026 was 328,594",
+            "supported": true,
+            "reason": "The context explicitly states: 'Total employees | 328,594 | 337,034 | 323,578' for the quarter ended March 31, 2026."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same number as the reference answer (328,594) and provides additional context (section and page reference) without contradicting or missing any key information."
+      }
+    },
+    {
+      "id": "r052",
+      "type": "numeric",
+      "error": "request to http://localhost:11434/api/generate failed: timed out"
+    },
+    {
+      "id": "r053",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's reported FY26 operating margin in the fact sheet?",
+      "reference": "20.3% (vs 21.1% in FY25).",
+      "answer": "Infosys's reported FY26 operating margin was **20.3%** [Section: 1 > Page 3], [Section: 3 > Page 3], [Section: 5 > Page 5].",
+      "model": "qwen3:14b",
+      "latency_ms": 42582,
+      "usage": {
+        "prompt_tokens": 4791,
+        "completion_tokens": 295,
+        "latency_ms": 41534.1,
+        "retrieval_ms": 1047.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.3333333333333333,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's reported FY26 operating margin was 20.3%",
+            "supported": true,
+            "reason": "The CONTEXT explicitly states that the reported IFRS operating margin was at 20.3% for FY26."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the FY26 operating margin as 20.3%, which matches the reference. Additional context about the sections in the fact sheet does not contradict the reference and is considered extra detail."
+      }
+    },
+    {
+      "id": "r054",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's FY26 revenue in rupee crore?",
+      "reference": "Rs 178,650 crore, up 9.6%.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 33224,
+      "usage": {
+        "prompt_tokens": 4077,
+        "completion_tokens": 208,
+        "latency_ms": 32231.2,
+        "retrieval_ms": 991.5
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": true,
+      "correctness": {
+        "grade": "incorrect",
+        "reason": "The answer states that the information was not found, but the reference provides a specific revenue figure for Infosys's FY26. This contradicts the reference answer."
+      }
+    },
+    {
+      "id": "r055",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What share of Infosys revenue came from AI services in Q1 FY27?",
+      "reference": "8.2% of overall revenue.",
+      "answer": "The share of Infosys revenue from AI services in Q1 FY27 was **8.2%** of overall revenue [Section: 1 > Page 3] [Section: 2 > Page 4].",
+      "model": "qwen3:14b",
+      "latency_ms": 41903,
+      "usage": {
+        "prompt_tokens": 4550,
+        "completion_tokens": 277,
+        "latency_ms": 40875.1,
+        "retrieval_ms": 1027.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "The share of Infosys revenue from AI services in Q1 FY27 was 8.2% of overall revenue.",
+            "supported": true,
+            "reason": "The context explicitly states: 'AI revenues for the quarter at 8.2%' and 'AI revenue momentum is very strong with AI revenues at 8.2% of our overall revenues'."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same fact and number as the reference answer (8.2% of overall revenue) and includes additional citation details, which do not contradict the reference."
+      }
+    },
+    {
+      "id": "r056",
+      "type": "guidance",
+      "answerable": true,
+      "question": "How did Infosys revise its FY27 revenue guidance on the Q1 FY27 call?",
+      "reference": "Changed to 1.5% to 3% year-on-year growth in constant currency.",
+      "answer": "Infosys revised its FY27 revenue guidance to **1.5% to 3%** in constant currency terms during the Q1 FY27 call. This revision was driven by:  \n- **Approximately 1.7% contribution** from recently closed acquisitions of Optimum Healthcare and Stratus [Section: 1 > Page 6].  \n- **Slightly over 1% impact** from a large European Manufacturing client due to reduced client spend and deliberate non-pursuit of certain deals [Section: 1 > Page 6].  \n- **Approximately 0.75% to 1% impact** from a shift towards offshore [Section: 1 > Page 6].  \n\nThe guidance also reflects lower-than-expected Q1 revenues and a revised outlook for the rest of the year [Section: 1 > Page 6]. Additionally, the guidance excludes the impact of the Versent JV and Optimum Healthcare acquisitions, which were not yet closed at the time [Section: 7 > Page 5].  \n\nThe revised guidance assumes a volatile macro environment, with the lower end reflecting further deterioration and the upper end assuming modest improvement [Section: 1 > Page 6].",
+      "model": "qwen3:14b",
+      "latency_ms": 79982,
+      "usage": {
+        "prompt_tokens": 5367,
+        "completion_tokens": 696,
+        "latency_ms": 78889.9,
+        "retrieval_ms": 1090.7
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 7,
+        "supported": 7,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys revised its FY27 revenue guidance to 1.5% to 3% in constant currency terms during the Q1 FY27 call.",
+            "supported": true,
+            "reason": "The context explicitly states: 'we have changed our revenue growth guidance to 1.5% to 3% Y-on-Y growth in constant currency terms.'"
+          },
+          {
+            "claim": "Approximately 1.7% contribution from recently closed acquisitions of Optimum Healthcare and Stratus.",
+            "supported": true,
+            "reason": "The context explicitly states: 'approximately 1.7% contribution from recently closed acquisitions of Optimum Healthcare and Stratus.'"
+          },
+          {
+            "claim": "Slightly over 1% impact from a large European Manufacturing client due to reduced client spend and deliberate non-pursuit of certain deals.",
+            "supported": true,
+            "reason": "The context explicitly states: 'slightly over 1% impact from large a European Manufacturing client due to reduced client spend along with our conscious decision to not pursue certain deals that were not aligned to our return expectations.'"
+          },
+          {
+            "claim": "Approximately 0.75% to 1% impact from a shift towards offshore.",
+            "supported": true,
+            "reason": "The context explicitly states: 'approximately 0.75% to 1% impact from shift towards offshore.'"
+          },
+          {
+            "claim": "The guidance also reflects lower-than-expected Q1 revenues and a revised outlook for the rest of the year.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Considering lower-than-expected Q1 revenues and revised view of the rest of the year, we are revising our revenue guidance to 1.5% to 3%.'"
+          },
+          {
+            "claim": "The guidance excludes the impact of the Versent JV and Optimum Healthcare acquisitions, which were not yet closed at the time.",
+            "supported": true,
+            "reason": "The context explicitly states: 'The FY27 guidance includes... excludes Versent JV and Optimum Healthcare acquisitions that are yet to be closed.'"
+          },
+          {
+            "claim": "The revised guidance assumes a volatile macro environment, with the lower end reflecting further deterioration and the upper end assuming modest improvement.",
+            "supported": true,
+            "reason": "The context explicitly states: 'Overall business environment continues to remain volatile. The lower end of the guidance assumes further deterioration in macro. Top end of the guidance assumes an improvement in macro, though lower than what we had assumed in April guidance.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "partial",
+        "reason": "The answer includes additional details about the reasons behind the revision, such as the impact of acquisitions, client behavior, and offshore shifts, which are not present in the reference. However, it correctly states the revised revenue guidance of 1.5% to 3% year-on-year growth in constant currency. Since the reference only mentions the revised guidance and the answer adds extra correct information, the grade is 'partial' because the reference does not include the additional details."
+      }
+    },
+    {
+      "id": "r057",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What were Infosys's large deal wins in Q1 FY27 and the net-new share?",
+      "reference": "$3.6 bn with 61% net new; 22 large deals including three worth $400 mn each.",
+      "answer": "Infosys's large deal wins in Q1 FY27 were **$3.6 bn** with a **net new share of 61%**.  \n\n[Section: 1 > Page 5]  \n[Section: 2 > Page 3]",
+      "model": "qwen3:14b",
+      "latency_ms": 50194,
+      "usage": {
+        "prompt_tokens": 5210,
+        "completion_tokens": 360,
+        "latency_ms": 49136.6,
+        "retrieval_ms": 1057.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's large deal wins in Q1 FY27 were $3.6 bn",
+            "supported": true,
+            "reason": "The context explicitly states: 'Our large deals were $3.6 bn with a net new of 61%.'"
+          },
+          {
+            "claim": "Infosys's large deal wins in Q1 FY27 had a net new share of 61%",
+            "supported": true,
+            "reason": "The context explicitly states: 'Our large deals were $3.6 bn with a net new of 61%.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the same facts and numbers as the reference answer: $3.6 bn in large deal wins and a net new share of 61%. Additional section references do not affect the correctness of the factual content."
+      }
+    },
+    {
+      "id": "r058",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's Q1 FY27 revenue growth year-on-year and sequentially?",
+      "reference": "2.4% YoY and 1% QoQ in constant currency.",
+      "answer": "Infosys's Q1 FY27 revenue growth was **2.4% year-on-year** in constant currency terms and **1% sequentially**.  \n\n[Section: 2 > Page 3]",
+      "model": "qwen3:14b",
+      "latency_ms": 47014,
+      "usage": {
+        "prompt_tokens": 4816,
+        "completion_tokens": 340,
+        "latency_ms": 45904.7,
+        "retrieval_ms": 1109.3
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's Q1 FY27 revenue growth was 2.4% year-on-year",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q1 revenues were at $5,082 mn, increase of 1% sequentially and 2.4% Y-on-Y in constant currency terms.'"
+          },
+          {
+            "claim": "Infosys's Q1 FY27 revenue growth was 1% sequentially",
+            "supported": true,
+            "reason": "The context explicitly states: 'Q1 revenues were at $5,082 mn, increase of 1% sequentially and 2.4% Y-on-Y in constant currency terms.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the same facts and numbers as the reference answer (2.4% YoY and 1% QoQ in constant currency). It also uses equivalent terminology (year-on-year and sequentially) and provides the information in a clear and accurate manner."
+      }
+    },
+    {
+      "id": "r059",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What was Infosys's free cash flow in Q1 FY27?",
+      "reference": "$955 mn.",
+      "answer": "Infosys's free cash flow in Q1 FY27 was $955 mn [Section: INFY · concall · FY27 | Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 45945,
+      "usage": {
+        "prompt_tokens": 3967,
+        "completion_tokens": 386,
+        "latency_ms": 44868.9,
+        "retrieval_ms": 1074.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's free cash flow in Q1 FY27 was $955 mn",
+            "supported": true,
+            "reason": "The context explicitly states: 'Free cash flow at $955 mn.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same number as the reference answer ($955 mn) and includes additional context about the source (Section: INFY · concall · FY27 | Page 3), which does not contradict the reference and is considered acceptable extra detail."
+      }
+    },
+    {
+      "id": "r060",
+      "type": "numeric",
+      "answerable": true,
+      "question": "What share of Infosys's Q1 FY27 large deal TCV came from vendor consolidation?",
+      "reference": "About 20%.",
+      "answer": "20% of the total large deal TCV came from vendor consolidation deals in Q1 FY27 [Section: 1 > Page 5].",
+      "model": "qwen3:14b",
+      "latency_ms": 49654,
+      "usage": {
+        "prompt_tokens": 5052,
+        "completion_tokens": 352,
+        "latency_ms": 48499.5,
+        "retrieval_ms": 1153.9
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 1,
+        "supported": 1,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "20% of the total large deal TCV came from vendor consolidation deals in Q1 FY27",
+            "supported": true,
+            "reason": "The context explicitly states: '20% of the total large deal TCV being from new vendor consolidation deals.'"
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states that 20% of the total large deal TCV came from vendor consolidation deals in Q1 FY27, which matches the reference answer of 'About 20%'. The additional detail provided in the answer (e.g., [Section: 1 > Page 5]) does not contradict the reference and is considered extra correct detail."
+      }
+    },
+    {
+      "id": "r061",
+      "type": "cross_doc",
+      "answerable": true,
+      "question": "Infosys guided FY26 revenue growth of 0%–3% in April 2025. What growth did it actually deliver for FY26?",
+      "reference": "3.1% in constant currency — at the top of the original 0%–3% range.",
+      "answer": "Infosys delivered a revenue growth of **3.1%** in constant currency for FY26, which fell within the guided range of 0%–3% provided in April 2025 [Section: 3 > Page 1] [Section: 4 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 63449,
+      "usage": {
+        "prompt_tokens": 4095,
+        "completion_tokens": 594,
+        "latency_ms": 62378.4,
+        "retrieval_ms": 1069.8
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 1.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 2,
+        "supported": 2,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys delivered a revenue growth of 3.1% in constant currency for FY26",
+            "supported": true,
+            "reason": "The context explicitly states: 'Revenue crosses $20 billion mark with resilient growth of 3.1% in FY 26 in constant currency.'"
+          },
+          {
+            "claim": "Infosys guided a revenue growth range of 0%–3% for FY26 in April 2025",
+            "supported": true,
+            "reason": "The context explicitly states: 'Guidance for FY26: - Revenue growth of 0%-3% in constant currency' and the press release was dated April 17, 2025."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the revenue growth of 3.1% in constant currency and notes that it fell within the guided range of 0%–3%, which matches the reference answer. Additional contextual information (e.g., the page and section references) does not contradict the reference and is considered acceptable."
+      }
+    },
+    {
+      "id": "r062",
+      "type": "cross_doc",
+      "answerable": true,
+      "question": "How did Infosys's FY26 revenue guidance evolve between April 2025 and July 2025?",
+      "reference": "From 0%–3% in April 2025 to 1%–3% in July 2025 (margin guidance unchanged at 20%–22%).",
+      "answer": "Infosys's FY26 revenue guidance evolved from **0%-3%** in constant currency (as stated in April 2025) to **1%-3%** in constant currency (revised in July 2025).  \n\n- The initial guidance of **0%-3%** was provided in the FY25 press release [Section: 1 > Page 1].  \n- The revised guidance of **1%-3%** was announced during the FY26 concall in July 2025 [Section: 5 > Page 2].",
+      "model": "qwen3:14b",
+      "latency_ms": 49989,
+      "usage": {
+        "prompt_tokens": 4142,
+        "completion_tokens": 520,
+        "latency_ms": 48878.3,
+        "retrieval_ms": 1109.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.3333333333333333,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 4,
+        "supported": 4,
+        "score": 1.0,
+        "verdicts": [
+          {
+            "claim": "Infosys's FY26 revenue guidance evolved from 0%-3% in constant currency as stated in April 2025",
+            "supported": true,
+            "reason": "The context states: 'Guidance for FY26: - Revenue growth of 0%-3% in constant currency' in the April 2025 press release."
+          },
+          {
+            "claim": "Infosys's FY26 revenue guidance was revised to 1%-3% in constant currency in July 2025",
+            "supported": true,
+            "reason": "The context states: 'Based on our performance in Q1 and our current outlook, our guidance for growth for financial year 2026 is revised. From the earlier guidance of 0% to 3%, now it is 1% to 3% growth in constant currency terms.' This statement is attributed to a July 2025 call."
+          },
+          {
+            "claim": "The initial guidance of 0%-3% was provided in the FY25 press release",
+            "supported": true,
+            "reason": "The context states: 'Guidance for FY26: - Revenue growth of 0%-3% in constant currency' in the April 2025 press release."
+          },
+          {
+            "claim": "The revised guidance of 1%-3% was announced during the FY26 concall in July 2025",
+            "supported": true,
+            "reason": "The context states: 'Based on our performance in Q1 and our current outlook, our guidance for growth for financial year 2026 is revised. From the earlier guidance of 0% to 3%, now it is 1% to 3% growth in constant currency terms. Our margin guidance remains unchanged at 20% to 22%.' This statement is attributed to a July 2025 call."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states the evolution of Infosys's FY26 revenue guidance from 0%-3% to 1%-3%, matching the reference. It also provides additional context about where the information was found, which is acceptable and does not contradict the reference."
+      }
+    },
+    {
+      "id": "r063",
+      "type": "cross_doc",
+      "answerable": true,
+      "question": "How did Infosys's total headcount change between March 31, 2025 and March 31, 2026?",
+      "reference": "From 323,578 to 328,594 (+5,016).",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 43680,
+      "usage": {
+        "prompt_tokens": 4476,
+        "completion_tokens": 323,
+        "latency_ms": 42636.5,
+        "retrieval_ms": 1043.5
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": true,
+      "correctness": {
+        "grade": "incorrect",
+        "reason": "The answer states that the information was not found, but the reference provides specific numbers showing the change in Infosys's total headcount between the two dates."
+      }
+    },
+    {
+      "id": "r064",
+      "type": "cross_doc",
+      "answerable": true,
+      "question": "Infosys guided a 20%–22% operating margin for FY26. What FY26 margin did it report?",
+      "reference": "Adjusted operating margin of 21% (reported 20.3% in the fact sheet) — within guidance.",
+      "answer": "Infosys reported an operating margin of 20.3% for FY26. This is explicitly stated in the document excerpts:  \n[Section: 2 > Page 1] and [Section: 4 > Page 1].  \n\nAdditionally, the operating margin is confirmed in [Section: 7 > Page 3], which lists \"Operating Margin %\" as **20.3** for FY26.",
+      "model": "qwen3:14b",
+      "latency_ms": 42681,
+      "usage": {
+        "prompt_tokens": 3708,
+        "completion_tokens": 363,
+        "latency_ms": 41608.5,
+        "retrieval_ms": 1072.2
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.5,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 3,
+        "supported": 1,
+        "score": 0.3333333333333333,
+        "verdicts": [
+          {
+            "claim": "Infosys reported an operating margin of 20.3% for FY26.",
+            "supported": true,
+            "reason": "The context explicitly states that the 'Reported IFRS operating margin was at 20.3%' for FY26."
+          },
+          {
+            "claim": "The operating margin of 20.3% for FY26 is explicitly stated in the document excerpts: [Section: 2 > Page 1] and [Section: 4 > Page 1].",
+            "supported": false,
+            "reason": "The context does not mention specific sections or pages, so it cannot be confirmed that the operating margin of 20.3% is explicitly stated in [Section: 2 > Page 1] and [Section: 4 > Page 1]."
+          },
+          {
+            "claim": "The operating margin is confirmed in [Section: 7 > Page 3], which lists 'Operating Margin %' as 20.3 for FY26.",
+            "supported": false,
+            "reason": "The context does not mention specific sections or pages, so it cannot be confirmed that the operating margin of 20.3% is listed in [Section: 7 > Page 3]."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer correctly states that Infosys reported an operating margin of 20.3% for FY26, which matches the reference answer. It also provides additional context about where the information is found in the document, which is acceptable and does not contradict the reference."
+      }
+    },
+    {
+      "id": "r065",
+      "type": "unanswerable",
+      "answerable": false,
+      "question": "What was Infosys's revenue in FY2020?",
+      "reference": "Not found in the selected documents.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 37798,
+      "usage": {
+        "prompt_tokens": 4265,
+        "completion_tokens": 261,
+        "latency_ms": 36685.6,
+        "retrieval_ms": 1111.9
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "abstain_ok": true
+    },
+    {
+      "id": "r066",
+      "type": "unanswerable",
+      "answerable": false,
+      "question": "What is TCS's operating margin guidance for FY27?",
+      "reference": "Not found in the selected documents.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 36500,
+      "usage": {
+        "prompt_tokens": 4691,
+        "completion_tokens": 223,
+        "latency_ms": 35704.3,
+        "retrieval_ms": 795.8
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "abstain_ok": true
+    },
+    {
+      "id": "r067",
+      "type": "unanswerable",
+      "answerable": false,
+      "question": "What was Infosys's closing share price on April 17, 2025?",
+      "reference": "Not found in the selected documents.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 40453,
+      "usage": {
+        "prompt_tokens": 3559,
+        "completion_tokens": 316,
+        "latency_ms": 39426.6,
+        "retrieval_ms": 1025.8
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "abstain_ok": true
+    },
+    {
+      "id": "r068",
+      "type": "unanswerable",
+      "answerable": false,
+      "question": "How many employees does Wipro have?",
+      "reference": "Not found in the selected documents.",
+      "answer": "Not found in the selected documents.",
+      "model": "qwen3:14b",
+      "latency_ms": 34124,
+      "usage": {
+        "prompt_tokens": 3624,
+        "completion_tokens": 227,
+        "latency_ms": 32841.7,
+        "retrieval_ms": 1282.4
+      },
+      "abstained": true,
+      "cited": false,
+      "citation_valid": null,
+      "abstain_ok": true
+    }
+  ]
+}

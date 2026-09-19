@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
+from finsight.auth.ratelimit import auth_limiter
 from finsight.auth.schemas import Token, UserCreate, UserLogin, UserResponse, UserUpdate
 from finsight.auth.service import create_user, delete_user, get_user_by_email, login_user, update_user
 from finsight.database.session import get_session
@@ -10,7 +11,7 @@ from finsight.models import User
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse, dependencies=[Depends(auth_limiter)])
 def register(
     data: UserCreate,
     session: Session = Depends(get_session),
@@ -25,7 +26,7 @@ def register(
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token, dependencies=[Depends(auth_limiter)])
 def login(
     data: UserLogin,
     session: Session = Depends(get_session),

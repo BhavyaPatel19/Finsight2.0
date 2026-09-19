@@ -89,6 +89,9 @@ def api_client(monkeypatch):
         with Session(engine) as s:
             yield s
 
+    from finsight.auth.ratelimit import auth_limiter
+
+    auth_limiter.reset()
     app.dependency_overrides[db.get_session] = _session
     try:
         with TestClient(app) as client:

@@ -248,7 +248,7 @@ const FEATURES = [
   { icon: MessageSquare, title: 'AI Chat (RAG)', desc: 'Ask context-aware questions about your documents, powered by hybrid retrieval and grounded generation.', tags: ['DeepSeek-R1:14B', 'Hybrid RAG', 'RRF'] },
   { icon: Shield, title: 'Credibility Scoring', desc: 'Extract management claims and verify them against financial data to score trustworthiness.', tags: ['Claim Extraction', 'Deviation Score'] },
   { icon: Brain, title: 'FinBERT Sentiment', desc: 'Analyze earnings call transcripts with domain-specific NLP for bullish/bearish signals.', tags: ['ProsusAI/finbert', 'batch=32'] },
-  { icon: TrendingUp, title: 'Live Market Data', desc: 'Real-time quotes, candlestick charts, and 52-week ranges via Zerodha Kite integration.', tags: ['Zerodha Kite', '500+ instruments'] },
+  { icon: TrendingUp, title: 'Market Data', desc: 'NSE quotes, candlestick charts, fundamentals and news — free delayed data out of the box, live via Zerodha Kite when you link an account.', tags: ['yfinance', 'Zerodha Kite'] },
   { icon: PieChart, title: 'Portfolio Analytics', desc: 'Visualize holdings with sector allocation, P&L tracking, and AI-driven insights.', tags: ['Groq Insights', 'Sector Allocation'] },
   { icon: List, title: 'Watchlist & AI Digest', desc: 'Track stocks with personalized watchlists, screener filters, and AI-generated digests.', tags: ['2h TTL Cache', 'AI Digest'] },
 ]
@@ -332,7 +332,7 @@ const TECH_STACK = [
 ]
 
 const JOURNEY_STEPS = [
-  { num: 1, title: 'Connect Your Broker', icon: Lock, accent: '#2980B9', desc: 'Link your Zerodha account with one-click OAuth. Holdings, positions, and live quotes sync automatically — no CSV uploads.' },
+  { num: 1, title: 'Bring Your Filings', icon: Lock, accent: '#2980B9', desc: 'Upload annual reports or earnings-call transcripts, or start with the bundled public Infosys filings. Optionally link Zerodha for live holdings.' },
   { num: 2, title: 'Upload Financial Documents', icon: FileText, accent: '#1ABC9C', desc: 'Drop annual reports, concall transcripts, or investor presentations. FinSight extracts text, builds a section tree, and embeds 1500-char chunks into ChromaDB.' },
   { num: 3, title: 'Ask Your Documents Questions', icon: MessageSquare, accent: '#8E44AD', desc: 'Type "What was TCS\'s EBIT margin guidance for FY26?" and get a sourced answer with [Section > Page] citations in seconds.' },
   { num: 4, title: 'Act on Verified Insights', icon: TrendingUp, accent: '#E67E22', desc: 'Review credibility scores, FinBERT sentiment trends, and AI-generated investment digests for your watchlist.' },

@@ -12,13 +12,12 @@ MARKET_DATA_PROVIDER (config):
 """
 from __future__ import annotations
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from finsight import config
 from finsight.market.providers.base import MarketDataProvider
 from finsight.market.providers.yfinance_provider import YFinanceProvider
 from finsight.market.providers.zerodha_provider import ZerodhaProvider
-from finsight.models import ZerodhaSession
 
 __all__ = ["MarketDataProvider", "get_market_provider", "market_status", "MarketNotLinked"]
 
@@ -34,8 +33,9 @@ def zerodha_configured() -> bool:
 
 
 def _user_token(session: Session, user_id: int) -> str | None:
-    row = session.exec(select(ZerodhaSession).where(ZerodhaSession.user_id == user_id)).first()
-    return row.access_token if row else None
+    from finsight.zerodha.service import get_zerodha_token_for_user
+
+    return get_zerodha_token_for_user(session, user_id)
 
 
 def get_market_provider(session: Session, user_id: int) -> MarketDataProvider:

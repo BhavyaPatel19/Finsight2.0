@@ -20,7 +20,8 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     payload = decode_access_token(token)
-    if not payload or "sub" not in payload:
+    if not payload or "sub" not in payload or payload.get("purpose"):
+        # purpose-bound tokens (e.g. the 5-minute Zerodha connect token) are not API credentials
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
