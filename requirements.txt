@@ -11,6 +11,7 @@ chromadb
 sentence-transformers
 pymupdf
 pdfplumber
+beautifulsoup4
 httpx
 transformers
 torch

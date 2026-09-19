@@ -73,7 +73,21 @@ def chunk_text(
 # Structured extraction for RAG (page-aware with TOC / section hierarchy)
 # ---------------------------------------------------------------------------
 
+SUPPORTED_SUFFIXES = (".pdf", ".htm", ".html", ".txt")
+
+
 def extract_structured_document(pdf_path: str | Path) -> dict:
+    """
+    Extract document structure. PDFs go through PyMuPDF (real pages + TOC);
+    HTML/text sources are paginated into synthetic pages (see html_parser).
+    """
+    if Path(pdf_path).suffix.lower() in (".htm", ".html", ".txt"):
+        from finsight.ingestion.html_parser import extract_structured_html
+        return extract_structured_html(pdf_path)
+    return _extract_structured_pdf(pdf_path)
+
+
+def _extract_structured_pdf(pdf_path: str | Path) -> dict:
     """
     Extract document structure using PyMuPDF:
     - TOC (table of contents) with section hierarchy

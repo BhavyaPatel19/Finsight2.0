@@ -127,7 +127,7 @@ function UploadModal({ onClose, onUploaded }) {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">PDF File *</label>
-            <input className="form-control" type="file" accept=".pdf"
+            <input className="form-control" type="file" accept=".pdf,.htm,.html,.txt"
               onChange={e => setFile(e.target.files[0])} required />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

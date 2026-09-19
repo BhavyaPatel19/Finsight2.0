@@ -8,12 +8,11 @@ from sqlmodel import Session
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
 from finsight.models import User, Document
-from finsight.config import DOCUMENTS_DIR
 from finsight.ingestion.service import (
     list_documents,
     register_document,
-    ensure_dirs,
 )
+from finsight.ingestion.uploads import MEDIA_TYPES, save_upload
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
@@ -52,16 +51,16 @@ def document_pdf(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Serve the document PDF for viewing."""
+    """Serve the source document (PDF or HTML) for viewing."""
     doc = session.get(Document, document_id)
     if not doc or not doc.pdf_path:
-        raise HTTPException(status_code=404, detail="Document or PDF not found")
+        raise HTTPException(status_code=404, detail="Document or file not found")
     pdf_path = Path(doc.pdf_path)
     if not pdf_path.exists():
-        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+        raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(
         path=str(pdf_path),
-        media_type="application/pdf",
+        media_type=MEDIA_TYPES.get(pdf_path.suffix.lower(), "application/octet-stream"),
         filename=pdf_path.name,
     )
 
@@ -107,20 +106,11 @@ async def upload_and_index(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload a PDF; save to documents dir, register, extract text, chunk, and index to Chroma."""
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="PDF file required")
-    if not symbol.strip():
-        raise HTTPException(status_code=400, detail="symbol required")
-    ensure_dirs()
-    import uuid
-    path = DOCUMENTS_DIR / f"{symbol}_{fiscal_year or 'na'}_{fiscal_quarter or 'na'}_{uuid.uuid4().hex[:8]}_{file.filename}"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    content = await file.read()
-    path.write_bytes(content)
+    """Upload a PDF/HTML/text filing; save to documents dir and register it (pending)."""
+    path = await save_upload(file, symbol=symbol, fiscal_year=fiscal_year, fiscal_quarter=fiscal_quarter)
     doc = register_document(
         session,
-        symbol=symbol.strip(),
+        symbol=symbol.strip().upper(),
         doc_type=doc_type.strip() or "quarterly",
         fiscal_quarter=fiscal_quarter.strip() or None,
         fiscal_year=fiscal_year.strip() or None,

@@ -1,12 +1,11 @@
-import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlmodel import Session, select
 
-from finsight.config import DOCUMENTS_DIR
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.uploads import save_upload
 from finsight.models import User, Document
 from finsight.credisentiment.schemas import (
     AnalyzeSentimentRequest,
@@ -55,7 +54,7 @@ def get_available_documents(
 # ── Upload ─────────────────────────────────────────────
 
 @router.post("/upload")
-def upload_document(
+async def upload_document(
     file: UploadFile = File(...),
     symbol: str = Form(...),
     doc_type: str = Form("annual_report"),
@@ -64,11 +63,8 @@ def upload_document(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload a PDF document for analysis."""
-    DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
-    dest = DOCUMENTS_DIR / file.filename
-    with open(dest, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    """Upload a PDF/HTML/text filing for analysis."""
+    dest = await save_upload(file, symbol=symbol, fiscal_year=fiscal_year, fiscal_quarter=fiscal_quarter)
 
     doc = Document(
         symbol=symbol.upper(),
