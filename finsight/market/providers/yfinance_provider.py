@@ -4,6 +4,7 @@ yfinance-backed market data: free, no account, ~15-min delayed for NSE.
 NSE symbols map to Yahoo tickers by appending ".NS". Instrument search uses
 the bundled NIFTY 500 list first (instant), then Yahoo's search endpoint.
 """
+
 from __future__ import annotations
 
 import csv
@@ -52,15 +53,17 @@ def _load_bundled_instruments() -> list[dict]:
             sym = (r.get("Symbol") or "").strip()
             if not sym:
                 continue
-            rows.append({
-                "instrument_token": 0,
-                "symbol": sym,
-                "name": (r.get("Company Name") or "").strip(),
-                "exchange": "NSE",
-                "segment": "NSE",
-                "instrument_type": "EQ",
-                "industry": (r.get("Industry") or "").strip(),
-            })
+            rows.append(
+                {
+                    "instrument_token": 0,
+                    "symbol": sym,
+                    "name": (r.get("Company Name") or "").strip(),
+                    "exchange": "NSE",
+                    "segment": "NSE",
+                    "instrument_type": "EQ",
+                    "industry": (r.get("Industry") or "").strip(),
+                }
+            )
     return rows
 
 
@@ -79,14 +82,17 @@ class YFinanceProvider(MarketDataProvider):
         reliable than the batch yf.download(), which silently drops symbols
         when Yahoo throttles."""
         import yfinance as yf
+
         return yf.Ticker(ticker).history(period="5d", interval="1d", auto_adjust=False)
 
     def _history(self, ticker: str, interval: str, start: datetime, end: datetime):
         import yfinance as yf
+
         return yf.Ticker(ticker).history(start=start, end=end, interval=interval, auto_adjust=False)
 
     def _yahoo_search(self, query: str, limit: int) -> list[dict]:
         import yfinance as yf
+
         return list(yf.Search(query, max_results=limit).quotes or [])
 
     # -- quotes -----------------------------------------------------------------
@@ -106,6 +112,7 @@ class YFinanceProvider(MarketDataProvider):
                 missing.append(ticker)
 
         if missing:
+
             def fetch(ticker: str):
                 try:
                     return ticker, self._shape_quote(self._recent(ticker))
@@ -148,7 +155,11 @@ class YFinanceProvider(MarketDataProvider):
 
     def get_history(self, symbol, interval="day", from_date=None, to_date=None) -> list[dict]:
         yf_interval, max_back = _INTERVALS.get(interval, _INTERVALS["day"])
-        end = datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1) if to_date else datetime.now() + timedelta(days=1)
+        end = (
+            datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1)
+            if to_date
+            else datetime.now() + timedelta(days=1)
+        )
         default_back = timedelta(days=365) if interval == "day" else max_back
         start = datetime.strptime(from_date, "%Y-%m-%d") if from_date else end - default_back
         # Yahoo refuses intraday requests older than its window; clamp instead of failing.
@@ -166,14 +177,16 @@ class YFinanceProvider(MarketDataProvider):
         for ts, row in df.iterrows():
             if row["Close"] != row["Close"]:  # NaN
                 continue
-            candles.append({
-                "timestamp": ts.isoformat(),
-                "open": round(float(row["Open"]), 2),
-                "high": round(float(row["High"]), 2),
-                "low": round(float(row["Low"]), 2),
-                "close": round(float(row["Close"]), 2),
-                "volume": int(row["Volume"]) if row["Volume"] == row["Volume"] else 0,
-            })
+            candles.append(
+                {
+                    "timestamp": ts.isoformat(),
+                    "open": round(float(row["Open"]), 2),
+                    "high": round(float(row["High"]), 2),
+                    "low": round(float(row["Low"]), 2),
+                    "close": round(float(row["Close"]), 2),
+                    "volume": int(row["Volume"]) if row["Volume"] == row["Volume"] else 0,
+                }
+            )
         return candles
 
     # -- search -----------------------------------------------------------------
@@ -186,8 +199,7 @@ class YFinanceProvider(MarketDataProvider):
             return []
         exact = [i for i in self._instruments if i["symbol"] == q]
         prefix = [i for i in self._instruments if i["symbol"].startswith(q) and i["symbol"] != q]
-        byname = [i for i in self._instruments if q in i["name"].upper()
-                  and i not in exact and i not in prefix]
+        byname = [i for i in self._instruments if q in i["name"].upper() and i not in exact and i not in prefix]
         results = (exact + prefix + byname)[:limit]
 
         if len(results) < 5:
@@ -201,12 +213,17 @@ class YFinanceProvider(MarketDataProvider):
                     if plain in seen:
                         continue
                     seen.add(plain)
-                    results.append({
-                        "instrument_token": 0, "symbol": plain,
-                        "name": hit.get("longname") or hit.get("shortname") or plain,
-                        "exchange": "NSE", "segment": "NSE", "instrument_type": "EQ",
-                        "industry": hit.get("industry", ""),
-                    })
+                    results.append(
+                        {
+                            "instrument_token": 0,
+                            "symbol": plain,
+                            "name": hit.get("longname") or hit.get("shortname") or plain,
+                            "exchange": "NSE",
+                            "segment": "NSE",
+                            "instrument_type": "EQ",
+                            "industry": hit.get("industry", ""),
+                        }
+                    )
                     if len(results) >= limit:
                         break
             except Exception as e:

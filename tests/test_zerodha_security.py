@@ -1,4 +1,5 @@
 """Zerodha link flow: CSRF state, purpose-bound connect token, token-at-rest encryption, auth rate limit."""
+
 from sqlmodel import Session
 
 from finsight import config
@@ -50,7 +51,9 @@ class TestLinkFlow:
         self._configured(monkeypatch, scheme="http")
         api_client.get("/zerodha/connect", headers=auth_headers, follow_redirects=False)
         # attacker-supplied request_token, wrong/missing state
-        r = api_client.get("/zerodha/callback", params={"request_token": "attacker", "status": "success", "state": "nope"})
+        r = api_client.get(
+            "/zerodha/callback", params={"request_token": "attacker", "status": "success", "state": "nope"}
+        )
         assert r.status_code == 400 and "not accepted" in r.text
         r = api_client.get("/zerodha/callback", params={"request_token": "attacker", "status": "success"})
         assert r.status_code == 400
@@ -60,7 +63,9 @@ class TestLinkFlow:
         self._configured(monkeypatch, scheme="http")
         import finsight.zerodha.router as zr
 
-        monkeypatch.setattr(zr, "exchange_request_token", lambda rt: {"access_token": "kite-token", "user_id": "AB1234"})
+        monkeypatch.setattr(
+            zr, "exchange_request_token", lambda rt: {"access_token": "kite-token", "user_id": "AB1234"}
+        )
         r = api_client.get("/zerodha/connect", headers=auth_headers, follow_redirects=False)
         nonce = r.headers["location"].split("state%3D")[1]
         r = api_client.get("/zerodha/callback", params={"request_token": "rt", "status": "success", "state": nonce})

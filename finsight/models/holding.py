@@ -19,4 +19,3 @@ class Holding(SQLModel, table=True):
     day_change_pct: float | None = None
     last_updated_at: datetime | None = None
     as_of_date: datetime | None = None
-

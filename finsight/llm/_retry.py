@@ -1,4 +1,5 @@
 """Small retry helper shared by HTTP-backed providers."""
+
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +23,7 @@ def _delay(attempt: int, response: httpx.Response | None) -> float:
                 return min(float(ra), 30.0)
             except ValueError:
                 pass
-    return min(2.0 ** attempt, 20.0)
+    return min(2.0**attempt, 20.0)
 
 
 def post_with_retry(client: httpx.Client, url: str, *, attempts: int = 3, **kw) -> httpx.Response:

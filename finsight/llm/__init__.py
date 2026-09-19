@@ -8,6 +8,7 @@ Selection (config.LLM_PROVIDER):
     "groq"   → Groq (raises at call time if the key is missing)
     "ollama" → Ollama at OLLAMA_BASE_URL
 """
+
 from __future__ import annotations
 
 import logging
@@ -18,8 +19,14 @@ from finsight.llm.groq import GroqProvider
 from finsight.llm.ollama import OllamaProvider
 
 __all__ = [
-    "LLMError", "LLMProvider", "LLMResponse",
-    "get_provider", "reset_provider", "generate", "agenerate", "llm_configured",
+    "LLMError",
+    "LLMProvider",
+    "LLMResponse",
+    "get_provider",
+    "reset_provider",
+    "generate",
+    "agenerate",
+    "llm_configured",
 ]
 
 logger = logging.getLogger(__name__)
@@ -30,7 +37,12 @@ def _build(name: str) -> LLMProvider:
     if name == "groq":
         return GroqProvider(api_key=config.GROQ_API_KEY, default_model=config.GROQ_MODEL)
     if name == "ollama":
-        return OllamaProvider(base_url=config.OLLAMA_BASE_URL, default_model=config.OLLAMA_MODEL, num_ctx=config.OLLAMA_NUM_CTX, default_timeout=config.OLLAMA_TIMEOUT_S)
+        return OllamaProvider(
+            base_url=config.OLLAMA_BASE_URL,
+            default_model=config.OLLAMA_MODEL,
+            num_ctx=config.OLLAMA_NUM_CTX,
+            default_timeout=config.OLLAMA_TIMEOUT_S,
+        )
     raise ValueError(f"unknown LLM_PROVIDER {name!r}; expected auto, groq or ollama")
 
 

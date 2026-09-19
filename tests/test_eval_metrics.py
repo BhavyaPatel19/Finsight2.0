@@ -1,4 +1,5 @@
 """Ranking metrics and RRF fusion — pure functions, no models."""
+
 import math
 
 import pytest

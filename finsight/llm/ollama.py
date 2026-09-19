@@ -3,6 +3,7 @@ Ollama backend — fully local inference via the Ollama HTTP API.
 
 Used when no hosted key is configured, or when LLM_PROVIDER=ollama.
 """
+
 from __future__ import annotations
 
 import logging
@@ -62,22 +63,46 @@ class OllamaProvider(LLMProvider):
             latency_ms=(time.perf_counter() - started) * 1000,
         )
 
-    def generate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                 json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
+    def generate(
+        self,
+        prompt,
+        *,
+        model=None,
+        max_tokens=2048,
+        temperature=0.0,
+        json_mode=False,
+        system=None,
+        timeout=None,
+        think=None,
+    ) -> LLMResponse:
         started = time.perf_counter()
         with httpx.Client(timeout=timeout or self.default_timeout, transport=self._transport) as client:
             r = post_with_retry(
-                client, f"{self.base_url}/api/generate",
+                client,
+                f"{self.base_url}/api/generate",
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)
 
-    async def agenerate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                        json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
+    async def agenerate(
+        self,
+        prompt,
+        *,
+        model=None,
+        max_tokens=2048,
+        temperature=0.0,
+        json_mode=False,
+        system=None,
+        timeout=None,
+        think=None,
+    ) -> LLMResponse:
         started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=timeout or self.default_timeout, transport=self._async_transport) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout or self.default_timeout, transport=self._async_transport
+        ) as client:
             r = await apost_with_retry(
-                client, f"{self.base_url}/api/generate",
+                client,
+                f"{self.base_url}/api/generate",
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)

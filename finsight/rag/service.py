@@ -2,6 +2,7 @@
 RAG service — hybrid BM25 + dense retrieval, cross-encoder reranking,
 page-aware context, strict grounding prompt.
 """
+
 import re
 
 from sqlmodel import Session, select
@@ -24,10 +25,12 @@ _embedding_model = None
 # Embeddings (BGE-base-en-v1.5)
 # ---------------------------------------------------------------------------
 
+
 def get_embedding_model():
     global _embedding_model
     if _embedding_model is None:
         from sentence_transformers import SentenceTransformer
+
         _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
     return _embedding_model
 
@@ -42,14 +45,13 @@ def embed_query(text: str) -> list[float]:
 def embed_documents(texts: list[str]) -> list[list[float]]:
     """Embed document chunks. BGE does NOT use a prefix for documents."""
     model = get_embedding_model()
-    return model.encode(
-        texts, convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False
-    ).tolist()
+    return model.encode(texts, convert_to_numpy=True, normalize_embeddings=True, show_progress_bar=False).tolist()
 
 
 # Keep old name for backward compat with legacy indexing
 def embed(text: str) -> list[float]:
     return embed_query(text)
+
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
     return embed_documents(texts)
@@ -58,6 +60,7 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
 # ---------------------------------------------------------------------------
 # Legacy index (kept for backward compat with old ingestion flow)
 # ---------------------------------------------------------------------------
+
 
 def index_chunks_for_document(session: Session, document_id: int) -> int:
     doc = session.get(Document, document_id)
@@ -70,17 +73,20 @@ def index_chunks_for_document(session: Session, document_id: int) -> int:
     texts = [c.text for c in chunks]
     embeddings = embed_documents(texts)
     ids = [f"doc_{document_id}_chunk_{c.chunk_index}" for c in chunks]
-    metadatas = [{
-        "symbol": doc.symbol or "",
-        "doc_type": doc.doc_type or "",
-        "fiscal_quarter": doc.fiscal_quarter or "",
-        "fiscal_year": doc.fiscal_year or "",
-        "document_id": document_id,
-        "chunk_index": c.chunk_index,
-        "page_number": 0,
-        "section": "",
-        "sub_section": "",
-    } for c in chunks]
+    metadatas = [
+        {
+            "symbol": doc.symbol or "",
+            "doc_type": doc.doc_type or "",
+            "fiscal_quarter": doc.fiscal_quarter or "",
+            "fiscal_year": doc.fiscal_year or "",
+            "document_id": document_id,
+            "chunk_index": c.chunk_index,
+            "page_number": 0,
+            "section": "",
+            "sub_section": "",
+        }
+        for c in chunks
+    ]
     add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
     return len(chunks)
 
@@ -124,6 +130,7 @@ def text_for_index(header: str, chunk: dict) -> str:
         lines.append(f"{section} > {sub}" if sub else section)
     lines.append(chunk["text"])
     return "\n".join(lines)
+
 
 def process_for_rag(session: Session, document_id: int) -> dict:
     """
@@ -175,6 +182,7 @@ def process_for_rag(session: Session, document_id: int) -> dict:
         # Save full text
         full_text = "\n\n".join(p["text"] for p in pages if p["text"])
         from pathlib import Path
+
         if doc.pdf_path:
             text_path = Path(doc.pdf_path).with_suffix(".txt")
             text_path.write_text(full_text, encoding="utf-8")
@@ -184,9 +192,7 @@ def process_for_rag(session: Session, document_id: int) -> dict:
         chunks = chunk_smart(pages, chunk_size=RAG_CHUNK_SIZE, overlap=RAG_CHUNK_OVERLAP)
 
         # Delete old chunks + ChromaDB entries
-        old_chunks = session.exec(
-            select(DocumentChunk).where(DocumentChunk.document_id == document_id)
-        ).all()
+        old_chunks = session.exec(select(DocumentChunk).where(DocumentChunk.document_id == document_id)).all()
         for oc in old_chunks:
             session.delete(oc)
         delete_by_document_id(document_id)
@@ -206,22 +212,26 @@ def process_for_rag(session: Session, document_id: int) -> dict:
         texts = [c["text"] for c in chunks]
         embeddings = embed_documents([text_for_index(header, c) for c in chunks])
         ids = [f"doc_{document_id}_chunk_{c['chunk_index']}" for c in chunks]
-        metadatas = [{
-            "symbol": doc.symbol or "",
-            "doc_type": doc.doc_type or "",
-            "fiscal_quarter": doc.fiscal_quarter or "",
-            "fiscal_year": doc.fiscal_year or "",
-            "document_id": document_id,
-            "chunk_index": c["chunk_index"],
-            "page_number": c.get("page_number", 0),
-            "section": c.get("section") or "",
-            "sub_section": c.get("sub_section") or "",
-            "context_header": header,
-        } for c in chunks]
+        metadatas = [
+            {
+                "symbol": doc.symbol or "",
+                "doc_type": doc.doc_type or "",
+                "fiscal_quarter": doc.fiscal_quarter or "",
+                "fiscal_year": doc.fiscal_year or "",
+                "document_id": document_id,
+                "chunk_index": c["chunk_index"],
+                "page_number": c.get("page_number", 0),
+                "section": c.get("section") or "",
+                "sub_section": c.get("sub_section") or "",
+                "context_header": header,
+            }
+            for c in chunks
+        ]
         add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
 
         # Invalidate BM25 index (will rebuild on next query)
         from finsight.rag.bm25_store import invalidate_bm25
+
         invalidate_bm25()
 
         doc.status = "indexed"
@@ -274,6 +284,7 @@ def _count_sections(sections):
 # Response parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
     """Extract <think>...</think> reasoning trace from DeepSeek-R1 output."""
     think_match = re.search(r"<think>(.*?)</think>", response, re.DOTALL)
@@ -318,7 +329,7 @@ def _build_section_context(chunks: list[dict]) -> str:
         doc_type = meta.get("doc_type", "")
         fy = meta.get("fiscal_year", "")
 
-        header = f"[{i+1}]"
+        header = f"[{i + 1}]"
         if symbol:
             header += f" {symbol}"
         if doc_type:
@@ -338,6 +349,7 @@ def _build_section_context(chunks: list[dict]) -> str:
 # ---------------------------------------------------------------------------
 # Main RAG query pipeline
 # ---------------------------------------------------------------------------
+
 
 def answer_question(
     session: Session,
@@ -359,9 +371,13 @@ def answer_question(
     from finsight.rag.retrieval import retrieve
 
     retrieved = retrieve(
-        session, question,
-        mode=retrieval_mode, top_k=top_k,
-        document_ids=document_ids, symbol=symbol, period=period,
+        session,
+        question,
+        mode=retrieval_mode,
+        top_k=top_k,
+        document_ids=document_ids,
+        symbol=symbol,
+        period=period,
     )
     top_chunks = retrieved["chunks"]
 
@@ -395,29 +411,33 @@ def answer_question(
         nav_key = f"{section}|{sub_section}|{page_num}"
         if nav_key not in seen:
             seen.add(nav_key)
-            navigations.append({
-                "section": section or None,
-                "sub_section": sub_section or None,
-                "page_number": page_num if isinstance(page_num, int) else 0,
-                "snippet": chunk.get("text", "")[:200],
-            })
+            navigations.append(
+                {
+                    "section": section or None,
+                    "sub_section": sub_section or None,
+                    "page_number": page_num if isinstance(page_num, int) else 0,
+                    "snippet": chunk.get("text", "")[:200],
+                }
+            )
 
     # 11. Build sources
     sources = []
     for chunk in top_chunks:
         meta = chunk.get("metadata", {})
-        sources.append({
-            "symbol": meta.get("symbol"),
-            "doc_type": meta.get("doc_type"),
-            "fiscal_quarter": meta.get("fiscal_quarter"),
-            "fiscal_year": meta.get("fiscal_year"),
-            "document_id": meta.get("document_id"),
-            "chunk_index": meta.get("chunk_index"),
-            "page_number": meta.get("page_number"),
-            "section": meta.get("section"),
-            "sub_section": meta.get("sub_section"),
-            "snippet": chunk.get("text", "")[:300],
-        })
+        sources.append(
+            {
+                "symbol": meta.get("symbol"),
+                "doc_type": meta.get("doc_type"),
+                "fiscal_quarter": meta.get("fiscal_quarter"),
+                "fiscal_year": meta.get("fiscal_year"),
+                "document_id": meta.get("document_id"),
+                "chunk_index": meta.get("chunk_index"),
+                "page_number": meta.get("page_number"),
+                "section": meta.get("section"),
+                "sub_section": meta.get("sub_section"),
+                "snippet": chunk.get("text", "")[:300],
+            }
+        )
 
     return {
         "answer": answer,

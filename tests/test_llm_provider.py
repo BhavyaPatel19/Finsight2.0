@@ -1,4 +1,5 @@
 """Provider layer: selection, request shapes, retries, and error mapping. No network."""
+
 import asyncio
 import json
 
@@ -21,6 +22,7 @@ def _fresh_registry():
 # ---------------------------------------------------------------------------
 # Selection
 # ---------------------------------------------------------------------------
+
 
 class TestSelection:
     def test_auto_prefers_groq_when_key_present(self, monkeypatch):
@@ -53,6 +55,7 @@ class TestSelection:
 # ---------------------------------------------------------------------------
 # Groq
 # ---------------------------------------------------------------------------
+
 
 def _groq_ok(content="hello", model="llama-3.3-70b-versatile"):
     return {
@@ -133,11 +136,16 @@ class TestGroq:
 
     def test_available_models_filters_non_chat(self):
         def handler(request):
-            return httpx.Response(200, json={"data": [
-                {"id": "llama-3.3-70b-versatile"},
-                {"id": "whisper-large-v3"},
-                {"id": "llama-guard-3-8b"},
-            ]})
+            return httpx.Response(
+                200,
+                json={
+                    "data": [
+                        {"id": "llama-3.3-70b-versatile"},
+                        {"id": "whisper-large-v3"},
+                        {"id": "llama-guard-3-8b"},
+                    ]
+                },
+            )
 
         p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
         assert [m["id"] for m in p.available_models()] == ["llama-3.3-70b-versatile"]
@@ -147,6 +155,7 @@ class TestGroq:
 # Ollama
 # ---------------------------------------------------------------------------
 
+
 class TestOllama:
     def test_request_shape_and_response_parsing(self):
         seen = {}
@@ -154,10 +163,15 @@ class TestOllama:
         def handler(request):
             seen["url"] = str(request.url)
             seen["body"] = json.loads(request.content)
-            return httpx.Response(200, json={
-                "model": "llama3.1:8b", "response": "  hi  ",
-                "prompt_eval_count": 5, "eval_count": 2,
-            })
+            return httpx.Response(
+                200,
+                json={
+                    "model": "llama3.1:8b",
+                    "response": "  hi  ",
+                    "prompt_eval_count": 5,
+                    "eval_count": 2,
+                },
+            )
 
         p = OllamaProvider(base_url="http://ollama:11434/", transport=httpx.MockTransport(handler))
         r = p.generate("q", max_tokens=50, json_mode=True, system="sys")
@@ -191,6 +205,7 @@ class TestOllama:
 # ---------------------------------------------------------------------------
 # /llm/models endpoint
 # ---------------------------------------------------------------------------
+
 
 class TestModelsEndpoint:
     def test_requires_auth(self, api_client):

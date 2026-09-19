@@ -1,4 +1,5 @@
 """Claim matching and summary for the Walk-the-Talk eval (no LLM)."""
+
 from eval.wtt import match_claims, similarity, summarise
 
 
@@ -11,9 +12,24 @@ def test_similarity_ignores_stopwords_and_brackets():
 
 def test_match_and_summarise():
     gold = [
-        {"id": "w1", "claim": "We expect FY26 free cash flows to be above 100% of net profit.", "human_verdict": "MET", "category": "cash_flow"},
-        {"id": "w2", "claim": "Our margin guidance for financial year 2026 is 20% to 22%.", "human_verdict": "MET", "category": "margin"},
-        {"id": "w3", "claim": "We expect to hire over 20,000 freshers in FY26.", "human_verdict": "MET", "category": "hiring"},
+        {
+            "id": "w1",
+            "claim": "We expect FY26 free cash flows to be above 100% of net profit.",
+            "human_verdict": "MET",
+            "category": "cash_flow",
+        },
+        {
+            "id": "w2",
+            "claim": "Our margin guidance for financial year 2026 is 20% to 22%.",
+            "human_verdict": "MET",
+            "category": "margin",
+        },
+        {
+            "id": "w3",
+            "claim": "We expect to hire over 20,000 freshers in FY26.",
+            "human_verdict": "MET",
+            "category": "hiring",
+        },
     ]
     system = [
         {"claim": "The company expects FY26 free cash flow above 100% of net profit", "verdict": "met"},
@@ -32,8 +48,10 @@ def test_match_and_summarise():
 
 
 def test_each_system_claim_used_once():
-    gold = [{"id": "a", "claim": "revenue growth of 3% in FY26", "human_verdict": "MET", "category": "revenue"},
-            {"id": "b", "claim": "revenue growth of 3% in FY26 again", "human_verdict": "MET", "category": "revenue"}]
+    gold = [
+        {"id": "a", "claim": "revenue growth of 3% in FY26", "human_verdict": "MET", "category": "revenue"},
+        {"id": "b", "claim": "revenue growth of 3% in FY26 again", "human_verdict": "MET", "category": "revenue"},
+    ]
     system = [{"claim": "revenue growth of 3% in FY26", "verdict": "MET"}]
     rows = match_claims(gold, system)
     assert sum(r["matched"] for r in rows) == 1

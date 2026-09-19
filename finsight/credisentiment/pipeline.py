@@ -21,6 +21,7 @@ from finsight.rag.service import embed_documents
 # Section-aware chunking
 # ---------------------------------------------------------------------------
 
+
 def _find_paragraph_break(text: str, target: int) -> int:
     """
     Search backward from *target* for a paragraph break (``\\n\\n``).
@@ -63,13 +64,15 @@ def chunk_for_credisentiment(
         text = text.strip()
         if not text:
             return
-        chunks.append({
-            "text": text,
-            "page_number": buffer_page,
-            "section": buffer_section,
-            "sub_section": buffer_sub,
-            "chunk_index": chunk_idx,
-        })
+        chunks.append(
+            {
+                "text": text,
+                "page_number": buffer_page,
+                "section": buffer_section,
+                "sub_section": buffer_sub,
+                "chunk_index": chunk_idx,
+            }
+        )
         chunk_idx += 1
 
     for page in pages:
@@ -82,11 +85,7 @@ def chunk_for_credisentiment(
         page_num = page.get("page", 1)
 
         # Section boundary detection
-        if (
-            buffer
-            and current_section != buffer_section
-            and len(buffer) > chunk_size * 0.3
-        ):
+        if buffer and current_section != buffer_section and len(buffer) > chunk_size * 0.3:
             _flush(buffer)
             buffer = ""
 
@@ -119,6 +118,7 @@ def chunk_for_credisentiment(
 # ---------------------------------------------------------------------------
 # Process orchestrator
 # ---------------------------------------------------------------------------
+
 
 def process_for_credisentiment(session: Session, document_id: int) -> dict:
     """
@@ -168,9 +168,7 @@ def process_for_credisentiment(session: Session, document_id: int) -> dict:
         cs_chunks = chunk_for_credisentiment(pages)
 
         # Delete old ComparisonChunk rows
-        old_chunks = session.exec(
-            select(ComparisonChunk).where(ComparisonChunk.document_id == document_id)
-        ).all()
+        old_chunks = session.exec(select(ComparisonChunk).where(ComparisonChunk.document_id == document_id)).all()
         for oc in old_chunks:
             session.delete(oc)
 

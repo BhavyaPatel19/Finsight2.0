@@ -6,6 +6,7 @@ brokerage account, so the SQLite file must not leak usable tokens. Tokens
 are Fernet-encrypted with a key derived from SECRET_KEY; values written
 before encryption existed are read as plaintext and re-encrypted on save.
 """
+
 from __future__ import annotations
 
 import base64
@@ -32,6 +33,6 @@ def decrypt_token(value: str) -> str:
     if not value.startswith(_PREFIX):
         return value
     try:
-        return _fernet().decrypt(value[len(_PREFIX):].encode()).decode()
+        return _fernet().decrypt(value[len(_PREFIX) :].encode()).decode()
     except InvalidToken as e:  # SECRET_KEY changed: the token is unrecoverable, force a re-link
         raise ValueError("stored Zerodha token cannot be decrypted with the current SECRET_KEY") from e

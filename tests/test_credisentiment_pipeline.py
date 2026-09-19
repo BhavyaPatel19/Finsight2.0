@@ -8,6 +8,7 @@ from finsight.models import Document
 # Chunking tests
 # ---------------------------------------------------------------------------
 
+
 class TestChunkForCredisentiment:
     """Tests for chunk_for_credisentiment()."""
 
@@ -21,9 +22,7 @@ class TestChunkForCredisentiment:
 
         assert len(chunks) >= 2, f"Expected 2+ chunks, got {len(chunks)}"
         for c in chunks:
-            assert len(c["text"]) <= 4000, (
-                f"Chunk {c['chunk_index']} is {len(c['text'])} chars (max 4000)"
-            )
+            assert len(c["text"]) <= 4000, f"Chunk {c['chunk_index']} is {len(c['text'])} chars (max 4000)"
 
     def test_section_boundary_chunking(self):
         """Section change with buffer > 30% of chunk_size triggers flush."""
@@ -66,14 +65,13 @@ class TestChunkForCredisentiment:
         # The tail of chunk 0 should appear at the start of chunk 1
         tail_of_first = chunks[0]["text"][-400:]  # last 400 chars
         head_of_second = chunks[1]["text"][:600]  # first 600 chars
-        assert tail_of_first in head_of_second, (
-            "Overlap not found between consecutive chunks"
-        )
+        assert tail_of_first in head_of_second, "Overlap not found between consecutive chunks"
 
 
 # ---------------------------------------------------------------------------
 # Vectorstore tests
 # ---------------------------------------------------------------------------
+
 
 class TestCredisentimentVectorstore:
     """Tests for credisentiment vectorstore module."""
@@ -89,6 +87,7 @@ class TestCredisentimentVectorstore:
 # ---------------------------------------------------------------------------
 # Pipeline orchestrator tests
 # ---------------------------------------------------------------------------
+
 
 def _fake_structured_doc():
     """Return a fake extract_structured_document result with 2 pages."""
@@ -123,9 +122,7 @@ class TestProcessForCredisentiment:
 
     @patch("finsight.credisentiment.pipeline.embed_documents", side_effect=_fake_embeddings)
     @patch("finsight.credisentiment.pipeline.extract_structured_document", return_value=_fake_structured_doc())
-    def test_pipeline_independence(
-        self, mock_extract, mock_embed, test_db_session, sample_document, tmp_chroma_dir
-    ):
+    def test_pipeline_independence(self, mock_extract, mock_embed, test_db_session, sample_document, tmp_chroma_dir):
         """process_for_credisentiment sets cs_status='indexed' without touching status (RAG)."""
         from finsight.credisentiment.pipeline import process_for_credisentiment
 
@@ -140,9 +137,7 @@ class TestProcessForCredisentiment:
 
     @patch("finsight.credisentiment.pipeline.embed_documents", side_effect=_fake_embeddings)
     @patch("finsight.credisentiment.pipeline.extract_structured_document", return_value=_fake_structured_doc())
-    def test_process_guard(
-        self, mock_extract, mock_embed, test_db_session, sample_document, tmp_chroma_dir
-    ):
+    def test_process_guard(self, mock_extract, mock_embed, test_db_session, sample_document, tmp_chroma_dir):
         """If cs_status is already 'indexed', return early with 'already_indexed'."""
         from finsight.credisentiment.pipeline import process_for_credisentiment
 
@@ -159,8 +154,11 @@ class TestProcessForCredisentiment:
         from finsight.credisentiment.pipeline import process_for_credisentiment
 
         doc = Document(
-            symbol="NOPDF", doc_type="annual_report",
-            status="pending", cs_status="pending", pdf_path=None,
+            symbol="NOPDF",
+            doc_type="annual_report",
+            status="pending",
+            cs_status="pending",
+            pdf_path=None,
         )
         test_db_session.add(doc)
         test_db_session.commit()

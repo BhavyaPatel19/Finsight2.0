@@ -1,4 +1,5 @@
 """Upload endpoint: type/size/content checks and path sanitisation."""
+
 import io
 
 from finsight import config

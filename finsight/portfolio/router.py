@@ -16,10 +16,7 @@ def holdings(
     current_user: User = Depends(get_current_user),
 ):
     rows = get_holdings_with_metrics(session, current_user.id)
-    total = sum(
-        (r.get("current_price") or r.get("avg_price", 0)) * r.get("quantity", 0)
-        for r in rows
-    )
+    total = sum((r.get("current_price") or r.get("avg_price", 0)) * r.get("quantity", 0) for r in rows)
     return PortfolioMetrics(
         holdings=[HoldingMetric(**r) for r in rows],
         total_value=total,

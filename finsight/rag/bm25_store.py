@@ -2,6 +2,7 @@
 In-memory BM25 index over the chunks in ChromaDB (same ids + metadata as
 dense retrieval). Rebuilt lazily on first query after invalidation.
 """
+
 import re
 
 _bm25_index = None
@@ -9,7 +10,7 @@ _bm25_corpus: list[dict] = []
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.findall(r'\b\w+\b', text.lower())
+    return re.findall(r"\b\w+\b", text.lower())
 
 
 def build_bm25_index(session=None) -> None:
@@ -38,9 +39,7 @@ def build_bm25_index(session=None) -> None:
         for cid, text, meta in zip(ids, got["documents"], got["metadatas"], strict=True)
     ]
     # Index the same contextual header the embeddings saw (company, doc type, period).
-    tokenized = [
-        _tokenize(f"{item['metadata'].get('context_header', '')} {item['text']}") for item in corpus
-    ]
+    tokenized = [_tokenize(f"{item['metadata'].get('context_header', '')} {item['text']}") for item in corpus]
     _bm25_index = BM25Okapi(tokenized)
     _bm25_corpus = corpus
 
@@ -67,12 +66,14 @@ def bm25_search(
             continue
         if score <= 0:
             continue
-        results.append({
-            "text": item["text"],
-            "metadata": item["metadata"],
-            "bm25_score": float(score),
-            "distance": None,
-        })
+        results.append(
+            {
+                "text": item["text"],
+                "metadata": item["metadata"],
+                "bm25_score": float(score),
+                "distance": None,
+            }
+        )
 
     results.sort(key=lambda x: x["bm25_score"], reverse=True)
     return results[:n_results]

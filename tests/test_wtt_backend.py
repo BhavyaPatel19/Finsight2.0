@@ -19,6 +19,7 @@ from finsight.models.enums import ClaimCategory
 # ClaimCategory enum tests
 # ---------------------------------------------------------------------------
 
+
 class TestClaimCategory:
     def test_enum_has_exactly_10_members(self):
         assert len(ClaimCategory) == 10
@@ -45,7 +46,6 @@ class TestClaimCategory:
 # ---------------------------------------------------------------------------
 
 
-
 class TestStripThinkTags:
     def test_properly_closed_tags(self):
         assert strip_think_tags("before<think>thinking</think>after") == "beforeafter"
@@ -57,9 +57,7 @@ class TestStripThinkTags:
         assert strip_think_tags("before</think>after") == "beforeafter"
 
     def test_multiple_blocks(self):
-        result = strip_think_tags(
-            "<think>block1</think>middle<think>block2</think>end"
-        )
+        result = strip_think_tags("<think>block1</think>middle<think>block2</think>end")
         assert result == "middleend"
 
     def test_no_tags(self):
@@ -69,6 +67,7 @@ class TestStripThinkTags:
 # ---------------------------------------------------------------------------
 # JSON parsing tests
 # ---------------------------------------------------------------------------
+
 
 class TestParseJsonArray:
     def test_plain_json_array(self):
@@ -94,6 +93,7 @@ class TestParseJsonObject:
 # deduplicate_claims tests
 # ---------------------------------------------------------------------------
 
+
 class TestDeduplicateClaims:
     def test_removes_exact_duplicates(self):
         claims = [
@@ -116,6 +116,7 @@ class TestDeduplicateClaims:
 # Prompt template tests
 # ---------------------------------------------------------------------------
 
+
 class TestPromptTemplates:
     def test_stage1_contains_all_categories(self):
         for cat in ClaimCategory:
@@ -129,7 +130,6 @@ class TestPromptTemplates:
 # ---------------------------------------------------------------------------
 # _call_wtt_llm goes through the provider layer
 # ---------------------------------------------------------------------------
-
 
 
 class TestCallWttLlm:
@@ -159,7 +159,6 @@ class TestCallWttLlm:
 # ---------------------------------------------------------------------------
 # get_document_chunks tests
 # ---------------------------------------------------------------------------
-
 
 
 class TestGetDocumentChunks:
@@ -212,7 +211,6 @@ class TestWalkTheTalkPipeline:
 # ---------------------------------------------------------------------------
 # Router endpoint tests
 # ---------------------------------------------------------------------------
-
 
 
 class TestRouterEndpoints:

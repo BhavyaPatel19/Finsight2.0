@@ -13,6 +13,7 @@ is reported separately as a diagnostic; it is not used for scoring.
 Writes eval/results/retrieval_<tag-or-date>.json and refreshes
 eval/results/retrieval_latest.md.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -90,7 +91,8 @@ def corpus_coverage(session, gold: list[dict], key_by_id: dict[int, str]) -> dic
             continue
         ok = any(
             any(_norm(q) in t for t in chunks_by_key.get(key, []))
-            for key, g in item["docs"].items() for q in g["evidence"]
+            for key, g in item["docs"].items()
+            for q in g["evidence"]
         )
         covered += ok
         if not ok:
@@ -117,15 +119,22 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
             if ev:
                 docs_hit.add(key_by_id.get(hit["metadata"].get("document_id")))
         n_gold_docs = len(item["docs"])
-        per_q.append({
-            "id": item["id"], "type": item["type"],
-            "hit@1": hit_at_k(rels, 1), "hit@3": hit_at_k(rels, 3), "hit@5": hit_at_k(rels, 5), f"hit@{k}": hit_at_k(rels, k),
-            "rr": reciprocal_rank(rels, k), "ndcg": ndcg_at_k(rels, k, n_relevant=max(1, sum(rels))),
-            "p@5": precision_at_k(rels, 5),
-            "page_hit@5": hit_at_k(pages, 5),
-            "docs_covered": len(docs_hit) / n_gold_docs if n_gold_docs else 0.0,
-            "first_rank": (rels.index(1) + 1) if 1 in rels else None,
-        })
+        per_q.append(
+            {
+                "id": item["id"],
+                "type": item["type"],
+                "hit@1": hit_at_k(rels, 1),
+                "hit@3": hit_at_k(rels, 3),
+                "hit@5": hit_at_k(rels, 5),
+                f"hit@{k}": hit_at_k(rels, k),
+                "rr": reciprocal_rank(rels, k),
+                "ndcg": ndcg_at_k(rels, k, n_relevant=max(1, sum(rels))),
+                "p@5": precision_at_k(rels, 5),
+                "page_hit@5": hit_at_k(pages, 5),
+                "docs_covered": len(docs_hit) / n_gold_docs if n_gold_docs else 0.0,
+                "first_rank": (rels.index(1) + 1) if 1 in rels else None,
+            }
+        )
         for stage, ms in res["timings_ms"].items():
             stage_ms.setdefault(stage, []).append(ms)
 
@@ -135,12 +144,23 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
 
     types = sorted({q["type"] for q in per_q})
     return {
-        "mode": mode, "k": k, "candidates": candidates, "n": len(per_q),
-        "hit@1": agg("hit@1"), "hit@3": agg("hit@3"), "hit@5": agg("hit@5"), f"hit@{k}": agg(f"hit@{k}"),
-        "mrr": agg("rr"), "ndcg": agg("ndcg"), "p@5": agg("p@5"),
+        "mode": mode,
+        "k": k,
+        "candidates": candidates,
+        "n": len(per_q),
+        "hit@1": agg("hit@1"),
+        "hit@3": agg("hit@3"),
+        "hit@5": agg("hit@5"),
+        f"hit@{k}": agg(f"hit@{k}"),
+        "mrr": agg("rr"),
+        "ndcg": agg("ndcg"),
+        "p@5": agg("p@5"),
         "page_hit@5": agg("page_hit@5"),
         "cross_doc_docs_covered": agg("docs_covered", "cross_doc") if "cross_doc" in types else None,
-        "by_type": {t: {"n": sum(1 for q in per_q if q["type"] == t), "hit@5": agg("hit@5", t), "mrr": agg("rr", t)} for t in types},
+        "by_type": {
+            t: {"n": sum(1 for q in per_q if q["type"] == t), "hit@5": agg("hit@5", t), "mrr": agg("rr", t)}
+            for t in types
+        },
         "latency_ms": {s: round(mean(v), 1) for s, v in stage_ms.items()},
         "per_question": per_q,
     }
@@ -167,15 +187,31 @@ def write_markdown(report: dict, path: Path) -> None:
             f"| {m} | {r['hit@1']:.3f} | {r['hit@3']:.3f} | {r['hit@5']:.3f} | {r[f'hit@{k}']:.3f} | "
             f"{r['mrr']:.3f} | {r['ndcg']:.3f} | {r['p@5']:.3f} | {r['latency_ms'].get('total', 0):.0f} |"
         )
-    lines += ["", "## By question type (hit@5 / MRR)", "", "| type | n | " + " | ".join(modes) + " |", "|---|---|" + "---|" * len(modes)]
+    lines += [
+        "",
+        "## By question type (hit@5 / MRR)",
+        "",
+        "| type | n | " + " | ".join(modes) + " |",
+        "|---|---|" + "---|" * len(modes),
+    ]
     types = sorted({t for r in modes.values() for t in r["by_type"]})
     for t in types:
         n = next(r["by_type"][t]["n"] for r in modes.values() if t in r["by_type"])
-        cells = [f"{r['by_type'][t]['hit@5']:.2f} / {r['by_type'][t]['mrr']:.2f}" if t in r["by_type"] else "–" for r in modes.values()]
+        cells = [
+            f"{r['by_type'][t]['hit@5']:.2f} / {r['by_type'][t]['mrr']:.2f}" if t in r["by_type"] else "–"
+            for r in modes.values()
+        ]
         lines.append(f"| {t} | {n} | " + " | ".join(cells) + " |")
     if report["coverage"]["uncovered_ids"]:
-        lines += ["", f"Uncovered by chunking (no chunk contains the evidence): {', '.join(report['coverage']['uncovered_ids'])}"]
-    lines += ["", "Relevance = retrieved chunk contains a gold evidence quote. Latency is mean per query on this machine, models warm.", ""]
+        lines += [
+            "",
+            f"Uncovered by chunking (no chunk contains the evidence): {', '.join(report['coverage']['uncovered_ids'])}",
+        ]
+    lines += [
+        "",
+        "Relevance = retrieved chunk contains a gold evidence quote. Latency is mean per query on this machine, models warm.",
+        "",
+    ]
     path.write_text("\n".join(lines))
 
 
@@ -210,18 +246,24 @@ def main() -> None:
         for mode in args.modes:
             # warm-up so model load time is not charged to the first query
             from finsight.rag.retrieval import retrieve
+
             retrieve(session, "warm up", mode=mode, top_k=1, candidates=5)
             t0 = time.time()
             modes[mode] = evaluate_mode(session, gold, mode, args.k, args.candidates, key_by_id)
             r = modes[mode]
-            print(f"{mode:14s} hit@1 {r['hit@1']:.3f}  hit@5 {r['hit@5']:.3f}  MRR {r['mrr']:.3f}  nDCG {r['ndcg']:.3f}  "
-                  f"{r['latency_ms'].get('total', 0):.0f} ms/q  ({time.time() - t0:.0f}s)")
+            print(
+                f"{mode:14s} hit@1 {r['hit@1']:.3f}  hit@5 {r['hit@5']:.3f}  MRR {r['mrr']:.3f}  nDCG {r['ndcg']:.3f}  "
+                f"{r['latency_ms'].get('total', 0):.0f} ms/q  ({time.time() - t0:.0f}s)"
+            )
 
     report = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_sha": git_sha(), "tag": args.tag,
-        "k": args.k, "candidates": args.candidates,
-        "embedding_model": config.EMBEDDING_MODEL, "reranker": "BAAI/bge-reranker-base",
+        "git_sha": git_sha(),
+        "tag": args.tag,
+        "k": args.k,
+        "candidates": args.candidates,
+        "embedding_model": config.EMBEDDING_MODEL,
+        "reranker": "BAAI/bge-reranker-base",
         "corpus": {"documents": len(key_by_id), "chunks": n_chunks},
         "coverage": coverage,
         "modes": modes,

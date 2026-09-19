@@ -43,12 +43,14 @@ def fetch_news(symbol: str, max_items: int = 5) -> list[dict]:
             link = item.findtext("link", "")
             pub_date = item.findtext("pubDate", "")
             source = item.findtext("source", "")
-            articles.append({
-                "title": title,
-                "url": link,
-                "published": pub_date,
-                "source": source,
-            })
+            articles.append(
+                {
+                    "title": title,
+                    "url": link,
+                    "published": pub_date,
+                    "source": source,
+                }
+            )
 
         _news_cache[sym] = (articles, time.time() + _NEWS_TTL)
         return articles

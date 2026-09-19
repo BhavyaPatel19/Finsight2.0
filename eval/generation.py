@@ -16,6 +16,7 @@ Judge (eval/judge.py, same provider unless --judge-model):
     faithfulness      claims in the answer supported by retrieved context
     correctness       correct / partial / incorrect vs the human reference
 """
+
 from __future__ import annotations
 
 import argparse
@@ -79,7 +80,9 @@ def deterministic(item: dict, answer: str, sources: list[dict]) -> dict:
     return out
 
 
-def run(session, gold: list[dict], *, model: str | None, judge: bool, judge_model: str | None, top_k: int) -> list[dict]:
+def run(
+    session, gold: list[dict], *, model: str | None, judge: bool, judge_model: str | None, top_k: int
+) -> list[dict]:
     from finsight.rag.service import answer_question
 
     rows = []
@@ -93,9 +96,14 @@ def run(session, gold: list[dict], *, model: str | None, judge: bool, judge_mode
             continue
         answer = res["answer"]
         row = {
-            "id": item["id"], "type": item["type"], "answerable": item["answerable"],
-            "question": item["question"], "reference": item["answer"], "answer": answer,
-            "model": res.get("model_used"), "latency_ms": round((time.perf_counter() - t0) * 1000),
+            "id": item["id"],
+            "type": item["type"],
+            "answerable": item["answerable"],
+            "question": item["question"],
+            "reference": item["answer"],
+            "answer": answer,
+            "model": res.get("model_used"),
+            "latency_ms": round((time.perf_counter() - t0) * 1000),
             "usage": res.get("usage"),
             **deterministic(item, answer, res.get("sources", [])),
         }
@@ -114,6 +122,7 @@ def run(session, gold: list[dict], *, model: str | None, judge: bool, judge_mode
 
 def judge_faithfulness_cached(answer, res, contexts, judge_model):
     from eval.judge import judge_faithfulness
+
     # Full chunk text gives the judge more to verify against than the 300-char snippet.
     full = [c for c in (res.get("context") or contexts) if c]
     return judge_faithfulness(answer, full, model=judge_model)
@@ -121,6 +130,7 @@ def judge_faithfulness_cached(answer, res, contexts, judge_model):
 
 def judge_correctness_cached(item, answer, judge_model):
     from eval.judge import judge_correctness
+
     return judge_correctness(item["question"], item["answer"], answer, model=judge_model)
 
 
@@ -135,24 +145,45 @@ def summarise(rows: list[dict]) -> dict:
     grades = [r["correctness"]["grade"] for r in ans if r.get("correctness")]
     cited = [r for r in ans if not r["abstained"]]
     return {
-        "n": len(rows), "errors": len(rows) - len(ok),
-        "answerable": len(ans), "unanswerable": len(unans),
+        "n": len(rows),
+        "errors": len(rows) - len(ok),
+        "answerable": len(ans),
+        "unanswerable": len(unans),
         "number_recall": round(mean(nr), 4) if nr else None,
         "false_abstain_rate": round(mean([float(r["false_abstain"]) for r in ans]), 4) if ans else None,
         "abstain_rate_on_unanswerable": round(mean([float(r["abstain_ok"]) for r in unans]), 4) if unans else None,
         "cited_rate": round(mean([float(r["cited"]) for r in cited]), 4) if cited else None,
-        "citation_valid_rate": round(mean([float(r["citation_valid"]) for r in cited if r["citation_valid"] is not None]), 4)
-        if any(r["citation_valid"] is not None for r in cited) else None,
+        "citation_valid_rate": round(
+            mean([float(r["citation_valid"]) for r in cited if r["citation_valid"] is not None]), 4
+        )
+        if any(r["citation_valid"] is not None for r in cited)
+        else None,
         "faithfulness": round(mean(faith), 4) if faith else None,
         "faithfulness_n": len(faith),
-        "correctness": {g: grades.count(g) / len(grades) for g in ("correct", "partial", "incorrect", "unknown")} if grades else None,
+        "correctness": {g: grades.count(g) / len(grades) for g in ("correct", "partial", "incorrect", "unknown")}
+        if grades
+        else None,
         "correctness_n": len(grades),
         "latency_ms_mean": round(mean([r["latency_ms"] for r in ok])) if ok else None,
         "by_type": {
-            t: {"n": sum(1 for r in ans if r["type"] == t),
-                "number_recall": round(mean([r["number_recall"] for r in ans if r["type"] == t and r.get("number_recall") is not None]), 3),
-                "correct": round(mean([float(r["correctness"]["grade"] == "correct") for r in ans if r["type"] == t and r.get("correctness")]), 3)
-                if any(r.get("correctness") for r in ans if r["type"] == t) else None}
+            t: {
+                "n": sum(1 for r in ans if r["type"] == t),
+                "number_recall": round(
+                    mean([r["number_recall"] for r in ans if r["type"] == t and r.get("number_recall") is not None]), 3
+                ),
+                "correct": round(
+                    mean(
+                        [
+                            float(r["correctness"]["grade"] == "correct")
+                            for r in ans
+                            if r["type"] == t and r.get("correctness")
+                        ]
+                    ),
+                    3,
+                )
+                if any(r.get("correctness") for r in ans if r["type"] == t)
+                else None,
+            }
             for t in sorted({r["type"] for r in ans})
         },
     }
@@ -169,20 +200,43 @@ def write_markdown(report: dict, path: Path) -> None:
         "",
         "| metric | value |",
         "|---|---|",
-        f"| correctness vs reference (judge) | correct {c.get('correct', 0):.1%} · partial {c.get('partial', 0):.1%} · incorrect {c.get('incorrect', 0):.1%} (n={s['correctness_n']}) |" if c else "| correctness | – (no judge) |",
-        f"| faithfulness (judge, claims supported by context) | {s['faithfulness']:.3f} (n={s['faithfulness_n']}) |" if s["faithfulness"] is not None else "| faithfulness | – (no judge) |",
-        f"| number recall (reference numbers present) | {s['number_recall']:.3f} |" if s["number_recall"] is not None else "| number recall | – |",
-        f"| abstains on unanswerable | {s['abstain_rate_on_unanswerable']:.1%} |" if s["abstain_rate_on_unanswerable"] is not None else "| abstains on unanswerable | – |",
-        f"| false abstain on answerable | {s['false_abstain_rate']:.1%} |" if s["false_abstain_rate"] is not None else "| false abstain | – |",
+        f"| correctness vs reference (judge) | correct {c.get('correct', 0):.1%} · partial {c.get('partial', 0):.1%} · incorrect {c.get('incorrect', 0):.1%} (n={s['correctness_n']}) |"
+        if c
+        else "| correctness | – (no judge) |",
+        f"| faithfulness (judge, claims supported by context) | {s['faithfulness']:.3f} (n={s['faithfulness_n']}) |"
+        if s["faithfulness"] is not None
+        else "| faithfulness | – (no judge) |",
+        f"| number recall (reference numbers present) | {s['number_recall']:.3f} |"
+        if s["number_recall"] is not None
+        else "| number recall | – |",
+        f"| abstains on unanswerable | {s['abstain_rate_on_unanswerable']:.1%} |"
+        if s["abstain_rate_on_unanswerable"] is not None
+        else "| abstains on unanswerable | – |",
+        f"| false abstain on answerable | {s['false_abstain_rate']:.1%} |"
+        if s["false_abstain_rate"] is not None
+        else "| false abstain | – |",
         f"| answers with a page citation | {s['cited_rate']:.1%} |" if s["cited_rate"] is not None else "| cited | – |",
-        f"| cited pages ⊆ retrieved pages | {s['citation_valid_rate']:.1%} |" if s["citation_valid_rate"] is not None else "| citation validity | – |",
+        f"| cited pages ⊆ retrieved pages | {s['citation_valid_rate']:.1%} |"
+        if s["citation_valid_rate"] is not None
+        else "| citation validity | – |",
         f"| mean latency | {s['latency_ms_mean']} ms |",
         "",
-        "## By question type", "", "| type | n | number recall | correct |", "|---|---|---|---|",
+        "## By question type",
+        "",
+        "| type | n | number recall | correct |",
+        "|---|---|---|---|",
     ]
     for t, v in s["by_type"].items():
-        lines.append(f"| {t} | {v['n']} | {v['number_recall']:.2f} | {v['correct']:.0%} |" if v["correct"] is not None else f"| {t} | {v['n']} | {v['number_recall']:.2f} | – |")
-    lines += ["", "Number recall and abstention are deterministic; correctness and faithfulness are LLM-judged (prompts in eval/judge.py).", ""]
+        lines.append(
+            f"| {t} | {v['n']} | {v['number_recall']:.2f} | {v['correct']:.0%} |"
+            if v["correct"] is not None
+            else f"| {t} | {v['n']} | {v['number_recall']:.2f} | – |"
+        )
+    lines += [
+        "",
+        "Number recall and abstention are deterministic; correctness and faithfulness are LLM-judged (prompts in eval/judge.py).",
+        "",
+    ]
     path.write_text("\n".join(lines))
 
 
@@ -194,7 +248,12 @@ def main() -> None:
     ap.add_argument("--top-k", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0, help="only the first N questions (smoke test)")
     ap.add_argument("--ids", default="", help="comma-separated question ids to (re)run")
-    ap.add_argument("--merge-into", type=Path, default=None, help="update these rows in an existing results JSON instead of writing a new file")
+    ap.add_argument(
+        "--merge-into",
+        type=Path,
+        default=None,
+        help="update these rows in an existing results JSON instead of writing a new file",
+    )
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--tag", default="")
     args = ap.parse_args()
@@ -214,10 +273,19 @@ def main() -> None:
         gold = gold[: args.limit]
     provider = get_provider()
     model = args.model or provider.default_model
-    print(f"generator {model} via {provider.name}; judge {'off' if args.no_judge else (args.judge_model or model)}; {len(gold)} questions")
+    print(
+        f"generator {model} via {provider.name}; judge {'off' if args.no_judge else (args.judge_model or model)}; {len(gold)} questions"
+    )
 
     with Session(engine) as session:
-        rows = run(session, gold, model=args.model, judge=not args.no_judge, judge_model=args.judge_model or args.model, top_k=args.top_k)
+        rows = run(
+            session,
+            gold,
+            model=args.model,
+            judge=not args.no_judge,
+            judge_model=args.judge_model or args.model,
+            top_k=args.top_k,
+        )
 
     if args.merge_into:
         # Re-run of specific questions: replace those rows, recompute the summary, keep provenance.
@@ -226,14 +294,25 @@ def main() -> None:
         by_id.update({r["id"]: r for r in rows})
         report["rows"] = [by_id[g["id"]] for g in load_gold(args.gold) if g["id"] in by_id]
         report["summary"] = summarise(report["rows"])
-        report.setdefault("reruns", []).append({"ids": sorted(r["id"] for r in rows), "git_sha": git_sha(),
-                                                 "timestamp": datetime.now(UTC).isoformat(timespec="seconds")})
+        report.setdefault("reruns", []).append(
+            {
+                "ids": sorted(r["id"] for r in rows),
+                "git_sha": git_sha(),
+                "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            }
+        )
         out = args.merge_into
     else:
         report = {
-            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
-            "provider": provider.name, "model": model, "judge_model": args.judge_model, "top_k": args.top_k,
-            "summary": summarise(rows), "rows": rows,
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            "git_sha": git_sha(),
+            "tag": args.tag,
+            "provider": provider.name,
+            "model": model,
+            "judge_model": args.judge_model,
+            "top_k": args.top_k,
+            "summary": summarise(rows),
+            "rows": rows,
         }
         name = args.tag or f"{provider.name}-{datetime.now().strftime('%Y-%m-%d')}"
         out = RESULTS / f"generation_{name}.json"

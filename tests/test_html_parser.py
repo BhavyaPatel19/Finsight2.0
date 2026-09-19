@@ -1,4 +1,5 @@
 """HTML/text ingestion: paragraphs, speaker labels, tables, synthetic pages."""
+
 from finsight.ingestion.html_parser import extract_structured_html, html_to_paragraphs, paginate
 from finsight.ingestion.parsers import chunk_smart, extract_structured_document, is_concall_transcript
 

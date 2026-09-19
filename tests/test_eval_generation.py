@@ -1,4 +1,5 @@
 """Deterministic answer metrics and judge plumbing (LLM calls stubbed)."""
+
 from eval import judge
 from eval.generation import deterministic, number_recall, numbers, summarise
 from finsight.llm import LLMResponse
@@ -15,7 +16,9 @@ class TestNumbers:
 
     def test_recall(self):
         ref = "$4,730 million, up 4.8% YoY in constant currency and 3.6% in reported terms."
-        assert number_recall(ref, "Q4 revenues were $4,730 million, an increase of 4.8% in CC and 3.6% reported.") == 1.0
+        assert (
+            number_recall(ref, "Q4 revenues were $4,730 million, an increase of 4.8% in CC and 3.6% reported.") == 1.0
+        )
         assert number_recall(ref, "Revenue was $4,730 million.") == 1 / 3
         assert number_recall("no numbers here", "anything") is None
 
@@ -27,7 +30,9 @@ class TestDeterministic:
     item = {"answerable": True, "answer": "21.1%, an improvement of 50 basis points."}
 
     def test_cited_and_valid(self):
-        row = deterministic(self.item, "Margin was 21.1% [Section: CFO remarks > Page 2]", [{"page_number": 2}, {"page_number": 5}])
+        row = deterministic(
+            self.item, "Margin was 21.1% [Section: CFO remarks > Page 2]", [{"page_number": 2}, {"page_number": 5}]
+        )
         assert row["cited"] and row["citation_valid"] is True and row["number_recall"] == 0.5
         assert row["false_abstain"] is False
 
@@ -36,8 +41,11 @@ class TestDeterministic:
         assert row["citation_valid"] is False
 
     def test_abstain_on_unanswerable(self):
-        row = deterministic({"answerable": False, "answer": "Not found in the selected documents."},
-                            "Not found in the selected documents.", [])
+        row = deterministic(
+            {"answerable": False, "answer": "Not found in the selected documents."},
+            "Not found in the selected documents.",
+            [],
+        )
         assert row["abstain_ok"] is True and row["cited"] is False and row["citation_valid"] is None
 
     def test_false_abstain(self):
@@ -48,13 +56,41 @@ class TestDeterministic:
 class TestSummarise:
     def test_aggregates(self):
         rows = [
-            {"id": "a", "type": "numeric", "answerable": True, "abstained": False, "cited": True, "citation_valid": True,
-             "number_recall": 1.0, "false_abstain": False, "latency_ms": 100,
-             "faithfulness": {"score": 1.0}, "correctness": {"grade": "correct"}},
-            {"id": "b", "type": "numeric", "answerable": True, "abstained": True, "cited": False, "citation_valid": None,
-             "number_recall": 0.0, "false_abstain": True, "latency_ms": 300, "correctness": {"grade": "incorrect"}},
-            {"id": "c", "type": "unanswerable", "answerable": False, "abstained": True, "cited": False, "citation_valid": None,
-             "abstain_ok": True, "latency_ms": 200},
+            {
+                "id": "a",
+                "type": "numeric",
+                "answerable": True,
+                "abstained": False,
+                "cited": True,
+                "citation_valid": True,
+                "number_recall": 1.0,
+                "false_abstain": False,
+                "latency_ms": 100,
+                "faithfulness": {"score": 1.0},
+                "correctness": {"grade": "correct"},
+            },
+            {
+                "id": "b",
+                "type": "numeric",
+                "answerable": True,
+                "abstained": True,
+                "cited": False,
+                "citation_valid": None,
+                "number_recall": 0.0,
+                "false_abstain": True,
+                "latency_ms": 300,
+                "correctness": {"grade": "incorrect"},
+            },
+            {
+                "id": "c",
+                "type": "unanswerable",
+                "answerable": False,
+                "abstained": True,
+                "cited": False,
+                "citation_valid": None,
+                "abstain_ok": True,
+                "latency_ms": 200,
+            },
             {"id": "d", "type": "numeric", "error": "boom"},
         ]
         s = summarise(rows)
@@ -76,8 +112,14 @@ class TestJudge:
         def fake(prompt, **kw):
             calls.append(prompt)
             if "atomic factual claims" in prompt:
-                return LLMResponse(text='{"claims": ["FCF was $4.1 bn", "FCF was 129% of net profit"]}', model="m", provider="t")
-            return LLMResponse(text='{"verdicts": [{"claim": "FCF was $4.1 bn", "supported": true}, {"claim": "129%", "supported": false}]}', model="m", provider="t")
+                return LLMResponse(
+                    text='{"claims": ["FCF was $4.1 bn", "FCF was 129% of net profit"]}', model="m", provider="t"
+                )
+            return LLMResponse(
+                text='{"verdicts": [{"claim": "FCF was $4.1 bn", "supported": true}, {"claim": "129%", "supported": false}]}',
+                model="m",
+                provider="t",
+            )
 
         monkeypatch.setattr(judge, "generate", fake)
         r = judge.judge_faithfulness("FCF was $4.1 bn, 129% of net profit.", ["Free cash flow was $4.1 bn"])
@@ -85,13 +127,21 @@ class TestJudge:
         assert len(calls) == 2
 
     def test_faithfulness_no_claims(self, monkeypatch):
-        monkeypatch.setattr(judge, "generate", lambda p, **kw: LLMResponse(text='{"claims": []}', model="m", provider="t"))
+        monkeypatch.setattr(
+            judge, "generate", lambda p, **kw: LLMResponse(text='{"claims": []}', model="m", provider="t")
+        )
         assert judge.judge_faithfulness("Not found in the selected documents.", [])["score"] is None
 
     def test_correctness_grade_validation(self, monkeypatch):
-        monkeypatch.setattr(judge, "generate", lambda p, **kw: LLMResponse(text='{"grade": "Correct", "reason": "same"}', model="m", provider="t"))
+        monkeypatch.setattr(
+            judge,
+            "generate",
+            lambda p, **kw: LLMResponse(text='{"grade": "Correct", "reason": "same"}', model="m", provider="t"),
+        )
         assert judge.judge_correctness("q", "ref", "ans")["grade"] == "correct"
-        monkeypatch.setattr(judge, "generate", lambda p, **kw: LLMResponse(text='{"grade": "meh"}', model="m", provider="t"))
+        monkeypatch.setattr(
+            judge, "generate", lambda p, **kw: LLMResponse(text='{"grade": "meh"}', model="m", provider="t")
+        )
         assert judge.judge_correctness("q", "ref", "ans")["grade"] == "unknown"
 
     def test_llm_error_is_contained(self, monkeypatch):

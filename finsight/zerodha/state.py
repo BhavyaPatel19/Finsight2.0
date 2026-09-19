@@ -7,6 +7,7 @@ if the cookie verifies AND the returned `state` equals the nonce. Without
 this, an attacker could link *their* brokerage to a victim's account by
 luring the victim to /callback with the attacker's request_token.
 """
+
 from __future__ import annotations
 
 import hmac

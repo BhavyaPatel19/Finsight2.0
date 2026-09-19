@@ -5,6 +5,7 @@ fundamentals, AI insights and news.
 Price data comes from the active MarketDataProvider (yfinance by default,
 Zerodha Kite when the user has linked a broker account).
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -19,8 +20,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 DEFAULT_WATCHLIST = [
-    "RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC",
-    "SBIN", "BAJFINANCE", "BHARTIARTL", "LT", "ICICIBANK",
+    "RELIANCE",
+    "TCS",
+    "HDFCBANK",
+    "INFY",
+    "ITC",
+    "SBIN",
+    "BAJFINANCE",
+    "BHARTIARTL",
+    "LT",
+    "ICICIBANK",
 ]
 
 
@@ -33,14 +42,10 @@ def _provider(session: Session, user_id: int):
 
 def _get_user_holding_symbols(session: Session, user_id: int) -> list[str]:
     """Get all holding symbols for a user via the Portfolio → Holding join."""
-    portfolio = session.exec(
-        select(Portfolio).where(Portfolio.user_id == user_id)
-    ).first()
+    portfolio = session.exec(select(Portfolio).where(Portfolio.user_id == user_id)).first()
     if not portfolio:
         return []
-    holdings = session.exec(
-        select(Holding).where(Holding.portfolio_id == portfolio.id)
-    ).all()
+    holdings = session.exec(select(Holding).where(Holding.portfolio_id == portfolio.id)).all()
     return [h.symbol for h in holdings]
 
 

@@ -9,6 +9,7 @@ eval/gold/documents.json, register them, and index them for RAG.
 Idempotent: existing files are kept when their SHA-256 matches, and
 documents are matched on source_url.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -93,7 +94,9 @@ def register(session: Session, entry: dict, path: Path) -> Document:
     return doc
 
 
-def seed(session: Session, *, index: bool = True, wtt: bool = False, reindex: bool = False, dest_dir: Path | None = None) -> dict[str, Document]:
+def seed(
+    session: Session, *, index: bool = True, wtt: bool = False, reindex: bool = False, dest_dir: Path | None = None
+) -> dict[str, Document]:
     """Download + register (+ index) every manifest entry. Returns {key: Document}."""
     dest_dir = dest_dir or Path(config.DOCUMENTS_DIR)
     entries = load_manifest()
@@ -116,7 +119,12 @@ def seed(session: Session, *, index: bool = True, wtt: bool = False, reindex: bo
                 session.commit()
             t0 = time.time()
             result = process_for_rag(session, doc.id)
-            logger.info("indexed  %s -> %s in %.1fs", key, {k: v for k, v in result.items() if k != "document_id"}, time.time() - t0)
+            logger.info(
+                "indexed  %s -> %s in %.1fs",
+                key,
+                {k: v for k, v in result.items() if k != "document_id"},
+                time.time() - t0,
+            )
     if wtt:
         from finsight.credisentiment.pipeline import process_for_credisentiment
 

@@ -9,6 +9,7 @@ Anti-bot measures:
 - Retry with exponential backoff
 - Proper Referer/Origin headers
 """
+
 import os
 import random
 import re
@@ -88,16 +89,16 @@ def _nse_request_with_retry(
                 client.close()
         except httpx.HTTPStatusError as e:
             if e.response.status_code in (403, 429):
-                wait = (2 ** attempt) * 4 + random.uniform(1, 3)
+                wait = (2**attempt) * 4 + random.uniform(1, 3)
                 time.sleep(wait)
                 continue
             if e.response.status_code >= 500:
-                wait = (2 ** attempt) + random.uniform(0, 1)
+                wait = (2**attempt) + random.uniform(0, 1)
                 time.sleep(wait)
                 continue
             return None
         except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout):
-            wait = (2 ** attempt) * 2 + random.uniform(0, 2)
+            wait = (2**attempt) * 2 + random.uniform(0, 2)
             time.sleep(wait)
             continue
         except Exception:
@@ -166,13 +167,15 @@ def search_nse_announcements(
             if attachment and not attachment.startswith("http"):
                 attachment = f"{NSE_BASE}{attachment}" if attachment.startswith("/") else ""
 
-            results.append({
-                "title": item.get("desc", "").strip(),
-                "date": item.get("an_dt", "") or item.get("dt", ""),
-                "category": item.get("attchmntText", "Announcement"),
-                "attachment_url": attachment,
-                "company": item.get("sm_name", "") or symbol,
-            })
+            results.append(
+                {
+                    "title": item.get("desc", "").strip(),
+                    "date": item.get("an_dt", "") or item.get("dt", ""),
+                    "category": item.get("attchmntText", "Announcement"),
+                    "attachment_url": attachment,
+                    "company": item.get("sm_name", "") or symbol,
+                }
+            )
         return results
     except Exception:
         return []
@@ -187,7 +190,7 @@ def download_nse_filing(url: str, save_dir: str, filename: str | None = None) ->
 
     if not filename:
         filename = url.split("/")[-1].split("?")[0]
-    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
     if not filename.lower().endswith(".pdf"):
         filename += ".pdf"
     filepath = os.path.join(save_dir, filename)

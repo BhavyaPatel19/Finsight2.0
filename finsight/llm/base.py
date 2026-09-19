@@ -5,6 +5,7 @@ Every backend (Groq, Ollama, ...) implements `LLMProvider`. Call sites use
 `finsight.llm.generate()` / `agenerate()` and never talk to a vendor API
 directly, so swapping hosted ↔ local is a config change, not a code change.
 """
+
 from __future__ import annotations
 
 import abc

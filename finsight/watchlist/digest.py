@@ -15,7 +15,6 @@ _digest_cache: dict[int, tuple[str, float]] = {}
 _DIGEST_TTL = 2 * 60 * 60  # 2 hours
 
 
-
 def _build_stock_line(symbol: str, quote: dict, fund: dict) -> str:
     parts = [symbol]
     ltp = quote.get("last_price")

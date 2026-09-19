@@ -9,6 +9,7 @@ Anti-bot measures:
 - Retry with exponential backoff
 - Session-based cookies
 """
+
 import os
 import random
 import re
@@ -93,17 +94,17 @@ def _request_with_retry(
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
                 # Likely bot-blocked, wait longer
-                wait = (2 ** attempt) * 3 + random.uniform(0, 2)
+                wait = (2**attempt) * 3 + random.uniform(0, 2)
                 time.sleep(wait)
                 headers = _get_headers()  # rotate UA
                 continue
             if e.response.status_code >= 500:
-                wait = (2 ** attempt) + random.uniform(0, 1)
+                wait = (2**attempt) + random.uniform(0, 1)
                 time.sleep(wait)
                 continue
             return None
         except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout):
-            wait = (2 ** attempt) + random.uniform(0, 1)
+            wait = (2**attempt) + random.uniform(0, 1)
             time.sleep(wait)
             continue
         except Exception:
@@ -131,14 +132,29 @@ _COMPANY_DB = [
     {"scrip_code": "500570", "company_name": "Tata Motors Ltd", "symbol": "TATAMOTORS", "industry": "Automobile"},
     {"scrip_code": "500470", "company_name": "Tata Steel Ltd", "symbol": "TATASTEEL", "industry": "Steel"},
     {"scrip_code": "532500", "company_name": "Maruti Suzuki India Ltd", "symbol": "MARUTI", "industry": "Automobile"},
-    {"scrip_code": "524715", "company_name": "Sun Pharmaceutical Industries Ltd", "symbol": "SUNPHARMA", "industry": "Pharma"},
+    {
+        "scrip_code": "524715",
+        "company_name": "Sun Pharmaceutical Industries Ltd",
+        "symbol": "SUNPHARMA",
+        "industry": "Pharma",
+    },
     {"scrip_code": "500114", "company_name": "Titan Company Ltd", "symbol": "TITAN", "industry": "Consumer Goods"},
     {"scrip_code": "500034", "company_name": "Bajaj Finance Ltd", "symbol": "BAJFINANCE", "industry": "Finance"},
     {"scrip_code": "500820", "company_name": "Asian Paints Ltd", "symbol": "ASIANPAINT", "industry": "Paints"},
     {"scrip_code": "512599", "company_name": "Adani Enterprises Ltd", "symbol": "ADANIENT", "industry": "Conglomerate"},
-    {"scrip_code": "532921", "company_name": "Adani Ports and SEZ Ltd", "symbol": "ADANIPORTS", "industry": "Infrastructure"},
+    {
+        "scrip_code": "532921",
+        "company_name": "Adani Ports and SEZ Ltd",
+        "symbol": "ADANIPORTS",
+        "industry": "Infrastructure",
+    },
     {"scrip_code": "532978", "company_name": "Bajaj Finserv Ltd", "symbol": "BAJAJFINSV", "industry": "Finance"},
-    {"scrip_code": "500547", "company_name": "Bharat Petroleum Corporation Ltd", "symbol": "BPCL", "industry": "Oil & Gas"},
+    {
+        "scrip_code": "500547",
+        "company_name": "Bharat Petroleum Corporation Ltd",
+        "symbol": "BPCL",
+        "industry": "Oil & Gas",
+    },
     {"scrip_code": "500087", "company_name": "Cipla Ltd", "symbol": "CIPLA", "industry": "Pharma"},
     {"scrip_code": "533278", "company_name": "Coal India Ltd", "symbol": "COALINDIA", "industry": "Mining"},
     {"scrip_code": "532488", "company_name": "Divi's Laboratories Ltd", "symbol": "DIVISLAB", "industry": "Pharma"},
@@ -154,9 +170,24 @@ _COMPANY_DB = [
     {"scrip_code": "500520", "company_name": "Mahindra & Mahindra Ltd", "symbol": "M&M", "industry": "Automobile"},
     {"scrip_code": "500790", "company_name": "Nestle India Ltd", "symbol": "NESTLEIND", "industry": "FMCG"},
     {"scrip_code": "532555", "company_name": "NTPC Ltd", "symbol": "NTPC", "industry": "Power"},
-    {"scrip_code": "500312", "company_name": "Oil and Natural Gas Corporation Ltd", "symbol": "ONGC", "industry": "Oil & Gas"},
-    {"scrip_code": "532898", "company_name": "Power Grid Corporation of India Ltd", "symbol": "POWERGRID", "industry": "Power"},
-    {"scrip_code": "540719", "company_name": "SBI Life Insurance Company Ltd", "symbol": "SBILIFE", "industry": "Insurance"},
+    {
+        "scrip_code": "500312",
+        "company_name": "Oil and Natural Gas Corporation Ltd",
+        "symbol": "ONGC",
+        "industry": "Oil & Gas",
+    },
+    {
+        "scrip_code": "532898",
+        "company_name": "Power Grid Corporation of India Ltd",
+        "symbol": "POWERGRID",
+        "industry": "Power",
+    },
+    {
+        "scrip_code": "540719",
+        "company_name": "SBI Life Insurance Company Ltd",
+        "symbol": "SBILIFE",
+        "industry": "Insurance",
+    },
     {"scrip_code": "500387", "company_name": "Shree Cement Ltd", "symbol": "SHREECEM", "industry": "Cement"},
     {"scrip_code": "500800", "company_name": "Tata Consumer Products Ltd", "symbol": "TATACONSUM", "industry": "FMCG"},
     {"scrip_code": "500400", "company_name": "Tata Power Company Ltd", "symbol": "TATAPOW", "industry": "Power"},
@@ -165,14 +196,29 @@ _COMPANY_DB = [
     {"scrip_code": "512070", "company_name": "UPL Ltd", "symbol": "UPL", "industry": "Chemicals"},
     {"scrip_code": "543257", "company_name": "Zomato Ltd", "symbol": "ZOMATO", "industry": "Internet"},
     {"scrip_code": "540180", "company_name": "Avenue Supermarts Ltd (DMart)", "symbol": "DMART", "industry": "Retail"},
-    {"scrip_code": "500085", "company_name": "Chambal Fertilisers and Chemicals Ltd", "symbol": "CHAMBLFERT", "industry": "Fertilizers"},
+    {
+        "scrip_code": "500085",
+        "company_name": "Chambal Fertilisers and Chemicals Ltd",
+        "symbol": "CHAMBLFERT",
+        "industry": "Fertilizers",
+    },
     {"scrip_code": "500049", "company_name": "Bharat Electronics Ltd", "symbol": "BEL", "industry": "Defence"},
     {"scrip_code": "530965", "company_name": "Indian Oil Corporation Ltd", "symbol": "IOC", "industry": "Oil & Gas"},
-    {"scrip_code": "500331", "company_name": "Pidilite Industries Ltd", "symbol": "PIDILITIND", "industry": "Chemicals"},
+    {
+        "scrip_code": "500331",
+        "company_name": "Pidilite Industries Ltd",
+        "symbol": "PIDILITIND",
+        "industry": "Chemicals",
+    },
     {"scrip_code": "500680", "company_name": "Pfizer Ltd", "symbol": "PFIZER", "industry": "Pharma"},
     {"scrip_code": "532454", "company_name": "Bharti Airtel Ltd", "symbol": "BHARTIARTL", "industry": "Telecom"},
     {"scrip_code": "543066", "company_name": "Tata Elxsi Ltd", "symbol": "TATAELXSI", "industry": "IT"},
-    {"scrip_code": "500185", "company_name": "Hindustan Petroleum Corp Ltd", "symbol": "HINDPETRO", "industry": "Oil & Gas"},
+    {
+        "scrip_code": "500185",
+        "company_name": "Hindustan Petroleum Corp Ltd",
+        "symbol": "HINDPETRO",
+        "industry": "Oil & Gas",
+    },
     {"scrip_code": "532978", "company_name": "Bajaj Finserv Ltd", "symbol": "BAJAJFINSV", "industry": "Finance"},
     {"scrip_code": "500295", "company_name": "Godrej Consumer Products Ltd", "symbol": "GODREJCP", "industry": "FMCG"},
     {"scrip_code": "532541", "company_name": "Voltas Ltd", "symbol": "VOLTAS", "industry": "Consumer Durables"},
@@ -180,9 +226,19 @@ _COMPANY_DB = [
     {"scrip_code": "500770", "company_name": "Tata Communications Ltd", "symbol": "TATACOMM", "industry": "Telecom"},
     {"scrip_code": "500900", "company_name": "Tata Investment Corp Ltd", "symbol": "TATAINVEST", "industry": "Finance"},
     {"scrip_code": "532155", "company_name": "Gail India Ltd", "symbol": "GAIL", "industry": "Gas"},
-    {"scrip_code": "500103", "company_name": "Bharat Heavy Electricals Ltd", "symbol": "BHEL", "industry": "Engineering"},
+    {
+        "scrip_code": "500103",
+        "company_name": "Bharat Heavy Electricals Ltd",
+        "symbol": "BHEL",
+        "industry": "Engineering",
+    },
     {"scrip_code": "532977", "company_name": "Bajaj Auto Ltd", "symbol": "BAJAJ-AUTO", "industry": "Automobile"},
-    {"scrip_code": "500040", "company_name": "Century Textiles & Industries Ltd", "symbol": "CENTURYTEX", "industry": "Textiles"},
+    {
+        "scrip_code": "500040",
+        "company_name": "Century Textiles & Industries Ltd",
+        "symbol": "CENTURYTEX",
+        "industry": "Textiles",
+    },
     {"scrip_code": "543320", "company_name": "Nykaa (FSN E-Commerce)", "symbol": "NYKAA", "industry": "E-Commerce"},
     {"scrip_code": "543396", "company_name": "Paytm (One97 Communications)", "symbol": "PAYTM", "industry": "Fintech"},
     {"scrip_code": "532978", "company_name": "Bajaj Finserv Ltd", "symbol": "BAJAJFINSV", "industry": "Finance"},
@@ -207,16 +263,20 @@ def search_company(query: str) -> list[dict]:
         scrip = company["scrip_code"]
 
         # Match against name, symbol, or scrip code
-        if (query_lower in name
+        if (
+            query_lower in name
             or query_lower in symbol
             or query_lower == scrip
             or name.startswith(query_lower)
-            or symbol.startswith(query_lower)):
-            results.append({
-                "scrip_code": scrip,
-                "company_name": company["company_name"],
-                "industry": company.get("industry", ""),
-            })
+            or symbol.startswith(query_lower)
+        ):
+            results.append(
+                {
+                    "scrip_code": scrip,
+                    "company_name": company["company_name"],
+                    "industry": company.get("industry", ""),
+                }
+            )
 
     # Deduplicate by scrip_code
     seen = set()
@@ -273,13 +333,15 @@ def search_filings(
             else:
                 attachment_url = ""
 
-            results.append({
-                "title": item.get("NEWSSUB", "").strip(),
-                "date": item.get("NEWS_DT", ""),
-                "category": item.get("CATEGORYNAME", ""),
-                "attachment_url": attachment_url,
-                "company": item.get("SLONGNAME", ""),
-            })
+            results.append(
+                {
+                    "title": item.get("NEWSSUB", "").strip(),
+                    "date": item.get("NEWS_DT", ""),
+                    "category": item.get("CATEGORYNAME", ""),
+                    "attachment_url": attachment_url,
+                    "company": item.get("SLONGNAME", ""),
+                }
+            )
         return results
     except Exception:
         return []
@@ -303,13 +365,15 @@ def search_annual_reports(scrip_code: str) -> list[dict]:
             attachment = item.get("ATTACHMENT", "") or item.get("FilePath", "")
             if attachment and not attachment.startswith("http"):
                 attachment = f"https://www.bseindia.com/{attachment}"
-            results.append({
-                "title": item.get("Year_Ended", "") or "Annual Report",
-                "date": item.get("Year_Ended", ""),
-                "category": "Annual Report",
-                "attachment_url": attachment,
-                "company": "",
-            })
+            results.append(
+                {
+                    "title": item.get("Year_Ended", "") or "Annual Report",
+                    "date": item.get("Year_Ended", ""),
+                    "category": "Annual Report",
+                    "attachment_url": attachment,
+                    "company": "",
+                }
+            )
         return results
     except Exception:
         return []
@@ -328,7 +392,7 @@ def download_filing(url: str, save_dir: str, filename: str | None = None) -> str
     if not filename:
         filename = url.split("/")[-1]
     # Sanitize filename
-    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
     filepath = os.path.join(save_dir, filename)
 
     if os.path.exists(filepath):

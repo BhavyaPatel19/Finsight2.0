@@ -10,6 +10,7 @@ def get_reranker():
     global _reranker
     if _reranker is None:
         from sentence_transformers import CrossEncoder
+
         _reranker = CrossEncoder("BAAI/bge-reranker-base", max_length=512)
     return _reranker
 

@@ -16,6 +16,7 @@ def get_collection():
         return _collection
 
     import chromadb
+
     client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
 
     # Check if existing collection was built with a different embedding model
@@ -69,11 +70,13 @@ def query(
     out = []
     if res["documents"] and res["documents"][0]:
         for i, doc in enumerate(res["documents"][0]):
-            out.append({
-                "text": doc,
-                "metadata": (res["metadatas"][0][i] if (res["metadatas"] and res["metadatas"][0]) else {}),
-                "distance": (res["distances"][0][i] if (res.get("distances") and res["distances"][0]) else None),
-            })
+            out.append(
+                {
+                    "text": doc,
+                    "metadata": (res["metadatas"][0][i] if (res["metadatas"] and res["metadatas"][0]) else {}),
+                    "distance": (res["distances"][0][i] if (res.get("distances") and res["distances"][0]) else None),
+                }
+            )
     return out
 
 

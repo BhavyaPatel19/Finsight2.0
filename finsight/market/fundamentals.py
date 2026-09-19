@@ -59,7 +59,9 @@ def _fetch_from_yfinance(symbol: str) -> dict:
         if financials is not None and balance is not None:
             op_income = financials.loc["Operating Income"].iloc[0] if "Operating Income" in financials.index else None
             total_assets = balance.loc["Total Assets"].iloc[0] if "Total Assets" in balance.index else None
-            current_liab = balance.loc["Current Liabilities"].iloc[0] if "Current Liabilities" in balance.index else None
+            current_liab = (
+                balance.loc["Current Liabilities"].iloc[0] if "Current Liabilities" in balance.index else None
+            )
             if op_income and total_assets and current_liab:
                 capital_employed = total_assets - current_liab
                 if capital_employed > 0:

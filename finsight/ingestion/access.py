@@ -6,6 +6,7 @@ or when it is part of the shared corpus (`user_id` is NULL — e.g. the
 seeded sample filings). Every router that touches a document goes through
 these two helpers, so the rule cannot drift between endpoints.
 """
+
 from __future__ import annotations
 
 from fastapi import HTTPException

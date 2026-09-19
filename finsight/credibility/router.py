@@ -73,4 +73,3 @@ def extract_claims(
     get_accessible_document(session, current_user, document_id)
     claims = extract_claims_for_document(session, document_id)
     return {"count": len(claims)}
-

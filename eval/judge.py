@@ -7,6 +7,7 @@ faithfulness  – decompose the answer into atomic claims, verify each claim
 correctness   – compare the answer with the human reference: correct,
                 partial or incorrect (numbers must match to be "correct").
 """
+
 from __future__ import annotations
 
 import json
@@ -51,7 +52,7 @@ def _json(text: str) -> dict:
     if start < 0 or end <= start:
         return {}
     try:
-        return json.loads(text[start:end + 1])
+        return json.loads(text[start : end + 1])
     except json.JSONDecodeError:
         return {}
 
@@ -71,9 +72,12 @@ def judge_faithfulness(answer: str, contexts: list[str], model: str | None = Non
     if not claims:
         return {"claims": 0, "supported": 0, "score": None, "verdicts": []}
     context = "\n\n---\n\n".join(contexts)
-    verdicts = _call(
-        VERIFY_PROMPT.format(context=context, claims="\n".join(f"- {c}" for c in claims)), model, max_tokens=1200
-    ).get("verdicts") or []
+    verdicts = (
+        _call(
+            VERIFY_PROMPT.format(context=context, claims="\n".join(f"- {c}" for c in claims)), model, max_tokens=1200
+        ).get("verdicts")
+        or []
+    )
     supported = sum(1 for v in verdicts if isinstance(v, dict) and v.get("supported") is True)
     return {"claims": len(claims), "supported": supported, "score": supported / len(claims), "verdicts": verdicts}
 

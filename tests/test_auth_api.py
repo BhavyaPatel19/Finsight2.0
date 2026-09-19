@@ -55,6 +55,7 @@ class TestLogin:
 
     def test_forged_token_with_other_key_rejected(self, api_client):
         from jose import jwt
+
         forged = jwt.encode({"sub": "1"}, "some-other-key", algorithm="HS256")
         r = api_client.get("/auth/me", headers={"Authorization": f"Bearer {forged}"})
         assert r.status_code == 401

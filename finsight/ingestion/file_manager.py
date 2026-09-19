@@ -3,6 +3,7 @@ File Manager Service — single source of truth for document lifecycle.
 Handles: registration, deduplication, download, processing, deletion.
 Used by scraper, ingestion router, and any module needing document context.
 """
+
 import os
 from pathlib import Path
 
@@ -30,9 +31,7 @@ def register_or_skip(
 ) -> tuple[Document, bool]:
     """Returns (document, is_new). If source_url already exists, returns existing doc with is_new=False."""
     if source_url:
-        existing = session.exec(
-            select(Document).where(Document.source_url == source_url)
-        ).first()
+        existing = session.exec(select(Document).where(Document.source_url == source_url)).first()
         if existing:
             return existing, False
 
@@ -173,9 +172,7 @@ def delete_document(session: Session, document_id: int) -> dict:
         pass
 
     # 2. Delete DocumentChunk rows
-    chunks = session.exec(
-        select(DocumentChunk).where(DocumentChunk.document_id == document_id)
-    ).all()
+    chunks = session.exec(select(DocumentChunk).where(DocumentChunk.document_id == document_id)).all()
     for chunk in chunks:
         session.delete(chunk)
 
@@ -213,11 +210,7 @@ def get_document_context(session: Session, document_id: int) -> dict | None:
     if not doc:
         return None
 
-    chunk_count = len(
-        session.exec(
-            select(DocumentChunk).where(DocumentChunk.document_id == document_id)
-        ).all()
-    )
+    chunk_count = len(session.exec(select(DocumentChunk).where(DocumentChunk.document_id == document_id)).all())
 
     return {
         "id": doc.id,

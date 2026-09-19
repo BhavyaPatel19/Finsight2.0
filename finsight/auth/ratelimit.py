@@ -3,6 +3,7 @@ Small in-process rate limiter for the auth endpoints (brute force /
 credential stuffing). Fixed window per client IP; good enough for a
 single-process deployment, and dependency-free.
 """
+
 from __future__ import annotations
 
 import threading

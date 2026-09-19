@@ -20,6 +20,7 @@ router = APIRouter()
 
 # ── Schemas ──────────────────────────────────────────────
 
+
 class WatchlistCreate(BaseModel):
     name: str
     is_default: bool = False
@@ -41,6 +42,7 @@ class ItemUpdate(BaseModel):
 
 # ── Watchlist CRUD ───────────────────────────────────────
 
+
 @router.get("/")
 def list_watchlists(
     session: Session = Depends(get_session),
@@ -54,14 +56,16 @@ def list_watchlists(
     for wl in watchlists:
         count_stmt = select(func.count()).where(WatchlistItem.watchlist_id == wl.id)
         item_count = session.exec(count_stmt).one()
-        result.append({
-            "id": wl.id,
-            "name": wl.name,
-            "is_default": wl.is_default,
-            "item_count": item_count,
-            "created_at": wl.created_at.isoformat(),
-            "updated_at": wl.updated_at.isoformat(),
-        })
+        result.append(
+            {
+                "id": wl.id,
+                "name": wl.name,
+                "is_default": wl.is_default,
+                "item_count": item_count,
+                "created_at": wl.created_at.isoformat(),
+                "updated_at": wl.updated_at.isoformat(),
+            }
+        )
 
     return result
 
@@ -102,9 +106,7 @@ def get_watchlist(
 ):
     """Get a watchlist with all its items."""
     wl = _get_owned_watchlist(session, watchlist_id, current_user.id)
-    items_stmt = select(WatchlistItem).where(
-        WatchlistItem.watchlist_id == wl.id
-    ).order_by(WatchlistItem.added_at)
+    items_stmt = select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id).order_by(WatchlistItem.added_at)
     items = session.exec(items_stmt).all()
 
     return {
@@ -175,6 +177,7 @@ def delete_watchlist(
 
 
 # ── Item CRUD ────────────────────────────────────────────
+
 
 @router.post("/{watchlist_id}/items")
 def add_item(
@@ -267,6 +270,7 @@ def remove_item(
 
 # ── Quotes for watchlist ─────────────────────────────────
 
+
 @router.get("/{watchlist_id}/quotes")
 def get_watchlist_quotes(
     watchlist_id: int,
@@ -278,9 +282,7 @@ def get_watchlist_quotes(
 
     wl = _get_owned_watchlist(session, watchlist_id, current_user.id)
 
-    items = session.exec(
-        select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id)
-    ).all()
+    items = session.exec(select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id)).all()
     if not items:
         return {"quotes": {}}
 
@@ -295,6 +297,7 @@ def get_watchlist_quotes(
 
 # ── AI Digest ─────────────────────────────────────────────
 
+
 @router.get("/{watchlist_id}/digest")
 def get_watchlist_digest(
     watchlist_id: int,
@@ -308,9 +311,7 @@ def get_watchlist_digest(
 
     wl = _get_owned_watchlist(session, watchlist_id, current_user.id)
 
-    items = session.exec(
-        select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id)
-    ).all()
+    items = session.exec(select(WatchlistItem).where(WatchlistItem.watchlist_id == wl.id)).all()
     if not items:
         return {"digest": "This watchlist is empty. Add stocks to generate a digest."}
 
@@ -337,6 +338,7 @@ def get_watchlist_digest(
 
 
 # ── Helpers ──────────────────────────────────────────────
+
 
 def _get_owned_watchlist(session: Session, watchlist_id: int, user_id: int) -> Watchlist:
     """Fetch a watchlist ensuring the current user owns it."""

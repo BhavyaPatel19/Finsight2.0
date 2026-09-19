@@ -35,4 +35,3 @@ class FundamentalsScoreResponse(BaseModel):
     book_value: float | None = None
     dividend_yield: float | None = None
     source: str = "screener.in"
-

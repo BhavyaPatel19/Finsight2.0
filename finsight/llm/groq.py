@@ -4,6 +4,7 @@ Groq backend — hosted, OpenAI-compatible chat completions.
 Free tier at https://console.groq.com; no card required. Fast enough for
 interactive RAG (Llama 3.3 70B at several hundred tokens/s).
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,27 +83,51 @@ class GroqProvider(LLMProvider):
 
     # -- public API ----------------------------------------------------------
 
-    def generate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                 json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
+    def generate(
+        self,
+        prompt,
+        *,
+        model=None,
+        max_tokens=2048,
+        temperature=0.0,
+        json_mode=False,
+        system=None,
+        timeout=None,
+        think=None,
+    ) -> LLMResponse:
         if not self.api_key:
             raise LLMError("GROQ_API_KEY is not set")
         started = time.perf_counter()
         with httpx.Client(timeout=timeout or self.default_timeout, transport=self._transport) as client:
             r = post_with_retry(
-                client, f"{self.base_url}/chat/completions",
+                client,
+                f"{self.base_url}/chat/completions",
                 headers=self._headers(),
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
             )
         return self._parse(r.json(), started)
 
-    async def agenerate(self, prompt, *, model=None, max_tokens=2048, temperature=0.0,
-                        json_mode=False, system=None, timeout=None, think=None) -> LLMResponse:
+    async def agenerate(
+        self,
+        prompt,
+        *,
+        model=None,
+        max_tokens=2048,
+        temperature=0.0,
+        json_mode=False,
+        system=None,
+        timeout=None,
+        think=None,
+    ) -> LLMResponse:
         if not self.api_key:
             raise LLMError("GROQ_API_KEY is not set")
         started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=timeout or self.default_timeout, transport=self._async_transport) as client:
+        async with httpx.AsyncClient(
+            timeout=timeout or self.default_timeout, transport=self._async_transport
+        ) as client:
             r = await apost_with_retry(
-                client, f"{self.base_url}/chat/completions",
+                client,
+                f"{self.base_url}/chat/completions",
                 headers=self._headers(),
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
             )

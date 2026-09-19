@@ -10,6 +10,7 @@ MARKET_DATA_PROVIDER (config):
     "yfinance" → always yfinance
     "zerodha"  → Zerodha only; raises if the user has not linked
 """
+
 from __future__ import annotations
 
 from sqlmodel import Session

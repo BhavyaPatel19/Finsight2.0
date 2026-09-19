@@ -8,6 +8,7 @@ Modes:
     hybrid         dense ∪ bm25 fused with Reciprocal Rank Fusion (k=60)
     hybrid_rerank  hybrid, then BAAI/bge-reranker-base cross-encoder   (production)
 """
+
 from __future__ import annotations
 
 import time

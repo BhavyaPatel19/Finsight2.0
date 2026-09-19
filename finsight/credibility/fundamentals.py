@@ -29,7 +29,7 @@ SCREENER_STANDALONE_URL = "https://www.screener.in/company/{symbol}/"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 }
 
 # ── In-memory cache: symbol → (timestamp, result_dict) ──
@@ -73,7 +73,7 @@ def _extract_ratio(soup: BeautifulSoup, label: str) -> float | None:
             continue
         if label.lower() in name_el.get_text(strip=True).lower():
             return _parse_number(value_el.get_text(strip=True))
-    
+
     # Fallback: search all text
     for el in soup.find_all(string=re.compile(label, re.IGNORECASE)):
         parent = el.parent
@@ -157,9 +157,15 @@ def fetch_fundamentals_screener(symbol: str) -> FundamentalData | None:
                                     break
                             break
 
-                logger.info("Fetched fundamentals for %s: PE=%s ROCE=%s D/E=%s RevGr=%s Prom=%s",
-                           symbol, data.pe, data.roce, data.debt_to_equity,
-                           data.revenue_growth, data.promoter_holding)
+                logger.info(
+                    "Fetched fundamentals for %s: PE=%s ROCE=%s D/E=%s RevGr=%s Prom=%s",
+                    symbol,
+                    data.pe,
+                    data.roce,
+                    data.debt_to_equity,
+                    data.revenue_growth,
+                    data.promoter_holding,
+                )
                 return data
 
         except Exception as e:
@@ -187,7 +193,7 @@ def compute_credibility_score(data: FundamentalData) -> float:
         elif data.pe <= 30:
             score += 10 - (data.pe - 20) * (6 / 10)  # 10→4
         elif data.pe <= 50:
-            score += 4 - (data.pe - 30) * (4 / 20)   # 4→0
+            score += 4 - (data.pe - 30) * (4 / 20)  # 4→0
         else:
             score += 0
 

@@ -16,9 +16,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'finsight.
 # JWT — no fallback: a known default key makes every token forgeable.
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 if not SECRET_KEY or SECRET_KEY.startswith("change-me"):
-    raise RuntimeError(
-        "SECRET_KEY is not set. Generate one with `openssl rand -hex 32` and put it in .env"
-    )
+    raise RuntimeError("SECRET_KEY is not set. Generate one with `openssl rand -hex 32` and put it in .env")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 

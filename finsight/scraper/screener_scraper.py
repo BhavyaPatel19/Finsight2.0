@@ -9,6 +9,7 @@ Anti-bot measures:
 - Rate limiting between requests
 - Session cookies from homepage
 """
+
 import os
 import random
 import re
@@ -64,6 +65,7 @@ def _get_client() -> httpx.Client:
 
 # ── Company Search ───────────────────────────────────
 
+
 def search_company(query: str) -> list[dict]:
     """
     Search Screener.in for companies by name/symbol.
@@ -87,12 +89,14 @@ def search_company(query: str) -> list[dict]:
             # Extract symbol from URL like /company/TCS/consolidated/
             symbol_match = re.search(r"/company/([^/]+)/", url)
             symbol = symbol_match.group(1) if symbol_match else ""
-            results.append({
-                "id": item.get("id"),
-                "name": item.get("name", ""),
-                "symbol": symbol,
-                "url": url,
-            })
+            results.append(
+                {
+                    "id": item.get("id"),
+                    "name": item.get("name", ""),
+                    "symbol": symbol,
+                    "url": url,
+                }
+            )
         return results
     except Exception:
         return []
@@ -119,8 +123,12 @@ def get_company_documents(symbol: str) -> dict:
     _rate_limit()
 
     empty = {
-        "company_name": symbol, "symbol": symbol,
-        "annual_reports": [], "concalls": [], "announcements": [], "credit_ratings": [],
+        "company_name": symbol,
+        "symbol": symbol,
+        "annual_reports": [],
+        "concalls": [],
+        "announcements": [],
+        "credit_ratings": [],
     }
 
     try:
@@ -196,8 +204,7 @@ def get_company_documents(symbol: str) -> dict:
                 result["credit_ratings"].extend(parsed)
 
     # ── Strategy 2 (fallback): scan entire page for heading matches ──
-    if not any([result["annual_reports"], result["concalls"],
-                result["announcements"], result["credit_ratings"]]):
+    if not any([result["annual_reports"], result["concalls"], result["announcements"], result["credit_ratings"]]):
         for section in soup.find_all(["div", "section"]):
             heading = section.find(["h2", "h3", "h4"])
             if not heading:
@@ -251,12 +258,14 @@ def _parse_document_links(section, category: str) -> list[dict]:
             elif month_match:
                 date_text = f"{month_match.group(1)} {month_match.group(2)}"
 
-        docs.append({
-            "title": title,
-            "url": href,
-            "category": category,
-            "date": date_text,
-        })
+        docs.append(
+            {
+                "title": title,
+                "url": href,
+                "category": category,
+                "date": date_text,
+            }
+        )
 
     return docs
 
@@ -282,7 +291,17 @@ def _is_document_url(url: str, category: str = "") -> bool:
         return True
     # Credit rating agency URLs
     if category == "credit_rating":
-        rating_domains = ["icra", "crisil", "careratings", "care", "indiaratings", "standardandpoors", "spglobal", "moodys", "fitch"]
+        rating_domains = [
+            "icra",
+            "crisil",
+            "careratings",
+            "care",
+            "indiaratings",
+            "standardandpoors",
+            "spglobal",
+            "moodys",
+            "fitch",
+        ]
         if any(domain in url_lower for domain in rating_domains):
             return True
     # Company-hosted documents (e.g. tcs.com/investor-relations)
@@ -292,6 +311,7 @@ def _is_document_url(url: str, category: str = "") -> bool:
 
 
 # ── Download ─────────────────────────────────────────
+
 
 def download_document(url: str, save_dir: str, filename: str | None = None) -> str | None:
     """
@@ -304,7 +324,7 @@ def download_document(url: str, save_dir: str, filename: str | None = None) -> s
 
     if not filename:
         filename = url.split("/")[-1].split("?")[0]
-    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    filename = re.sub(r'[<>:"/\\|?*]', "_", filename)
     if not filename.lower().endswith(".pdf") and not filename.lower().endswith(".zip"):
         filename += ".pdf"
     filepath = os.path.join(save_dir, filename)

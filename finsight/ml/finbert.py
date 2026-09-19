@@ -5,6 +5,7 @@ Eliminates repeated ~500MB model downloads/loads.
 Usage:
     from finsight.ml.finbert import get_finbert, analyze_batch
 """
+
 import re
 
 import torch
@@ -67,11 +68,13 @@ def analyze_batch(
         probs = torch.softmax(outputs.logits, dim=1)
         # FinBERT labels order: [positive, negative, neutral]
         for j in range(len(batch)):
-            results.append({
-                "positive": probs[j][0].item(),
-                "negative": probs[j][1].item(),
-                "neutral": probs[j][2].item(),
-            })
+            results.append(
+                {
+                    "positive": probs[j][0].item(),
+                    "negative": probs[j][1].item(),
+                    "neutral": probs[j][2].item(),
+                }
+            )
 
     return results
 
@@ -82,5 +85,5 @@ def split_financial_sentences(text: str, min_length: int = 15) -> list[str]:
     Handles financial abbreviations (Rs., Q3., FY25., vs.) better than
     naive [.!?] splitting.
     """
-    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
+    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", text)
     return [s.strip() for s in sentences if len(s.strip()) >= min_length]

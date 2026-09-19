@@ -16,6 +16,7 @@ Reported:
     system_claims      how many claims the system produced per pair (precision is
                        not measured: only labelled claims have ground truth)
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,14 +32,16 @@ GOLD = ROOT / "eval" / "gold" / "wtt_claims.jsonl"
 RESULTS = ROOT / "eval" / "results"
 MATCH_THRESHOLD = 0.45
 
-_STOP = set("the a an of to in for and or is are was were be been our we it its this that on at by with as from will".split())
+_STOP = set(
+    "the a an of to in for and or is are was were be been our we it its this that on at by with as from will".split()
+)
 
 
 def tokens(text: str) -> tuple[set[str], set[str]]:
     """(content stems, numeric tokens). 'FY26'/'FY2026'/"'26" normalise to a year token."""
     text = re.sub(r"\[.*?\]", " ", text.lower())
-    text = re.sub(r"\bfy\s?'?(\d{2,4})", r"\1", text)   # fy26, fy 2026 -> 26 / 2026
-    text = re.sub(r"'(\d{2})\b", r"\1", text)             # '26 -> 26
+    text = re.sub(r"\bfy\s?'?(\d{2,4})", r"\1", text)  # fy26, fy 2026 -> 26 / 2026
+    text = re.sub(r"'(\d{2})\b", r"\1", text)  # '26 -> 26
     words, nums = set(), set()
     for tok in re.findall(r"[a-z0-9%.,]+", text):
         tok = tok.strip(".,")
@@ -82,15 +85,29 @@ def match_claims(gold: list[dict], system: list[dict]) -> list[dict]:
         if best_i is not None and best >= MATCH_THRESHOLD:
             used.add(best_i)
             sys_claim = system[best_i]
-            out.append({
-                "id": g["id"], "matched": True, "similarity": round(best, 3),
-                "human": g["human_verdict"], "system": str(sys_claim.get("verdict", "")).upper(),
-                "system_claim": sys_claim.get("claim"), "system_explanation": sys_claim.get("explanation"),
-                "category": g["category"],
-            })
+            out.append(
+                {
+                    "id": g["id"],
+                    "matched": True,
+                    "similarity": round(best, 3),
+                    "human": g["human_verdict"],
+                    "system": str(sys_claim.get("verdict", "")).upper(),
+                    "system_claim": sys_claim.get("claim"),
+                    "system_explanation": sys_claim.get("explanation"),
+                    "category": g["category"],
+                }
+            )
         else:
-            out.append({"id": g["id"], "matched": False, "similarity": round(best, 3), "human": g["human_verdict"],
-                        "system": None, "category": g["category"]})
+            out.append(
+                {
+                    "id": g["id"],
+                    "matched": False,
+                    "similarity": round(best, 3),
+                    "human": g["human_verdict"],
+                    "system": None,
+                    "category": g["category"],
+                }
+            )
     return out
 
 
@@ -110,7 +127,8 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
         confusion.setdefault(r["human"], {}).setdefault(r["system"], 0)
         confusion[r["human"]][r["system"]] += 1
     return {
-        "labelled": len(rows), "matched": len(matched),
+        "labelled": len(rows),
+        "matched": len(matched),
         "claim_recall": round(len(matched) / len(rows), 4) if rows else None,
         "verdict_accuracy": round(len(agree) / len(matched), 4) if matched else None,
         "kappa": kappa,
@@ -168,12 +186,19 @@ def main() -> None:
             rows.extend(matched)
             for r in matched:
                 flag = "✓" if r["matched"] and r["system"] == r["human"] else ("✗" if r["matched"] else "–")
-                print(f"    {flag} {r['id']} human={r['human']:8s} system={r['system'] or 'not found':10s} sim={r['similarity']}")
+                print(
+                    f"    {flag} {r['id']} human={r['human']:8s} system={r['system'] or 'not found':10s} sim={r['similarity']}"
+                )
 
     report = {
-        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"), "git_sha": git_sha(), "tag": args.tag,
-        "provider": provider.name, "model": provider.default_model,
-        "summary": summarise(rows, system_counts), "pairs": pair_meta, "rows": rows,
+        "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+        "git_sha": git_sha(),
+        "tag": args.tag,
+        "provider": provider.name,
+        "model": provider.default_model,
+        "summary": summarise(rows, system_counts),
+        "pairs": pair_meta,
+        "rows": rows,
     }
     RESULTS.mkdir(parents=True, exist_ok=True)
     name = args.tag or f"{provider.name}-{datetime.now().strftime('%Y-%m-%d')}"

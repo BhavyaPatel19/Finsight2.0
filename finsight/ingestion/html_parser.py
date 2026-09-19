@@ -7,6 +7,7 @@ markers. We flatten them to paragraphs, render bold-only paragraphs as
 synthetic ~3,000-character "pages" at paragraph boundaries so citations
 stay locatable. `page` therefore means "segment" for these sources.
 """
+
 from __future__ import annotations
 
 import re

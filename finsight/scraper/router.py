@@ -2,6 +2,7 @@
 Scraper API endpoints — uses Screener.in for company search and document discovery.
 Flow: search company → view available docs → user picks → download selected → process → index.
 """
+
 import os
 import threading
 import uuid
@@ -29,6 +30,7 @@ _jobs: dict[str, dict] = {}
 
 # ── Search ───────────────────────────────────────────
 
+
 @router.get("/search-company")
 def api_search_company(query: str = Query(..., min_length=1)):
     """Search Screener.in for companies by name or symbol."""
@@ -50,6 +52,7 @@ def api_company_documents(
 
 
 # ── Download Selected ────────────────────────────────
+
 
 class DownloadRequest(BaseModel):
     symbol: str
@@ -78,24 +81,26 @@ def _run_download_selected(job_id: str, req: DownloadRequest):
                 continue
 
             # Check for existing doc
-            existing = session.exec(
-                select(Document).where(Document.source_url == url)
-            ).first()
+            existing = session.exec(select(Document).where(Document.source_url == url)).first()
             if existing:
-                job["documents"].append({
-                    "document_id": existing.id,
-                    "title": doc_info.get("title", ""),
-                    "status": "already_exists",
-                })
+                job["documents"].append(
+                    {
+                        "document_id": existing.id,
+                        "title": doc_info.get("title", ""),
+                        "status": "already_exists",
+                    }
+                )
                 continue
 
             # Download
             filepath = download_document(url, UPLOAD_DIR)
             if not filepath:
-                job["documents"].append({
-                    "title": doc_info.get("title", ""),
-                    "status": "download_failed",
-                })
+                job["documents"].append(
+                    {
+                        "title": doc_info.get("title", ""),
+                        "status": "download_failed",
+                    }
+                )
                 continue
 
             # Register in DB
@@ -113,11 +118,13 @@ def _run_download_selected(job_id: str, req: DownloadRequest):
             session.commit()
             session.refresh(doc)
 
-            job["documents"].append({
-                "document_id": doc.id,
-                "title": doc_info.get("title", ""),
-                "status": "downloaded",
-            })
+            job["documents"].append(
+                {
+                    "document_id": doc.id,
+                    "title": doc_info.get("title", ""),
+                    "status": "downloaded",
+                }
+            )
 
         job["status"] = "done"
         job["message"] = f"Processed {len([d for d in job['documents'] if d.get('status') == 'indexed'])} documents"

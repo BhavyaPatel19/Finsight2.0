@@ -102,6 +102,7 @@ Respond ONLY with a JSON object in this format:
 # Parsing utilities
 # ---------------------------------------------------------------------------
 
+
 def strip_think_tags(text: str) -> str:
     """Remove <think>...</think> blocks from DeepSeek R1 output.
 

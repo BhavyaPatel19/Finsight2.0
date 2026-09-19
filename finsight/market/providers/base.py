@@ -15,6 +15,7 @@ Shapes (kept identical to what the frontend already consumes):
     instruments: [{"instrument_token": int, "symbol", "name", "exchange",
                    "segment", "instrument_type"}]
 """
+
 from __future__ import annotations
 
 import abc
@@ -32,11 +33,7 @@ class MarketDataProvider(abc.ABC):
 
     def get_ltp(self, symbols: list[str]) -> dict[str, float]:
         quotes = self.get_quotes(symbols)
-        return {
-            key.split(":")[-1]: q["last_price"]
-            for key, q in quotes.items()
-            if q.get("last_price") is not None
-        }
+        return {key.split(":")[-1]: q["last_price"] for key, q in quotes.items() if q.get("last_price") is not None}
 
     @abc.abstractmethod
     def get_history(

@@ -110,7 +110,9 @@ def zerodha_callback(
 
     data = exchange_request_token(request_token)
     if not data or not data.get("access_token"):
-        return HTMLResponse("<h1>Token exchange failed</h1><p>Invalid request_token or API config.</p>", status_code=400)
+        return HTMLResponse(
+            "<h1>Token exchange failed</h1><p>Invalid request_token or API config.</p>", status_code=400
+        )
 
     save_zerodha_token(session, user_id, data["access_token"])
     response = HTMLResponse("<h1>Zerodha linked</h1><p>You can close this window and use the app.</p>")

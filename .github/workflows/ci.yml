@@ -17,7 +17,7 @@ jobs:
       - name: Install
         run: uv sync --frozen --group dev
       - name: Lint
-        run: uv run ruff check .
+        run: uv run ruff check . && uv run ruff format --check .
       - name: Test
         env:
           SECRET_KEY: ci-only-not-a-real-secret

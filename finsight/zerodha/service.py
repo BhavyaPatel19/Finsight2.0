@@ -49,9 +49,7 @@ def get_or_create_default_portfolio(session: Session, user_id: int) -> Portfolio
     return portfolio
 
 
-def sync_holdings_from_zerodha(
-    session: Session, portfolio_id: int, access_token: str
-) -> list[Holding]:
+def sync_holdings_from_zerodha(session: Session, portfolio_id: int, access_token: str) -> list[Holding]:
     """Sync holdings from Zerodha API into DB. Returns list of Holding."""
     raw = fetch_holdings(access_token)
     if not raw:

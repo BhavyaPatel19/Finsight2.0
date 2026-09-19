@@ -1,6 +1,7 @@
 """
 Zerodha Kite Connect API: OAuth login, token exchange, portfolio holdings, and market data.
 """
+
 import hashlib
 from datetime import datetime
 from typing import Any
@@ -42,11 +43,16 @@ def exchange_request_token(request_token: str) -> dict[str, Any] | None:
     Returns {"access_token": "...", "user_id": "..."} or None on failure.
     """
     import logging
+
     logger = logging.getLogger(__name__)
 
     if not ZERODHA_API_KEY or not ZERODHA_API_SECRET or not request_token:
-        logger.error("exchange_request_token: missing API_KEY=%s, API_SECRET=%s, request_token=%s",
-                      bool(ZERODHA_API_KEY), bool(ZERODHA_API_SECRET), bool(request_token))
+        logger.error(
+            "exchange_request_token: missing API_KEY=%s, API_SECRET=%s, request_token=%s",
+            bool(ZERODHA_API_KEY),
+            bool(ZERODHA_API_SECRET),
+            bool(request_token),
+        )
         return None
     checksum = _checksum(request_token)
     data = {
@@ -54,8 +60,12 @@ def exchange_request_token(request_token: str) -> dict[str, Any] | None:
         "request_token": request_token,
         "checksum": checksum,
     }
-    logger.info("exchange_request_token: posting to %s with api_key=%s, request_token=%s",
-                KITE_SESSION_URL, ZERODHA_API_KEY, request_token)
+    logger.info(
+        "exchange_request_token: posting to %s with api_key=%s, request_token=%s",
+        KITE_SESSION_URL,
+        ZERODHA_API_KEY,
+        request_token,
+    )
     try:
         with httpx.Client(timeout=15.0) as client:
             r = client.post(
@@ -202,10 +212,7 @@ def fetch_ltp(access_token: str, symbols: list[str]) -> dict[str, float]:
             out = r.json()
             if out.get("status") != "success":
                 return {}
-            return {
-                key: val.get("last_price", 0)
-                for key, val in out.get("data", {}).items()
-            }
+            return {key: val.get("last_price", 0) for key, val in out.get("data", {}).items()}
     except Exception:
         return {}
 
@@ -272,6 +279,7 @@ def fetch_instruments(access_token: str, exchange: str = "NSE") -> list[dict]:
             r.raise_for_status()
             import csv
             import io
+
             reader = csv.DictReader(io.StringIO(r.text))
             return list(reader)
     except Exception:

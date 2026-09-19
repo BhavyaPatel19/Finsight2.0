@@ -2,6 +2,7 @@
 Zerodha Kite Connect market data: live quotes for a user who has linked
 their broker account. Wraps the existing client functions.
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,11 +1,14 @@
 """Documents are private to their uploader; the shared corpus (user_id NULL) is visible to everyone."""
+
 import io
 
 from finsight import config
 
 
 def _login(api_client, email):
-    api_client.post("/auth/register", json={"first_name": "A", "last_name": "B", "email": email, "password": "secret-123"})
+    api_client.post(
+        "/auth/register", json={"first_name": "A", "last_name": "B", "email": email, "password": "secret-123"}
+    )
     r = api_client.post("/auth/login", json={"email": email, "password": "secret-123"})
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
@@ -55,8 +58,11 @@ class TestPrivateDocuments:
         assert r.status_code == 404
         r = api_client.post("/rag/prepare", json={"document_ids": [doc_id]}, headers=bob)
         assert r.status_code == 404
-        r = api_client.post("/credisentiment/walk-the-talk",
-                            json={"claims_document_id": doc_id, "actuals_document_id": doc_id}, headers=bob)
+        r = api_client.post(
+            "/credisentiment/walk-the-talk",
+            json={"claims_document_id": doc_id, "actuals_document_id": doc_id},
+            headers=bob,
+        )
         assert r.status_code == 404
 
 

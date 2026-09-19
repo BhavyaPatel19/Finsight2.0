@@ -1,4 +1,5 @@
 """Market data provider layer. yfinance calls are stubbed; no network."""
+
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -28,6 +29,7 @@ def _ohlcv_frame(ticker: str, rows: int = 3) -> pd.DataFrame:
 # Symbol mapping
 # ---------------------------------------------------------------------------
 
+
 def test_symbol_mapping():
     assert _to_yahoo("NSE:INFY") == "INFY.NS"
     assert _to_yahoo("infy") == "INFY.NS"
@@ -38,6 +40,7 @@ def test_symbol_mapping():
 # ---------------------------------------------------------------------------
 # yfinance quotes
 # ---------------------------------------------------------------------------
+
 
 class TestYFinanceQuotes:
     def test_quote_shape_matches_kite_contract(self, monkeypatch):
@@ -91,6 +94,7 @@ class TestYFinanceQuotes:
 # yfinance history
 # ---------------------------------------------------------------------------
 
+
 class TestYFinanceHistory:
     def test_candles_shape_and_interval_mapping(self, monkeypatch):
         p = YFinanceProvider()
@@ -109,8 +113,14 @@ class TestYFinanceHistory:
 
         assert seen["ticker"] == "INFY.NS" and seen["interval"] == "15m"
         assert seen["end"] == datetime(2026, 9, 3)  # to_date is inclusive
-        assert candles[0] == {"timestamp": "2026-09-01T00:00:00+05:30", "open": 1.0, "high": 1.5,
-                              "low": 0.5, "close": 1.2, "volume": 10}
+        assert candles[0] == {
+            "timestamp": "2026-09-01T00:00:00+05:30",
+            "open": 1.0,
+            "high": 1.5,
+            "low": 0.5,
+            "close": 1.2,
+            "volume": 10,
+        }
 
     def test_intraday_lookback_is_clamped(self, monkeypatch):
         p = YFinanceProvider()
@@ -137,6 +147,7 @@ class TestYFinanceHistory:
 # Instrument search (bundled NIFTY 500 → Yahoo search fallback)
 # ---------------------------------------------------------------------------
 
+
 class TestSearch:
     def test_bundled_list_exact_then_prefix_then_name(self, monkeypatch):
         p = YFinanceProvider()
@@ -151,11 +162,15 @@ class TestSearch:
 
     def test_yahoo_fallback_for_unknown_names(self, monkeypatch):
         p = YFinanceProvider()
-        monkeypatch.setattr(p, "_yahoo_search", lambda q, n: [
-            {"symbol": "ZZZ.NS", "shortname": "Zzz Ltd", "quoteType": "EQUITY"},
-            {"symbol": "ZZZ", "shortname": "Zzz ADR", "quoteType": "EQUITY", "exchange": "NYQ"},
-            {"symbol": "ZZZ.BO", "shortname": "Zzz BSE", "quoteType": "EQUITY"},
-        ])
+        monkeypatch.setattr(
+            p,
+            "_yahoo_search",
+            lambda q, n: [
+                {"symbol": "ZZZ.NS", "shortname": "Zzz Ltd", "quoteType": "EQUITY"},
+                {"symbol": "ZZZ", "shortname": "Zzz ADR", "quoteType": "EQUITY", "exchange": "NYQ"},
+                {"symbol": "ZZZ.BO", "shortname": "Zzz BSE", "quoteType": "EQUITY"},
+            ],
+        )
         res = p.search_instruments("zzz nonexistent")
         assert [r["symbol"] for r in res] == ["ZZZ"]
         assert res[0]["name"] == "Zzz Ltd"
@@ -167,6 +182,7 @@ class TestSearch:
 # ---------------------------------------------------------------------------
 # Selection
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def user(test_db_session):
@@ -209,13 +225,17 @@ class TestSelection:
         monkeypatch.setattr(config, "MARKET_DATA_PROVIDER", "auto")
         monkeypatch.setattr(config, "ZERODHA_API_KEY", "")
         assert market_status(test_db_session, user.id) == {
-            "provider": "yfinance", "live": False, "zerodha_configured": False, "zerodha_linked": False,
+            "provider": "yfinance",
+            "live": False,
+            "zerodha_configured": False,
+            "zerodha_linked": False,
         }
 
 
 # ---------------------------------------------------------------------------
 # API: the whole point — market endpoints work with no broker at all
 # ---------------------------------------------------------------------------
+
 
 class TestMarketApiWithoutZerodha:
     def test_search_works_unlinked(self, api_client, auth_headers, monkeypatch):

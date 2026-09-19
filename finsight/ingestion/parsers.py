@@ -25,6 +25,7 @@ def extract_text_from_pdf(pdf_path: str | Path) -> str:
         return ""
     try:
         import fitz  # PyMuPDF
+
         doc = fitz.open(path)
         text = ""
         for page in doc:
@@ -36,6 +37,7 @@ def extract_text_from_pdf(pdf_path: str | Path) -> str:
         pass
     try:
         import pdfplumber
+
         with pdfplumber.open(path) as pdf:
             text = ""
             for page in pdf.pages:
@@ -83,6 +85,7 @@ def extract_structured_document(pdf_path: str | Path) -> dict:
     """
     if Path(pdf_path).suffix.lower() in (".htm", ".html", ".txt"):
         from finsight.ingestion.html_parser import extract_structured_html
+
         return extract_structured_html(pdf_path)
     return _extract_structured_pdf(pdf_path)
 
@@ -124,12 +127,14 @@ def _extract_structured_pdf(pdf_path: str | Path) -> dict:
         text = page.get_text("text")
         pg = page_num + 1  # 1-indexed
         section, sub_section = _find_section_for_page(sections, pg)
-        pages.append({
-            "page": pg,
-            "text": text.strip(),
-            "section": section,
-            "sub_section": sub_section,
-        })
+        pages.append(
+            {
+                "page": pg,
+                "text": text.strip(),
+                "section": section,
+                "sub_section": sub_section,
+            }
+        )
 
     doc.close()
     return {
@@ -158,13 +163,15 @@ def _build_section_tree(toc: list, total_pages: int) -> list[dict]:
             if toc[j][0] <= level:  # same or higher level = section ends
                 end_page = toc[j][2] - 1
                 break
-        flat_sections.append({
-            "title": title.strip(),
-            "level": level,
-            "start_page": page,
-            "end_page": end_page,
-            "children": [],
-        })
+        flat_sections.append(
+            {
+                "title": title.strip(),
+                "level": level,
+                "start_page": page,
+                "end_page": end_page,
+                "children": [],
+            }
+        )
 
     # Build tree: nest children under parents based on level
     root: list[dict] = []
@@ -240,13 +247,15 @@ def chunk_pages(
 
         # If page text fits in one chunk, keep it whole
         if len(text) <= chunk_size:
-            chunks.append({
-                "text": text,
-                "page_number": page_num,
-                "section": section,
-                "sub_section": sub_section,
-                "chunk_index": chunk_idx,
-            })
+            chunks.append(
+                {
+                    "text": text,
+                    "page_number": page_num,
+                    "section": section,
+                    "sub_section": sub_section,
+                    "chunk_index": chunk_idx,
+                }
+            )
             chunk_idx += 1
         else:
             # Split large pages with overlap
@@ -255,13 +264,15 @@ def chunk_pages(
                 end = start + chunk_size
                 chunk_text_slice = text[start:end].strip()
                 if chunk_text_slice:
-                    chunks.append({
-                        "text": chunk_text_slice,
-                        "page_number": page_num,
-                        "section": section,
-                        "sub_section": sub_section,
-                        "chunk_index": chunk_idx,
-                    })
+                    chunks.append(
+                        {
+                            "text": chunk_text_slice,
+                            "page_number": page_num,
+                            "section": section,
+                            "sub_section": sub_section,
+                            "chunk_index": chunk_idx,
+                        }
+                    )
                     chunk_idx += 1
                 start = end - overlap
                 if start >= len(text):
@@ -273,6 +284,7 @@ def chunk_pages(
 # ---------------------------------------------------------------------------
 # Concall-aware chunking
 # ---------------------------------------------------------------------------
+
 
 def is_concall_transcript(pages: list[dict]) -> bool:
     """
@@ -315,21 +327,23 @@ def chunk_by_speaker(
             positions = [0]
         boundaries = positions + [len(text)]
         turns = [
-            text[boundaries[i]:boundaries[i + 1]].strip()
+            text[boundaries[i] : boundaries[i + 1]].strip()
             for i in range(len(boundaries) - 1)
-            if text[boundaries[i]:boundaries[i + 1]].strip()
+            if text[boundaries[i] : boundaries[i + 1]].strip()
         ]
 
         for turn in turns:
             # Flush buffer when adding this turn would overflow chunk_size
             if buf_len + len(turn) > chunk_size and buf_turns:
-                chunks.append({
-                    "text": "\n".join(buf_turns),
-                    "page_number": buf_page,
-                    "section": buf_section,
-                    "sub_section": buf_sub,
-                    "chunk_index": chunk_idx,
-                })
+                chunks.append(
+                    {
+                        "text": "\n".join(buf_turns),
+                        "page_number": buf_page,
+                        "section": buf_section,
+                        "sub_section": buf_sub,
+                        "chunk_index": chunk_idx,
+                    }
+                )
                 chunk_idx += 1
                 buf_turns = []
                 buf_len = 0
@@ -346,13 +360,15 @@ def chunk_by_speaker(
             buf_len += len(turn)
 
     if buf_turns:
-        chunks.append({
-            "text": "\n".join(buf_turns),
-            "page_number": buf_page,
-            "section": buf_section,
-            "sub_section": buf_sub,
-            "chunk_index": chunk_idx,
-        })
+        chunks.append(
+            {
+                "text": "\n".join(buf_turns),
+                "page_number": buf_page,
+                "section": buf_section,
+                "sub_section": buf_sub,
+                "chunk_index": chunk_idx,
+            }
+        )
 
     return chunks
 

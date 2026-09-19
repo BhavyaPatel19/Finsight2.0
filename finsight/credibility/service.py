@@ -10,6 +10,7 @@ def extract_claims_for_document(session: Session, document_id: int) -> list[Extr
     if not doc or not doc.text_path:
         return []
     from pathlib import Path
+
     text = Path(doc.text_path).read_text(encoding="utf-8")[:8000]
     if not text.strip():
         return []
@@ -23,6 +24,7 @@ JSON array:"""
     try:
         raw = generate(prompt, max_tokens=512, temperature=0.0).text
         import json
+
         # Try to parse JSON from response (might be wrapped in markdown)
         start = raw.find("[")
         end = raw.rfind("]") + 1
@@ -54,9 +56,7 @@ JSON array:"""
     return created
 
 
-def compute_credibility_for_symbol_period(
-    session: Session, symbol: str, period: str
-) -> CredibilityScore | None:
+def compute_credibility_for_symbol_period(session: Session, symbol: str, period: str) -> CredibilityScore | None:
     """Compare extracted claims to actual FinancialMetric; compute deviation and score 0-100."""
     stmt = select(ExtractedClaim).where(
         ExtractedClaim.symbol == symbol,
@@ -66,10 +66,14 @@ def compute_credibility_for_symbol_period(
     if not claims:
         return None
 
-    stmt = select(FinancialMetric).where(
-        FinancialMetric.symbol == symbol,
-        (FinancialMetric.fiscal_year == period) | (FinancialMetric.fiscal_quarter == period),
-    ).limit(1)
+    stmt = (
+        select(FinancialMetric)
+        .where(
+            FinancialMetric.symbol == symbol,
+            (FinancialMetric.fiscal_year == period) | (FinancialMetric.fiscal_quarter == period),
+        )
+        .limit(1)
+    )
     metric = session.exec(stmt).first()
     if not metric:
         # No actuals: cannot compute
@@ -109,8 +113,6 @@ def compute_credibility_for_symbol_period(
 
 def get_credibility_history(session: Session, symbol: str) -> list[CredibilityScore]:
     stmt = (
-        select(CredibilityScore)
-        .where(CredibilityScore.symbol == symbol)
-        .order_by(CredibilityScore.computed_at.desc())
+        select(CredibilityScore).where(CredibilityScore.symbol == symbol).order_by(CredibilityScore.computed_at.desc())
     )
     return list(session.exec(stmt).all())

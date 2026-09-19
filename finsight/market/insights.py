@@ -39,7 +39,6 @@ COMPANY_NAMES: dict[str, str] = {
 }
 
 
-
 def _format_metric(value, suffix="", prefix="", decimals=2):
     """Format a metric value for the prompt, return None if missing."""
     if value is None:

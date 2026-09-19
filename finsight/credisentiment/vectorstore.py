@@ -77,12 +77,14 @@ def query_by_document_id(
     metas = res.get("metadatas", [[]])[0]
     dists = res.get("distances", [[]])[0]
     for i, cid in enumerate(ids):
-        items.append({
-            "id": cid,
-            "text": docs[i] if docs else "",
-            "metadata": metas[i] if metas else {},
-            "distance": dists[i] if dists else 1.0,
-        })
+        items.append(
+            {
+                "id": cid,
+                "text": docs[i] if docs else "",
+                "metadata": metas[i] if metas else {},
+                "distance": dists[i] if dists else 1.0,
+            }
+        )
     return items
 
 
@@ -98,11 +100,13 @@ def get_chunks_by_document_id(document_id: int) -> list[dict]:
     docs = results.get("documents", [])
     metas = results.get("metadatas", [])
     for i, cid in enumerate(ids):
-        items.append({
-            "id": cid,
-            "text": docs[i] if docs else "",
-            "metadata": metas[i] if metas else {},
-        })
+        items.append(
+            {
+                "id": cid,
+                "text": docs[i] if docs else "",
+                "metadata": metas[i] if metas else {},
+            }
+        )
     # Sort by chunk_index
     items.sort(key=lambda x: x.get("metadata", {}).get("chunk_index", 0))
     return items

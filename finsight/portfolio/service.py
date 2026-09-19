@@ -8,17 +8,19 @@ def get_holdings_with_metrics(session: Session, user_id: int) -> list[dict]:
     holdings_list = get_holdings(session, user_id)
     out = []
     for h in holdings_list:
-        out.append({
-            "symbol": h.symbol,
-            "exchange": h.exchange,
-            "quantity": h.quantity,
-            "avg_price": h.avg_price,
-            "current_price": h.current_price,
-            "close_price": h.close_price,
-            "pnl": h.pnl,
-            "day_change": h.day_change,
-            "day_change_pct": h.day_change_pct,
-        })
+        out.append(
+            {
+                "symbol": h.symbol,
+                "exchange": h.exchange,
+                "quantity": h.quantity,
+                "avg_price": h.avg_price,
+                "current_price": h.current_price,
+                "close_price": h.close_price,
+                "pnl": h.pnl,
+                "day_change": h.day_change,
+                "day_change_pct": h.day_change_pct,
+            }
+        )
     return out
 
 

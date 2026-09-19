@@ -3,6 +3,7 @@ CrediSentiment service — combines:
   Feature 1: Division-level FinBERT sentiment analysis
   Feature 2: 'Walking the Talk' LLM credibility comparison
 """
+
 import asyncio
 import json
 import logging
@@ -40,6 +41,7 @@ from finsight.rag.service import process_for_rag
 # ---------------------------------------------------------------------------
 # Feature 1 — Division-level FinBERT Sentiment
 # ---------------------------------------------------------------------------
+
 
 def _get_division_texts(session: Session, document_id: int) -> dict[str, str]:
     """
@@ -79,11 +81,7 @@ def _get_division_texts(session: Session, document_id: int) -> dict[str, str]:
             return division_texts
 
     # Fallback: use PageMetadata section_title grouping
-    page_stmt = (
-        select(PageMetadata)
-        .where(PageMetadata.document_id == document_id)
-        .order_by(PageMetadata.page_number)
-    )
+    page_stmt = select(PageMetadata).where(PageMetadata.document_id == document_id).order_by(PageMetadata.page_number)
     pages = list(session.exec(page_stmt).all())
 
     if pages:
@@ -102,7 +100,7 @@ def _get_division_texts(session: Session, document_id: int) -> dict[str, str]:
         try:
             text = open(doc.text_path, encoding="utf-8").read()
         except Exception:
-            return {"Full Document": text if 'text' in dir() else ""}
+            return {"Full Document": text if "text" in dir() else ""}
         # Split on lines that look like headings (ALL CAPS, short)
         parts = re.split(r"\n([A-Z][A-Z &/\-]{4,})\n", text)
         if len(parts) > 2:
@@ -154,9 +152,7 @@ def _run_finbert_on_text(text: str) -> dict:
     }
 
 
-def analyze_division_sentiment(
-    session: Session, document_id: int
-) -> list[DivisionSentiment]:
+def analyze_division_sentiment(session: Session, document_id: int) -> list[DivisionSentiment]:
     """
     Run FinBERT division-level sentiment on a document.
     Auto-indexes for RAG if not already done to get section structure.
@@ -185,9 +181,7 @@ def analyze_division_sentiment(
                 return []
 
     # Delete old results for this document
-    old = session.exec(
-        select(DivisionSentiment).where(DivisionSentiment.document_id == document_id)
-    ).all()
+    old = session.exec(select(DivisionSentiment).where(DivisionSentiment.document_id == document_id)).all()
     for o in old:
         session.delete(o)
     session.commit()
@@ -224,12 +218,38 @@ logger = logging.getLogger(__name__)
 
 # Forward-looking keywords for pre-filtering claim-rich chunks
 _CLAIM_KEYWORDS = [
-    "target", "guidance", "expect", "plan to", "aim", "goal",
-    "outlook", "project", "intend", "forecast", "aspire", "commit",
-    "promise", "anticipate", "envision", "strategy", "initiative",
-    "fy2", "fy 2", "growth", "increase", "expand", "reduce",
-    "achieve", "deliver", "milestone", "pipeline", "launch",
-    "capex", "margin", "debt-free", "dividend",
+    "target",
+    "guidance",
+    "expect",
+    "plan to",
+    "aim",
+    "goal",
+    "outlook",
+    "project",
+    "intend",
+    "forecast",
+    "aspire",
+    "commit",
+    "promise",
+    "anticipate",
+    "envision",
+    "strategy",
+    "initiative",
+    "fy2",
+    "fy 2",
+    "growth",
+    "increase",
+    "expand",
+    "reduce",
+    "achieve",
+    "deliver",
+    "milestone",
+    "pipeline",
+    "launch",
+    "capex",
+    "margin",
+    "debt-free",
+    "dividend",
 ]
 
 
@@ -264,9 +284,7 @@ def _score_chunk_for_claims(text: str) -> float:
     return hits / len(_CLAIM_KEYWORDS)
 
 
-def _prefilter_claims_chunks(
-    chunks: list[str], max_n: int = WTT_MAX_CLAIMS_CHUNKS
-) -> list[str]:
+def _prefilter_claims_chunks(chunks: list[str], max_n: int = WTT_MAX_CLAIMS_CHUNKS) -> list[str]:
     """Keep only the top N most claim-rich chunks by keyword scoring."""
     scored = [(chunk, _score_chunk_for_claims(chunk)) for chunk in chunks]
     # Filter out chunks with zero score (no forward-looking language)
@@ -314,9 +332,7 @@ def _retrieve_relevant_actuals(
     for cat, cat_claims in categories.items():
         query_text = f"{cat}: " + "; ".join(cat_claims[:3])
         prefixed = f"Represent this sentence for searching relevant passages: {query_text}"
-        embedding = model.encode(
-            prefixed, convert_to_numpy=True, normalize_embeddings=True
-        ).tolist()
+        embedding = model.encode(prefixed, convert_to_numpy=True, normalize_embeddings=True).tolist()
         results = query_by_document_id(embedding, actuals_document_id, n_results=top_k)
         for r in results:
             rid = r.get("id", "")
@@ -330,9 +346,7 @@ def _retrieve_relevant_actuals(
 def get_document_chunks(session: Session, document_id: int) -> list[str]:
     """Load all CrediSentiment chunks for a document, ordered by chunk_index."""
     stmt = (
-        select(ComparisonChunk)
-        .where(ComparisonChunk.document_id == document_id)
-        .order_by(ComparisonChunk.chunk_index)
+        select(ComparisonChunk).where(ComparisonChunk.document_id == document_id).order_by(ComparisonChunk.chunk_index)
     )
     chunks = list(session.exec(stmt).all())
     return [c.text for c in chunks]
@@ -364,7 +378,9 @@ async def walk_the_talk(
 
     logger.info(
         "WTT: %d claims chunks, %d actuals chunks (model=%s)",
-        len(claims_chunks), len(actuals_chunks), WTT_MODEL or "provider-default",
+        len(claims_chunks),
+        len(actuals_chunks),
+        WTT_MODEL or "provider-default",
     )
 
     # ------------------------------------------------------------------
@@ -441,18 +457,13 @@ async def walk_the_talk(
         unique_claims = unique_claims[:35]
         logger.info("WTT: capped to %d claims for Stage 2", len(unique_claims))
     STAGE2_BATCH = 7
-    claim_batches = [
-        unique_claims[i : i + STAGE2_BATCH]
-        for i in range(0, len(unique_claims), STAGE2_BATCH)
-    ]
+    claim_batches = [unique_claims[i : i + STAGE2_BATCH] for i in range(0, len(unique_claims), STAGE2_BATCH)]
     logger.info("WTT Stage 2: %d claim batches of %d", len(claim_batches), STAGE2_BATCH)
 
     # Pre-retrieve actuals for each batch (sequential — embedding model not thread-safe)
     batch_actuals: list[str] = []
     for bc in claim_batches:
-        actuals_text = _retrieve_relevant_actuals(
-            bc, actuals_document_id, top_k=WTT_ACTUALS_TOP_K
-        )
+        actuals_text = _retrieve_relevant_actuals(bc, actuals_document_id, top_k=WTT_ACTUALS_TOP_K)
         if len(actuals_text) > 4000:
             actuals_text = actuals_text[:4000]
         batch_actuals.append(actuals_text)

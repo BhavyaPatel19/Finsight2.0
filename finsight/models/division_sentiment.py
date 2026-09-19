@@ -5,6 +5,7 @@ from sqlmodel import Field, SQLModel
 
 class DivisionSentiment(SQLModel, table=True):
     """Per-division FinBERT sentiment scores for a document."""
+
     __tablename__ = "division_sentiments"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -21,6 +22,7 @@ class DivisionSentiment(SQLModel, table=True):
 
 class WalkTheTalkResult(SQLModel, table=True):
     """LLM comparison of management claims vs actual outcomes."""
+
     __tablename__ = "walk_the_talk_results"
 
     id: int | None = Field(default=None, primary_key=True)

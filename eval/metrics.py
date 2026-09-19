@@ -1,4 +1,5 @@
 """Ranking metrics over binary relevance lists. Pure functions, no I/O."""
+
 from __future__ import annotations
 
 import math

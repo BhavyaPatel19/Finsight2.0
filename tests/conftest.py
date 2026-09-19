@@ -79,9 +79,7 @@ def api_client(monkeypatch):
     import finsight.database.session as db
     from finsight.main import app
 
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     monkeypatch.setattr(db, "engine", engine)
     monkeypatch.setattr("finsight.main.run_migrations", lambda: None)
 
@@ -104,10 +102,15 @@ def api_client(monkeypatch):
 @pytest.fixture()
 def auth_headers(api_client):
     """Register + login a throwaway user; returns Bearer headers."""
-    api_client.post("/auth/register", json={
-        "first_name": "Test", "last_name": "User",
-        "email": "test@example.com", "password": "secret-123",
-    })
+    api_client.post(
+        "/auth/register",
+        json={
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "test@example.com",
+            "password": "secret-123",
+        },
+    )
     r = api_client.post("/auth/login", json={"email": "test@example.com", "password": "secret-123"})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}

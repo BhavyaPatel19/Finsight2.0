@@ -5,6 +5,7 @@ Used by both upload endpoints (/ingestion and /credisentiment) so the
 validation rules — allowed types, size cap, content sniff, sanitised names
 that cannot escape DOCUMENTS_DIR — cannot drift apart.
 """
+
 from __future__ import annotations
 
 import re

@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlmodel import Session
 
@@ -27,6 +26,7 @@ router = APIRouter()
 
 # ── Document listing (same as RAG) ─────────────────────
 
+
 @router.get("/available-documents", response_model=list[AvailableDocumentResponse])
 def get_available_documents(
     session: Session = Depends(get_session),
@@ -51,6 +51,7 @@ def get_available_documents(
 
 
 # ── Upload ─────────────────────────────────────────────
+
 
 @router.post("/upload")
 async def upload_document(
@@ -84,6 +85,7 @@ async def upload_document(
 
 # ── Processing pipeline ──────────────────────────────
 
+
 @router.post("/process/{document_id}", response_model=ProcessResponse)
 def process_for_credisentiment_endpoint(
     document_id: int,
@@ -96,6 +98,7 @@ def process_for_credisentiment_endpoint(
         raise HTTPException(status_code=400, detail="Document has no PDF file")
 
     from finsight.credisentiment.pipeline import process_for_credisentiment
+
     result = process_for_credisentiment(session, document_id)
 
     if result.get("status") == "error":
@@ -105,6 +108,7 @@ def process_for_credisentiment_endpoint(
 
 
 # ── Feature 1: Division-level FinBERT ──────────────────
+
 
 @router.post("/analyze-sentiment", response_model=list[AnalyzeSentimentResponse])
 def analyze_sentiment(
@@ -155,6 +159,7 @@ def analyze_sentiment(
 
 
 # ── Feature 2: Walking the Talk ────────────────────────
+
 
 @router.get("/wtt-documents", response_model=list[AvailableDocumentResponse])
 def get_wtt_documents(

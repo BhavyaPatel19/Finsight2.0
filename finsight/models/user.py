@@ -11,4 +11,3 @@ class User(SQLModel, table=True):
     hashed_password: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
     last_login_at: datetime | None = None
-

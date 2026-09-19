@@ -74,9 +74,5 @@ def compute_sentiment_for_document(session: Session, document_id: int) -> Sentim
 
 
 def get_sentiment_history(session: Session, symbol: str) -> list[SentimentScore]:
-    stmt = (
-        select(SentimentScore)
-        .where(SentimentScore.symbol == symbol)
-        .order_by(SentimentScore.computed_at.desc())
-    )
+    stmt = select(SentimentScore).where(SentimentScore.symbol == symbol).order_by(SentimentScore.computed_at.desc())
     return list(session.exec(stmt).all())

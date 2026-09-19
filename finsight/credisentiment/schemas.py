@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 # ── Feature 1: Division-level FinBERT ──────────────────
 
+
 class AnalyzeSentimentRequest(BaseModel):
     document_ids: list[int]
 
@@ -28,6 +29,7 @@ class AnalyzeSentimentResponse(BaseModel):
 
 
 # ── Feature 2: Walking the Talk ────────────────────────
+
 
 class WalkTheTalkRequest(BaseModel):
     claims_document_id: int
@@ -59,6 +61,7 @@ class WalkTheTalkResponse(BaseModel):
 
 # ── Document listing (shared with RAG) ─────────────────
 
+
 class AvailableDocumentResponse(BaseModel):
     id: int
     symbol: str
@@ -76,8 +79,9 @@ class AvailableDocumentResponse(BaseModel):
 
 # ── Processing pipeline response ─────────────────────
 
+
 class ProcessResponse(BaseModel):
-    status: str          # "indexed" | "already_indexed" | "error"
+    status: str  # "indexed" | "already_indexed" | "error"
     document_id: int
     chunks: int = 0
     message: str | None = None
