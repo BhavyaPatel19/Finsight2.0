@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from finsight.credisentiment.schemas import (
     AnalyzeSentimentRequest,
@@ -18,6 +18,7 @@ from finsight.credisentiment.service import (
 )
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.access import get_accessible_document, visible_documents
 from finsight.ingestion.uploads import save_upload
 from finsight.models import Document, User
 
@@ -31,9 +32,8 @@ def get_available_documents(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Return all documents for the document picker."""
-    stmt = select(Document).order_by(Document.ingested_at.desc())
-    docs = list(session.exec(stmt).all())
+    """Documents this user may analyse (own uploads + shared corpus)."""
+    docs = visible_documents(session, current_user)
     return [
         AvailableDocumentResponse(
             id=d.id,
@@ -66,6 +66,7 @@ async def upload_document(
     dest = await save_upload(file, symbol=symbol, fiscal_year=fiscal_year, fiscal_quarter=fiscal_quarter)
 
     doc = Document(
+        user_id=current_user.id,
         symbol=symbol.upper(),
         doc_type=doc_type,
         fiscal_quarter=fiscal_quarter,
@@ -90,9 +91,7 @@ def process_for_credisentiment_endpoint(
     current_user: User = Depends(get_current_user),
 ):
     """Process a document for the CrediSentiment pipeline (separate from RAG)."""
-    doc = session.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
+    doc = get_accessible_document(session, current_user, document_id)
     if not doc.pdf_path:
         raise HTTPException(status_code=400, detail="Document has no PDF file")
 
@@ -119,9 +118,7 @@ def analyze_sentiment(
     """
     results = []
     for doc_id in payload.document_ids:
-        doc = session.get(Document, doc_id)
-        if not doc:
-            raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
+        doc = get_accessible_document(session, current_user, doc_id)
 
         divisions = analyze_division_sentiment(session, doc_id)
         if not divisions:
@@ -164,13 +161,8 @@ def get_wtt_documents(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Return only CrediSentiment-processed documents for WTT picker."""
-    stmt = (
-        select(Document)
-        .where(Document.cs_status == "indexed")
-        .order_by(Document.ingested_at.desc())
-    )
-    docs = list(session.exec(stmt).all())
+    """Only CrediSentiment-processed documents this user may see, for the WTT picker."""
+    docs = [d for d in visible_documents(session, current_user) if d.cs_status == "indexed"]
     return [
         AvailableDocumentResponse(
             id=d.id,
@@ -199,6 +191,8 @@ async def walk_the_talk_endpoint(
     """
     import json
 
+    get_accessible_document(session, current_user, payload.claims_document_id)
+    get_accessible_document(session, current_user, payload.actuals_document_id)
     result = await walk_the_talk(
         session,
         payload.claims_document_id,

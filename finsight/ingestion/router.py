@@ -6,17 +6,17 @@ from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.access import get_accessible_document, visible_documents
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
     process_document,
 )
 from finsight.ingestion.service import (
-    list_documents,
     register_document,
 )
 from finsight.ingestion.uploads import MEDIA_TYPES, save_upload
-from finsight.models import Document, User
+from finsight.models import User
 
 router = APIRouter()
 
@@ -28,7 +28,7 @@ def documents_list(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return list_documents(session, symbol=symbol, doc_type=doc_type)
+    return visible_documents(session, current_user, symbol=symbol, doc_type=doc_type)
 
 
 @router.get("/documents/{document_id}")
@@ -38,6 +38,7 @@ def document_detail(
     current_user: User = Depends(get_current_user),
 ):
     """Get full document details including chunk count and status."""
+    get_accessible_document(session, current_user, document_id)
     ctx = get_document_context(session, document_id)
     if not ctx:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -51,8 +52,8 @@ def document_pdf(
     current_user: User = Depends(get_current_user),
 ):
     """Serve the source document (PDF or HTML) for viewing."""
-    doc = session.get(Document, document_id)
-    if not doc or not doc.pdf_path:
+    doc = get_accessible_document(session, current_user, document_id)
+    if not doc.pdf_path:
         raise HTTPException(status_code=404, detail="Document or file not found")
     pdf_path = Path(doc.pdf_path)
     if not pdf_path.exists():
@@ -71,6 +72,7 @@ def document_delete(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a document: removes file from disk, chunks from DB, embeddings from ChromaDB."""
+    get_accessible_document(session, current_user, document_id)
     result = delete_document(session, document_id)
     if result.get("status") == "not_found":
         raise HTTPException(status_code=404, detail="Document not found")
@@ -84,6 +86,7 @@ def document_process(
     current_user: User = Depends(get_current_user),
 ):
     """Extract text, chunk, and index a document to ChromaDB."""
+    get_accessible_document(session, current_user, document_id)
     doc = process_document(session, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found or no PDF")
@@ -109,6 +112,7 @@ async def upload_and_index(
     path = await save_upload(file, symbol=symbol, fiscal_year=fiscal_year, fiscal_quarter=fiscal_quarter)
     doc = register_document(
         session,
+        user_id=current_user.id,
         symbol=symbol.strip().upper(),
         doc_type=doc_type.strip() or "quarterly",
         fiscal_quarter=fiscal_quarter.strip() or None,

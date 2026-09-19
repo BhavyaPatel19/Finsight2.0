@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.access import get_accessible_document, visible_documents
 from finsight.llm import LLMError
-from finsight.models import Document, User
+from finsight.models import User
 from finsight.rag.schemas import (
     AvailableDocument,
     NavigationStep,
@@ -24,9 +25,8 @@ def get_available_documents(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Return all documents for the document picker in RAG tab."""
-    stmt = select(Document).order_by(Document.ingested_at.desc())
-    docs = list(session.exec(stmt).all())
+    """Documents this user may query (own uploads + shared corpus)."""
+    docs = visible_documents(session, current_user)
     return [
         AvailableDocument(
             id=d.id,
@@ -56,8 +56,8 @@ def prepare_documents(
     """
     results = []
     for doc_id in payload.document_ids:
-        result = process_for_rag(session, doc_id)
-        results.append(result)
+        get_accessible_document(session, current_user, doc_id)
+        results.append(process_for_rag(session, doc_id))
     return PrepareResponse(results=results)
 
 
@@ -68,11 +68,20 @@ def rag_query(
     current_user: User = Depends(get_current_user),
 ):
     """Query against selected documents with navigation and thinking trace."""
+    # Restrict retrieval to documents this user may see; an explicit selection
+    # is validated, no selection means "everything visible to me".
+    visible_ids = [d.id for d in visible_documents(session, current_user)]
+    if payload.document_ids:
+        document_ids = [i for i in payload.document_ids if i in visible_ids]
+        if not document_ids:
+            raise HTTPException(status_code=404, detail="Document not found")
+    else:
+        document_ids = visible_ids
     try:
         result = answer_question(
             session=session,
             question=payload.question,
-            document_ids=payload.document_ids,
+            document_ids=document_ids,
             symbol=payload.symbol,
             period=payload.period,
             top_k=payload.top_k,

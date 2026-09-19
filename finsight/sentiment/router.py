@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.access import get_accessible_document
 from finsight.models import User
 from finsight.sentiment.schemas import SentimentScoreResponse
 from finsight.sentiment.service import compute_sentiment_for_document, get_sentiment_history
@@ -25,6 +26,7 @@ def recompute(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    get_accessible_document(session, current_user, document_id)
     result = compute_sentiment_for_document(session, document_id)
     if not result:
         raise HTTPException(status_code=404, detail="Document not found or no text")

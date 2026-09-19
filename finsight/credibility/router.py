@@ -10,6 +10,7 @@ from finsight.credibility.service import (
 )
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
+from finsight.ingestion.access import get_accessible_document
 from finsight.models import User
 
 router = APIRouter()
@@ -69,6 +70,7 @@ def extract_claims(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    get_accessible_document(session, current_user, document_id)
     claims = extract_claims_for_document(session, document_id)
     return {"count": len(claims)}
 

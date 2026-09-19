@@ -39,6 +39,7 @@ def run_migrations():
         "ALTER TABLE documents ADD COLUMN cs_error_message TEXT",
         "ALTER TABLE user ADD COLUMN first_name TEXT DEFAULT ''",
         "ALTER TABLE user ADD COLUMN last_name TEXT DEFAULT ''",
+        "ALTER TABLE documents ADD COLUMN user_id INTEGER REFERENCES user(id)",
     ]
     try:
         conn = sqlite3.connect(db_path)

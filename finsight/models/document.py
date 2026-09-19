@@ -7,6 +7,8 @@ class Document(SQLModel, table=True):
     __tablename__ = "documents"
 
     id: int | None = Field(default=None, primary_key=True)
+    # NULL = shared corpus (seeded filings); otherwise private to the uploader.
+    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
     symbol: str = Field(index=True)
     doc_type: str = Field(index=True)  # DocType value
     fiscal_quarter: str | None = None

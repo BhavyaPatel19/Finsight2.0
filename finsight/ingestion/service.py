@@ -20,8 +20,10 @@ def register_document(
     fiscal_year: str | None = None,
     source_url: str | None = None,
     pdf_path: str | None = None,
+    user_id: int | None = None,
 ) -> Document:
     doc = Document(
+        user_id=user_id,
         symbol=symbol,
         doc_type=doc_type,
         fiscal_quarter=fiscal_quarter,
