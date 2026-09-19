@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { getChartColors } from '../utils/chartTheme'
-import { portfolioApi, zerodhaApi } from '../api/client'
+import { portfolioApi, zerodhaApi, marketApi } from '../api/client'
 import {
   DollarSign, TrendingUp, TrendingDown, BarChart2, RefreshCw,
   Link2, Download, Briefcase
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState('')
   const [connecting, setConnecting] = useState(false)
+  const [market, setMarket] = useState(null)
   const [requestToken, setRequestToken] = useState('')
   const [linking, setLinking] = useState(false)
 
@@ -75,7 +76,10 @@ export default function Dashboard() {
     } finally { setLinking(false) }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    marketApi.status().then(r => setMarket(r.data)).catch(() => {})
+  }, [])
 
   const totalValue = holdings.reduce(
     (s, h) => s + (h.current_price ?? h.avg_price) * h.quantity, 0
@@ -117,11 +121,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Zerodha Connect/Sync Bar ── */}
+      {/* ── Market data source / Zerodha Connect/Sync Bar ── */}
+      {market && !market.zerodha_configured && (
+        <div className="text-xs text-muted mb-6">
+          Prices via {market.provider}{market.live ? '' : ' (delayed, free)'} · add Zerodha Kite credentials to <code>.env</code> to enable live broker sync.
+        </div>
+      )}
+      {(!market || market.zerodha_configured) && (
       <GlowCard className="card mb-6" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', padding: '16px 22px' }}>
         <div style={{ flex: 1, minWidth: 180 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>🔗 Zerodha Integration</div>
-          <div className="text-xs text-muted">Connect → Sync</div>
+          <div className="text-xs text-muted">{market?.zerodha_linked ? 'Linked · live quotes' : 'Connect → Sync'}</div>
         </div>
         <button id="zerodha-connect-btn" className="btn btn-primary btn-sm flex-center gap-2" onClick={connectZerodha} disabled={connecting}>
           {connecting ? <span className="spinner" /> : <Link2 size={14} />}
@@ -137,6 +147,7 @@ export default function Dashboard() {
           </span>
         )}
       </GlowCard>
+      )}
 
       {loading ? (
         <div className="empty-state"><span className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} /></div>

@@ -59,7 +59,7 @@ export default function Portfolio() {
       ) : holdings.length === 0 ? (
         <div className="empty-state card">
           <BarChart2 size={48} />
-          <p>No holdings found.<br />Sync Zerodha via the Dashboard.</p>
+          <p>No holdings yet.<br />Link Zerodha on the Dashboard to sync your broker holdings.</p>
         </div>
       ) : (
         <>

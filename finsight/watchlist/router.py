@@ -4,6 +4,8 @@ Watchlist CRUD endpoints: create, list, update, delete watchlists and their item
 
 from datetime import datetime
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, select, func
@@ -13,6 +15,7 @@ from finsight.deps import get_current_user
 from finsight.models import User
 from finsight.models.watchlist import Watchlist, WatchlistItem
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -271,9 +274,8 @@ def get_watchlist_quotes(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Fetch live quotes for all stocks in a watchlist."""
-    from finsight.models import ZerodhaSession
-    from finsight.zerodha.client import fetch_quotes
+    """Fetch quotes for all stocks in a watchlist via the active market provider."""
+    from finsight.market.providers import MarketNotLinked, get_market_provider
 
     wl = _get_owned_watchlist(session, watchlist_id, current_user.id)
 
@@ -283,16 +285,13 @@ def get_watchlist_quotes(
     if not items:
         return {"quotes": {}}
 
-    # Get Zerodha token
-    zs = session.exec(
-        select(ZerodhaSession).where(ZerodhaSession.user_id == current_user.id)
-    ).first()
-    if not zs or not zs.access_token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked.")
+    try:
+        provider = get_market_provider(session, current_user.id)
+    except MarketNotLinked as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     sym_list = [f"NSE:{item.symbol}" for item in items]
-    quotes = fetch_quotes(zs.access_token, sym_list)
-    return {"quotes": quotes}
+    return {"quotes": provider.get_quotes(sym_list), "provider": provider.name}
 
 
 # ── AI Digest ─────────────────────────────────────────────
@@ -304,8 +303,7 @@ def get_watchlist_digest(
     current_user: User = Depends(get_current_user),
 ):
     """Generate AI digest for all stocks in a watchlist."""
-    from finsight.models import ZerodhaSession
-    from finsight.zerodha.client import fetch_quotes
+    from finsight.market.providers import MarketNotLinked, get_market_provider
     from finsight.market.fundamentals import get_fundamentals
     from finsight.watchlist.digest import generate_digest
 
@@ -319,17 +317,13 @@ def get_watchlist_digest(
 
     symbols = [item.symbol for item in items]
 
-    # Fetch Zerodha quotes (gracefully handle missing session)
+    # Quotes are a nice-to-have for the digest; fundamentals carry it if they fail.
     quotes = {}
-    zs = session.exec(
-        select(ZerodhaSession).where(ZerodhaSession.user_id == current_user.id)
-    ).first()
-    if zs and zs.access_token:
-        try:
-            sym_list = [f"NSE:{s}" for s in symbols]
-            quotes = fetch_quotes(zs.access_token, sym_list)
-        except Exception:
-            pass
+    try:
+        provider = get_market_provider(session, current_user.id)
+        quotes = provider.get_quotes([f"NSE:{s}" for s in symbols])
+    except (MarketNotLinked, Exception) as e:
+        logger.warning("digest: quotes unavailable: %s", e)
 
     # Fetch fundamentals (uses 24h cache)
     fund_data = {}

@@ -1,21 +1,22 @@
 """
-Market data endpoints: live quotes, LTP, historical candles, instrument search,
-and default watchlist from Kite Connect.
+Market data endpoints: quotes, LTP, historical candles, instrument search,
+fundamentals, AI insights and news.
+
+Price data comes from the active MarketDataProvider (yfinance by default,
+Zerodha Kite when the user has linked a broker account).
 """
 import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
-from finsight.models import User, Holding, Portfolio, ZerodhaSession
-from finsight.zerodha.client import fetch_quotes, fetch_ltp, fetch_historical, fetch_instruments
+from finsight.market.providers import MarketNotLinked, get_market_provider, market_status
+from finsight.models import User, Holding, Portfolio
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-# ── In-memory instrument cache ──
-_instruments_cache: list[dict] = []
 
 DEFAULT_WATCHLIST = [
     "RELIANCE", "TCS", "HDFCBANK", "INFY", "ITC",
@@ -23,10 +24,11 @@ DEFAULT_WATCHLIST = [
 ]
 
 
-def _get_access_token(session: Session, user_id: int) -> str | None:
-    stmt = select(ZerodhaSession).where(ZerodhaSession.user_id == user_id)
-    zs = session.exec(stmt).first()
-    return zs.access_token if zs else None
+def _provider(session: Session, user_id: int):
+    try:
+        return get_market_provider(session, user_id)
+    except MarketNotLinked as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 def _get_user_holding_symbols(session: Session, user_id: int) -> list[str]:
@@ -42,28 +44,19 @@ def _get_user_holding_symbols(session: Session, user_id: int) -> list[str]:
     return [h.symbol for h in holdings]
 
 
-def _ensure_instruments_loaded(access_token: str) -> None:
-    """Load instruments into cache if not already loaded."""
-    global _instruments_cache
-    if _instruments_cache:
-        return
-    try:
-        raw = fetch_instruments(access_token, "NSE")
-        _instruments_cache = [
-            {
-                "instrument_token": int(i.get("instrument_token", 0)),
-                "symbol": i.get("tradingsymbol", ""),
-                "name": i.get("name", ""),
-                "exchange": i.get("exchange", "NSE"),
-                "segment": i.get("segment", ""),
-                "instrument_type": i.get("instrument_type", ""),
-            }
-            for i in raw
-            if i.get("tradingsymbol")
-        ]
-        logger.info("Loaded %d instruments into cache", len(_instruments_cache))
-    except Exception as e:
-        logger.warning("Failed to load instruments: %s", e)
+def _symbols_or_holdings(session: Session, user_id: int, symbols: str | None) -> list[str]:
+    if symbols:
+        return [f"NSE:{s.strip().upper()}" for s in symbols.split(",") if s.strip()]
+    return [f"NSE:{s}" for s in _get_user_holding_symbols(session, user_id)]
+
+
+@router.get("/status")
+def get_status(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Which price source is active for this user, and whether Zerodha is available."""
+    return market_status(session, current_user.id)
 
 
 @router.get("/quotes")
@@ -73,21 +66,11 @@ def get_quotes(
     current_user: User = Depends(get_current_user),
 ):
     """Fetch full market quotes for given symbols or all portfolio holdings."""
-    token = _get_access_token(session, current_user.id)
-    if not token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked. Connect first.")
-
-    if symbols:
-        sym_list = [f"NSE:{s.strip().upper()}" for s in symbols.split(",") if s.strip()]
-    else:
-        holding_symbols = _get_user_holding_symbols(session, current_user.id)
-        sym_list = [f"NSE:{s}" for s in holding_symbols]
-
+    provider = _provider(session, current_user.id)
+    sym_list = _symbols_or_holdings(session, current_user.id, symbols)
     if not sym_list:
-        return {"quotes": {}}
-
-    data = fetch_quotes(token, sym_list)
-    return {"quotes": data}
+        return {"quotes": {}, "provider": provider.name}
+    return {"quotes": provider.get_quotes(sym_list), "provider": provider.name}
 
 
 @router.get("/ltp")
@@ -97,25 +80,11 @@ def get_ltp(
     current_user: User = Depends(get_current_user),
 ):
     """Fetch LTP for given symbols or all portfolio holdings."""
-    token = _get_access_token(session, current_user.id)
-    if not token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked.")
-
-    if symbols:
-        sym_list = [f"NSE:{s.strip().upper()}" for s in symbols.split(",") if s.strip()]
-    else:
-        holding_symbols = _get_user_holding_symbols(session, current_user.id)
-        sym_list = [f"NSE:{s}" for s in holding_symbols]
-
+    provider = _provider(session, current_user.id)
+    sym_list = _symbols_or_holdings(session, current_user.id, symbols)
     if not sym_list:
         return {"ltp": {}}
-
-    data = fetch_ltp(token, sym_list)
-    result = {}
-    for key, price in data.items():
-        simple_key = key.split(":")[-1] if ":" in key else key
-        result[simple_key] = price
-    return {"ltp": result}
+    return {"ltp": provider.get_ltp(sym_list)}
 
 
 @router.get("/history/{symbol}")
@@ -128,31 +97,11 @@ def get_history(
     current_user: User = Depends(get_current_user),
 ):
     """Fetch historical candle data for a single symbol."""
-    token = _get_access_token(session, current_user.id)
-    if not token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked.")
-
-    _ensure_instruments_loaded(token)
-
-    inst_token = None
-    for inst in _instruments_cache:
-        if inst["symbol"].upper() == symbol.upper():
-            inst_token = inst["instrument_token"]
-            break
-
-    # Fallback: fetch live if cache miss
-    if not inst_token:
-        instruments = fetch_instruments(token, "NSE")
-        for inst in instruments:
-            if inst.get("tradingsymbol", "").upper() == symbol.upper():
-                inst_token = int(inst.get("instrument_token", 0))
-                break
-
-    if not inst_token:
-        raise HTTPException(status_code=404, detail=f"Instrument {symbol} not found on NSE")
-
-    candles = fetch_historical(token, inst_token, interval, from_date, to_date)
-    return {"symbol": symbol.upper(), "interval": interval, "candles": candles}
+    provider = _provider(session, current_user.id)
+    candles = provider.get_history(symbol.upper(), interval, from_date, to_date)
+    if not candles:
+        raise HTTPException(status_code=404, detail=f"No history for {symbol.upper()} on NSE")
+    return {"symbol": symbol.upper(), "interval": interval, "candles": candles, "provider": provider.name}
 
 
 @router.get("/watchlist")
@@ -161,13 +110,9 @@ def get_watchlist(
     current_user: User = Depends(get_current_user),
 ):
     """Fetch full quotes for default blue-chip watchlist stocks."""
-    token = _get_access_token(session, current_user.id)
-    if not token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked. Connect first.")
-
+    provider = _provider(session, current_user.id)
     sym_list = [f"NSE:{s}" for s in DEFAULT_WATCHLIST]
-    data = fetch_quotes(token, sym_list)
-    return {"watchlist": DEFAULT_WATCHLIST, "quotes": data}
+    return {"watchlist": DEFAULT_WATCHLIST, "quotes": provider.get_quotes(sym_list)}
 
 
 @router.get("/instruments/search")
@@ -177,41 +122,8 @@ def search_instruments(
     current_user: User = Depends(get_current_user),
 ):
     """Search instruments by symbol or name. Returns top 15 matches."""
-    token = _get_access_token(session, current_user.id)
-    if not token:
-        raise HTTPException(status_code=400, detail="Zerodha not linked.")
-
-    _ensure_instruments_loaded(token)
-
-    query = q.strip().upper()
-    results = []
-
-    # Exact symbol match first
-    for inst in _instruments_cache:
-        if inst["symbol"].upper() == query:
-            results.append(inst)
-            break
-
-    # Then prefix matches
-    for inst in _instruments_cache:
-        if inst in results:
-            continue
-        if inst["symbol"].upper().startswith(query):
-            results.append(inst)
-        if len(results) >= 15:
-            break
-
-    # Then name contains
-    if len(results) < 15:
-        for inst in _instruments_cache:
-            if inst in results:
-                continue
-            if query in (inst.get("name", "") or "").upper():
-                results.append(inst)
-            if len(results) >= 15:
-                break
-
-    return {"results": results}
+    provider = _provider(session, current_user.id)
+    return {"results": provider.search_instruments(q, limit=15)}
 
 
 @router.get("/fundamentals/{symbol}")
@@ -236,7 +148,7 @@ def get_insights(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Return a Groq-generated AI insight using live fundamentals data."""
+    """Return an LLM-generated insight using live fundamentals data."""
     from finsight.market.fundamentals import get_fundamentals
     from finsight.market.insights import get_company_insight
 

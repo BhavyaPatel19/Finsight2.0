@@ -486,7 +486,7 @@ export default function Market() {
           <Activity size={22} color="var(--accent, #148F77)" />
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Live Market</h1>
-            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>Real-time quotes from Zerodha Kite</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0 }}>NSE quotes · live via Zerodha when linked, otherwise delayed via Yahoo Finance</p>
           </div>
         </div>
       </div>
@@ -561,7 +561,7 @@ export default function Market() {
             ) : watchlistKeys.length === 0 && customKeys.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
                 <Activity size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
-                <p>No data. Link Zerodha first.</p>
+                <p>No data for this symbol.</p>
               </div>
             ) : (
               <>

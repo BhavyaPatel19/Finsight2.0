@@ -58,6 +58,7 @@ export const portfolioApi = {
 
 // ── Market Data ───────────────────────────────────────
 export const marketApi = {
+  status: () => client.get('/market/status'),
   quotes: (symbols) => client.get('/market/quotes', { params: { symbols } }),
   ltp: (symbols) => client.get('/market/ltp', { params: { symbols } }),
   history: (symbol, interval = 'day', from_date, to_date) =>

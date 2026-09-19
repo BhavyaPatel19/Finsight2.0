@@ -29,7 +29,10 @@ ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
-# Zerodha (set in env in production)
+# Market data — "auto" uses Zerodha for users who linked a Kite account, else yfinance.
+MARKET_DATA_PROVIDER = os.getenv("MARKET_DATA_PROVIDER", "auto")
+
+# Zerodha Kite Connect (optional; paid API subscription + per-user OAuth)
 ZERODHA_API_KEY = os.getenv("ZERODHA_API_KEY", "")
 ZERODHA_API_SECRET = os.getenv("ZERODHA_API_SECRET", "")
 # Must match the Redirect URL you set in Zerodha app (e.g. https://yourdomain.com/zerodha/callback)
