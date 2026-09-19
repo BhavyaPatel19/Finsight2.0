@@ -49,6 +49,9 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 
+# SEC EDGAR downloads (sample corpus). SEC requires an identifying User-Agent with a contact email.
+EDGAR_USER_AGENT = os.getenv("EDGAR_USER_AGENT", "FinSight research (set EDGAR_USER_AGENT)")
+
 # Embeddings (local, via sentence-transformers)
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 

@@ -58,40 +58,6 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
 
 
 # ---------------------------------------------------------------------------
-# Reciprocal Rank Fusion
-# ---------------------------------------------------------------------------
-
-def _reciprocal_rank_fusion(
-    dense_hits: list[dict],
-    bm25_hits: list[dict],
-    k: int = 60,
-) -> list[dict]:
-    """
-    Combine dense + BM25 results using Reciprocal Rank Fusion.
-    RRF score = 1/(k + rank_dense) + 1/(k + rank_bm25)
-    Deduplicates by chunk ID.
-    """
-    scores: dict[str, dict] = {}
-
-    for rank, hit in enumerate(dense_hits):
-        meta = hit.get("metadata", {})
-        cid = f"doc_{meta.get('document_id')}_chunk_{meta.get('chunk_index')}"
-        if cid not in scores:
-            scores[cid] = {"rrf_score": 0.0, "item": hit}
-        scores[cid]["rrf_score"] += 1.0 / (k + rank + 1)
-
-    for rank, hit in enumerate(bm25_hits):
-        meta = hit.get("metadata", {})
-        cid = f"doc_{meta.get('document_id')}_chunk_{meta.get('chunk_index')}"
-        if cid not in scores:
-            scores[cid] = {"rrf_score": 0.0, "item": hit}
-        scores[cid]["rrf_score"] += 1.0 / (k + rank + 1)
-
-    merged = sorted(scores.values(), key=lambda x: x["rrf_score"], reverse=True)
-    return [m["item"] for m in merged]
-
-
-# ---------------------------------------------------------------------------
 # Legacy index (kept for backward compat with old ingestion flow)
 # ---------------------------------------------------------------------------
 
@@ -345,46 +311,23 @@ def answer_question(
     period: str | None = None,
     top_k: int = 8,
     model: str | None = None,
+    retrieval_mode: str = "hybrid_rerank",
 ) -> dict:
     """
     Hybrid RAG pipeline:
-    1. BGE query embedding
-    2. Dense retrieval (ChromaDB top-30)
-    3. BM25 keyword retrieval (top-30)
-    4. Reciprocal Rank Fusion → merged top-30
-    5. BGE-reranker cross-encoder → top-k
-    6. Strict grounded prompt
-    7. LLM inference via the configured provider (Groq or Ollama)
-    8. Parse thinking trace + navigation breadcrumbs
+    1-5. retrieve() — BGE dense + BM25 → RRF → cross-encoder rerank → top-k
+    6.   Strict grounded prompt with section/page headers
+    7.   LLM inference via the configured provider (Groq or Ollama)
+    8.   Parse thinking trace + navigation breadcrumbs
     """
-    from finsight.rag.bm25_store import bm25_search, build_bm25_index, is_built
-    from finsight.rag.reranker import rerank
+    from finsight.rag.retrieval import retrieve
 
-    # 1. Embed query
-    q_emb = embed_query(question)
-
-    # 2. Dense retrieval
-    if document_ids:
-        dense_hits = query_by_document_ids(q_emb, document_ids, n_results=30)
-    else:
-        where = None
-        if symbol:
-            where = {"symbol": symbol}
-        if period:
-            where = where or {}
-            where["fiscal_year"] = period
-        dense_hits = chroma_query(q_emb, n_results=30, where=where)
-
-    # 3. BM25 retrieval
-    if not is_built():
-        build_bm25_index(session)
-    bm25_hits = bm25_search(question, n_results=30, document_ids=document_ids)
-
-    # 4. Reciprocal Rank Fusion
-    merged = _reciprocal_rank_fusion(dense_hits, bm25_hits)[:30]
-
-    # 5. Rerank → top-k
-    top_chunks = rerank(question, merged, top_k=top_k) if merged else []
+    retrieved = retrieve(
+        session, question,
+        mode=retrieval_mode, top_k=top_k,
+        document_ids=document_ids, symbol=symbol, period=period,
+    )
+    top_chunks = retrieved["chunks"]
 
     # 6. Build structured context
     context = _build_section_context(top_chunks)
@@ -450,5 +393,6 @@ def answer_question(
             "prompt_tokens": response.prompt_tokens,
             "completion_tokens": response.completion_tokens,
             "latency_ms": round(response.latency_ms, 1),
+            "retrieval_ms": round(retrieved["timings_ms"]["total"], 1),
         },
     }
