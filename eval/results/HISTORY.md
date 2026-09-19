@@ -21,3 +21,22 @@ Observations worth keeping:
 - Remaining misses cluster on questions whose evidence spans two chunks (coverage 95.3%: r027, r030, r054 are not in any single chunk) and on cross-document questions, where hit@5 counts any one document.
 
 Gold-set fix along the way: 20 questions had their fact stated in more than one filing (press release ↔ call ↔ fact sheet). Only listing one source under-counted correct retrievals; every restatement is now listed as evidence.
+
+---
+
+# Generation (answers, not just retrieval)
+
+`python -m eval.generation` — production pipeline (hybrid_rerank, top-8, strict grounding prompt), 64 gold questions (60 answerable + 4 unanswerable).
+
+| run | generator | judge | correct | partial | incorrect | faithfulness | number recall | abstain (unans.) | false abstain | cited | cited pages ⊆ retrieved | p50 latency |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `generation_ollama-qwen3-14b.json` | qwen3:14b (local, thinking on) | qwen3:14b | 87.5% | 7.8% | 4.7% | 0.947 (n=57) | 0.720 | 100% | 6.2% | 95% | 100% | 47 s |
+
+What the first generation run changed:
+
+- **Ollama's default context window was truncating the RAG prompt.** The prompt is ~4,100 tokens; Ollama defaulted to 2,048 and drops tokens from the *front*, so the model saw neither the grounding rules nor the first chunks and fabricated figures ("$10.3 billion" for a $19.3 bn revenue). `OLLAMA_NUM_CTX` (default 8192) is now sent on every call. Before the fix, 0/3 smoke-test answers were correct; after, 3/3.
+- Every remaining "incorrect" answer is an **abstention** on a question whose evidence retrieval did not surface (two are the chunk-boundary cases from the retrieval coverage report, one is a cross-document headcount comparison). The model does not hallucinate when retrieval fails; it says "Not found in the selected documents."
+- Four questions exceeded the 120 s request timeout on long reasoning traces (p90 latency 80 s); providers now carry their own default timeout (Ollama 300 s) and those four were re-run and merged (`reruns` in the JSON records provenance). Three were correct, one partial.
+- Number recall (0.72) undercounts: it cannot equate `$19,277 million` with `$19.3 bn` or `Rs 43.00` with `₹43`; the judge can, hence correctness > number recall.
+
+Caveat: generator and judge are the same model here. A Groq run (Llama 3.3 70B generating, a different model judging) is the cross-check to do before quoting a single headline number.

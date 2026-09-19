@@ -23,7 +23,18 @@ Retrieval over 8 Infosys filings (145 chunks), 64 gold questions, relevance = th
 
 The production path started at hit@5 **0.578** — below BM25 alone — and reached **0.844** through four measured fixes, none of which changed the architecture: the reranker was scoring 512 *characters* instead of 512 tokens, BM25 hits carried no page numbers, and neither the embedder nor the reranker could tell a Q4 FY25 filing from a Q4 FY26 one until a `company · doc type · period` header was prepended at index time.
 
-Generation and Walk-the-Talk results: see [`eval/results/`](eval/results/) (`generation_latest.md`, `wtt_*.json`) — produced by `make eval-generation` and `python -m eval.wtt`.
+End-to-end answers on the same 64 questions, generated and judged by a local `qwen3:14b` (Groq/70B cross-check pending — [why that matters](docs/EVALUATION.md#2-generation-python--m-evalgeneration)):
+
+| metric | value |
+|---|---|
+| correct vs human reference (judge) | **87.5%** (partial 7.8%, incorrect 4.7%) |
+| faithfulness — answer claims supported by retrieved text (judge) | **0.947** |
+| abstains on the 4 unanswerable questions | 100% |
+| answers carrying a `[… Page N]` citation / cited pages actually retrieved | 95% / 100% |
+
+Every "incorrect" answer was an abstention on a retrieval miss, not a fabricated number. The first generation run also caught a production bug: Ollama's default 2k context window silently truncated the 4k-token RAG prompt from the front, so local models never saw the grounding rules.
+
+Walk-the-Talk results against 15 human-labelled claims: `python -m eval.wtt` → `eval/results/wtt_*.json`.
 
 ---
 

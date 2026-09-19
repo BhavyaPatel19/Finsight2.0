@@ -8,24 +8,24 @@
   "top_k": 8,
   "summary": {
     "n": 68,
-    "errors": 4,
-    "answerable": 60,
+    "errors": 0,
+    "answerable": 64,
     "unanswerable": 4,
-    "number_recall": 0.7646,
-    "false_abstain_rate": 0.0667,
+    "number_recall": 0.7199,
+    "false_abstain_rate": 0.0625,
     "abstain_rate_on_unanswerable": 1.0,
-    "cited_rate": 1.0,
+    "cited_rate": 0.95,
     "citation_valid_rate": 1.0,
-    "faithfulness": 0.9494,
-    "faithfulness_n": 56,
+    "faithfulness": 0.9468,
+    "faithfulness_n": 57,
     "correctness": {
-      "correct": 0.8833333333333333,
-      "partial": 0.06666666666666667,
-      "incorrect": 0.05,
+      "correct": 0.875,
+      "partial": 0.078125,
+      "incorrect": 0.046875,
       "unknown": 0.0
     },
-    "correctness_n": 60,
-    "latency_ms_mean": 53986,
+    "correctness_n": 64,
+    "latency_ms_mean": 61429,
     "by_type": {
       "cross_doc": {
         "n": 4,
@@ -48,9 +48,9 @@
         "correct": 0.778
       },
       "numeric": {
-        "n": 43,
-        "number_recall": 0.797,
-        "correct": 0.907
+        "n": 47,
+        "number_recall": 0.736,
+        "correct": 0.894
       }
     }
   },
@@ -283,7 +283,33 @@
     {
       "id": "r006",
       "type": "numeric",
-      "error": "request to http://localhost:11434/api/generate failed: timed out"
+      "answerable": true,
+      "question": "What was Infosys's free cash flow in FY25, and what percentage of net profit was it?",
+      "reference": "$4.1 bn, the highest ever, at 129% of net profit.",
+      "answer": "",
+      "model": "qwen3:14b",
+      "latency_ms": 190907,
+      "usage": {
+        "prompt_tokens": 4097,
+        "completion_tokens": 2048,
+        "latency_ms": 182015.7,
+        "retrieval_ms": 8888.6
+      },
+      "abstained": false,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 0,
+        "supported": 0,
+        "score": null,
+        "verdicts": []
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer: $4.1 billion and 129% of net profit."
+      }
     },
     {
       "id": "r007",
@@ -1554,7 +1580,33 @@
     {
       "id": "r037",
       "type": "numeric",
-      "error": "request to http://localhost:11434/api/generate failed: timed out"
+      "answerable": true,
+      "question": "What was Infosys's utilization excluding trainees in Q1 FY26?",
+      "reference": "85.2%, up 30 basis points QoQ.",
+      "answer": "",
+      "model": "qwen3:14b",
+      "latency_ms": 187154,
+      "usage": {
+        "prompt_tokens": 4865,
+        "completion_tokens": 2048,
+        "latency_ms": 186188.2,
+        "retrieval_ms": 965.2
+      },
+      "abstained": false,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 0,
+        "supported": 0,
+        "score": null,
+        "verdicts": []
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer matches the reference exactly, stating the same utilization rate (85.2%) and the same increase (30 basis points QoQ)."
+      }
     },
     {
       "id": "r038",
@@ -2043,7 +2095,33 @@
     {
       "id": "r050",
       "type": "numeric",
-      "error": "request to http://localhost:11434/api/generate failed: timed out"
+      "answerable": true,
+      "question": "What was Infosys's FY26 net profit after non-controlling interests in US dollars?",
+      "reference": "$3,313 million, up 4.9% from $3,158 million.",
+      "answer": "",
+      "model": "qwen3:14b",
+      "latency_ms": 186610,
+      "usage": {
+        "prompt_tokens": 4801,
+        "completion_tokens": 2048,
+        "latency_ms": 185626.1,
+        "retrieval_ms": 983.3
+      },
+      "abstained": false,
+      "cited": false,
+      "citation_valid": null,
+      "number_recall": 0.0,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 0,
+        "supported": 0,
+        "score": null,
+        "verdicts": []
+      },
+      "correctness": {
+        "grade": "correct",
+        "reason": "The answer states the same facts and numbers as the reference answer, which is $3,313 million for Infosys's FY26 net profit after non-controlling interests, with a 4.9% increase from $3,158 million."
+      }
     },
     {
       "id": "r051",
@@ -2085,7 +2163,59 @@
     {
       "id": "r052",
       "type": "numeric",
-      "error": "request to http://localhost:11434/api/generate failed: timed out"
+      "answerable": true,
+      "question": "What dividend per share did Infosys declare for FY26 in rupees?",
+      "reference": "Rs 48.00, up 11.6% from Rs 43.00.",
+      "answer": "Infosys declared a dividend per share of INR48 for FY26 [Section: 1 > Page 4]. This total includes the proposed final dividend of INR25 per share, along with the interim dividend and buyback activities [Section: 2 > Page 2]. \n\nAdditionally, the fact sheet confirms the dividend per share for FY26 as INR48.00 [Section: 6 > Page 3].",
+      "model": "qwen3:14b",
+      "latency_ms": 157394,
+      "usage": {
+        "prompt_tokens": 4492,
+        "completion_tokens": 1688,
+        "latency_ms": 156341.9,
+        "retrieval_ms": 1051.1
+      },
+      "abstained": false,
+      "cited": true,
+      "citation_valid": true,
+      "number_recall": 0.3333333333333333,
+      "false_abstain": false,
+      "faithfulness": {
+        "claims": 5,
+        "supported": 4,
+        "score": 0.8,
+        "verdicts": [
+          {
+            "claim": "Infosys declared a dividend per share of INR48 for FY26.",
+            "supported": true,
+            "reason": "The context states: 'Board has proposed a final dividend of INR25 per share which will result in a total dividend of INR48 per share, an increase of 11.6% over last year, once the final dividend is approved by the shareholders.'"
+          },
+          {
+            "claim": "The total includes the proposed final dividend of INR25 per share.",
+            "supported": true,
+            "reason": "The context states: 'Board has proposed a final dividend of INR25 per share which will result in a total dividend of INR48 per share.'"
+          },
+          {
+            "claim": "The total includes the interim dividend.",
+            "supported": true,
+            "reason": "The context states: 'Board has proposed a final dividend of INR25 per share, which along with interim dividend and recently concluded buyback, amounts to over 37,500 crore returned to shareholders for FY26.'"
+          },
+          {
+            "claim": "The total includes buyback activities.",
+            "supported": true,
+            "reason": "The context states: 'Board has proposed a final dividend of INR25 per share, which along with interim dividend and recently concluded buyback, amounts to over 37,500 crore returned to shareholders for FY26.'"
+          },
+          {
+            "claim": "The fact sheet confirms the dividend per share for FY26 as INR48.00.",
+            "supported": false,
+            "reason": "The context does not mention the fact sheet confirming the dividend per share as INR48.00. It only mentions that the fact sheet provides operating metrics."
+          }
+        ]
+      },
+      "correctness": {
+        "grade": "partial",
+        "reason": "The answer mentions the correct dividend per share of INR48.00 for FY26, which matches the reference. However, it also includes additional information about the proposed final dividend, interim dividend, and buyback activities, which are not mentioned in the reference. While this does not contradict the reference, it adds details that are not present in the reference answer, making it a partial match."
+      }
     },
     {
       "id": "r053",
@@ -2656,6 +2786,18 @@
       "cited": false,
       "citation_valid": null,
       "abstain_ok": true
+    }
+  ],
+  "reruns": [
+    {
+      "ids": [
+        "r006",
+        "r037",
+        "r050",
+        "r052"
+      ],
+      "git_sha": "c91cca1",
+      "timestamp": "2026-09-19T12:41:32+00:00"
     }
   ]
 }
