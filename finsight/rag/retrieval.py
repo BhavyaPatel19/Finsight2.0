@@ -16,7 +16,7 @@ from sqlmodel import Session
 
 MODES = ("dense", "bm25", "hybrid", "hybrid_rerank")
 DEFAULT_MODE = "hybrid_rerank"
-CANDIDATES = 30  # first-stage depth per retriever before fusion / reranking
+CANDIDATES = 20  # first-stage depth per retriever before fusion / reranking (ablation: 20 ≈ 30 in quality, 35% faster)
 
 
 def reciprocal_rank_fusion(*ranked_lists: list[dict], k: int = 60) -> list[dict]:

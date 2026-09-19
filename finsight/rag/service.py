@@ -91,6 +91,42 @@ def index_chunks_for_document(session: Session, document_id: int) -> int:
 # On-demand RAG processing
 # ---------------------------------------------------------------------------
 
+_DOC_TYPE_LABELS = {
+    "concall": "earnings call transcript",
+    "press_release": "results press release",
+    "fact_sheet": "results fact sheet",
+    "annual_report": "annual report",
+    "quarterly": "quarterly results",
+    "annual": "annual report",
+}
+
+
+def context_header(doc: Document) -> str:
+    """Document-level context prepended to each chunk *for indexing only*.
+
+    Corpora hold many near-identical filings from different periods; without
+    this, an embedding cannot tell a Q4 FY25 call from a Q4 FY26 call.
+    """
+    parts = [doc.company_name or doc.symbol]
+    if doc.company_name and doc.symbol:
+        parts[0] = f"{doc.company_name} ({doc.symbol})"
+    parts.append(_DOC_TYPE_LABELS.get(doc.doc_type or "", doc.doc_type or "document"))
+    period = " ".join(x for x in (doc.fiscal_quarter, doc.fiscal_year) if x)
+    if period:
+        parts.append(period)
+    return " · ".join(parts)
+
+
+def text_for_index(header: str, chunk: dict) -> str:
+    """What gets embedded / BM25-tokenised: header, section path, then the chunk."""
+    lines = [header]
+    section = chunk.get("section") or ""
+    if section:
+        sub = chunk.get("sub_section") or ""
+        lines.append(f"{section} > {sub}" if sub else section)
+    lines.append(chunk["text"])
+    return "\n".join(lines)
+
 def process_for_rag(session: Session, document_id: int) -> dict:
     """
     On-demand: extract structured text → page-aware chunks → embed → ChromaDB.
@@ -167,9 +203,10 @@ def process_for_rag(session: Session, document_id: int) -> dict:
             session.add(dc)
         session.commit()
 
-        # Embed and index to ChromaDB
+        # Embed (with contextual header) and index to ChromaDB; stored text stays clean.
+        header = context_header(doc)
         texts = [c["text"] for c in chunks]
-        embeddings = embed_documents(texts)
+        embeddings = embed_documents([text_for_index(header, c) for c in chunks])
         ids = [f"doc_{document_id}_chunk_{c['chunk_index']}" for c in chunks]
         metadatas = [{
             "symbol": doc.symbol or "",
@@ -181,6 +218,7 @@ def process_for_rag(session: Session, document_id: int) -> dict:
             "page_number": c.get("page_number", 0),
             "section": c.get("section") or "",
             "sub_section": c.get("sub_section") or "",
+            "context_header": header,
         } for c in chunks]
         add_chunks(ids=ids, texts=texts, metadatas=metadatas, embeddings=embeddings)
 

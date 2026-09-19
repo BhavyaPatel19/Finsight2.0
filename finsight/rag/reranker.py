@@ -14,6 +14,11 @@ def get_reranker():
     return _reranker
 
 
+def _with_header(chunk: dict) -> str:
+    header = (chunk.get("metadata") or {}).get("context_header") or ""
+    return f"{header}\n{chunk['text']}" if header else chunk["text"]
+
+
 def rerank(query: str, candidates: list[dict], top_k: int = 8) -> list[dict]:
     """
     Rerank candidate chunks using cross-encoder.
@@ -24,7 +29,11 @@ def rerank(query: str, candidates: list[dict], top_k: int = 8) -> list[dict]:
         return []
 
     model = get_reranker()
-    pairs = [(query, c["text"][:512]) for c in candidates]  # truncate to 512 chars for speed
+    # Full text: the model truncates at max_length=512 tokens itself. Slicing to
+    # 512 *characters* (~120 tokens) hid the answer for most chunks.
+    # The contextual header (company · doc type · period) is what lets the
+    # cross-encoder tell a Q4 FY25 fact-sheet row from the Q4 FY26 one.
+    pairs = [(query, _with_header(c)) for c in candidates]
 
     try:
         scores = model.predict(pairs, show_progress_bar=False)

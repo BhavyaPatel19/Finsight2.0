@@ -185,7 +185,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--modes", nargs="+", default=list(MODES), choices=list(MODES))
     ap.add_argument("--k", type=int, default=8)
-    ap.add_argument("--candidates", type=int, default=30)
+    ap.add_argument("--candidates", type=int, default=20)
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--tag", default="")
     args = ap.parse_args()

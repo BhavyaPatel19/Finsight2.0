@@ -1,6 +1,6 @@
 """
-In-memory BM25 index built from DocumentChunk rows.
-Rebuilt lazily on first query after invalidation.
+In-memory BM25 index over the chunks in ChromaDB (same ids + metadata as
+dense retrieval). Rebuilt lazily on first query after invalidation.
 """
 import re
 
@@ -12,43 +12,35 @@ def _tokenize(text: str) -> list[str]:
     return re.findall(r'\b\w+\b', text.lower())
 
 
-def build_bm25_index(session) -> None:
-    """Load all DocumentChunk rows from DB and build BM25Okapi index."""
+def build_bm25_index(session=None) -> None:
+    """Build BM25Okapi over the chunks stored in ChromaDB.
+
+    Reading the same collection dense retrieval uses guarantees identical
+    chunk ids and metadata (page_number, section, ...) for both retrievers;
+    the earlier DocumentChunk-based build stored page_number=0 for every
+    BM25 hit, so citations lost their page whenever BM25 found the chunk.
+    """
     global _bm25_index, _bm25_corpus
     from rank_bm25 import BM25Okapi
-    from sqlmodel import select
-    from finsight.models import DocumentChunk, Document
 
-    chunks = list(session.exec(select(DocumentChunk)).all())
-    if not chunks:
+    from finsight.rag.vectorstore import get_collection
+
+    coll = get_collection()
+    got = coll.get(include=["documents", "metadatas"])
+    ids = got.get("ids") or []
+    if not ids:
         _bm25_index = None
         _bm25_corpus = []
         return
 
-    doc_cache: dict[int, Document] = {}
-    corpus = []
-    for chunk in chunks:
-        if chunk.document_id not in doc_cache:
-            doc = session.get(Document, chunk.document_id)
-            doc_cache[chunk.document_id] = doc
-        doc = doc_cache[chunk.document_id]
-        corpus.append({
-            "id": f"doc_{chunk.document_id}_chunk_{chunk.chunk_index}",
-            "text": chunk.text,
-            "metadata": {
-                "document_id": chunk.document_id,
-                "chunk_index": chunk.chunk_index,
-                "symbol": doc.symbol if doc else "",
-                "doc_type": doc.doc_type if doc else "",
-                "fiscal_year": doc.fiscal_year if doc else "",
-                "fiscal_quarter": doc.fiscal_quarter if doc else "",
-                "page_number": 0,
-                "section": "",
-                "sub_section": "",
-            },
-        })
-
-    tokenized = [_tokenize(item["text"]) for item in corpus]
+    corpus = [
+        {"id": cid, "text": text or "", "metadata": dict(meta or {})}
+        for cid, text, meta in zip(ids, got["documents"], got["metadatas"])
+    ]
+    # Index the same contextual header the embeddings saw (company, doc type, period).
+    tokenized = [
+        _tokenize(f"{item['metadata'].get('context_header', '')} {item['text']}") for item in corpus
+    ]
     _bm25_index = BM25Okapi(tokenized)
     _bm25_corpus = corpus
 

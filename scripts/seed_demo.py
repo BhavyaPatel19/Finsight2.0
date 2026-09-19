@@ -93,7 +93,7 @@ def register(session: Session, entry: dict, path: Path) -> Document:
     return doc
 
 
-def seed(session: Session, *, index: bool = True, wtt: bool = False, dest_dir: Path | None = None) -> dict[str, Document]:
+def seed(session: Session, *, index: bool = True, wtt: bool = False, reindex: bool = False, dest_dir: Path | None = None) -> dict[str, Document]:
     """Download + register (+ index) every manifest entry. Returns {key: Document}."""
     dest_dir = dest_dir or Path(config.DOCUMENTS_DIR)
     entries = load_manifest()
@@ -107,9 +107,13 @@ def seed(session: Session, *, index: bool = True, wtt: bool = False, dest_dir: P
         from finsight.rag.service import process_for_rag
 
         for key, doc in docs.items():
-            if doc.status == "indexed":
+            if doc.status == "indexed" and not reindex:
                 logger.info("indexed  %s (already)", key)
                 continue
+            if reindex:
+                doc.status = "pending"
+                session.add(doc)
+                session.commit()
             t0 = time.time()
             result = process_for_rag(session, doc.id)
             logger.info("indexed  %s -> %s in %.1fs", key, {k: v for k, v in result.items() if k != "document_id"}, time.time() - t0)
@@ -129,6 +133,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--no-index", action="store_true", help="download and register only")
     ap.add_argument("--wtt", action="store_true", help="also build Walk-the-Talk chunks")
+    ap.add_argument("--reindex", action="store_true", help="re-chunk and re-embed documents that are already indexed")
     ap.add_argument("--write-hashes", action="store_true", help="record SHA-256 of downloaded files into the manifest")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -137,7 +142,7 @@ def main() -> None:
 
     init_db()
     with Session(engine) as session:
-        docs = seed(session, index=not args.no_index, wtt=args.wtt)
+        docs = seed(session, index=not args.no_index, wtt=args.wtt, reindex=args.reindex)
         paths = {key: Path(doc.pdf_path) for key, doc in docs.items()}
 
     if args.write_hashes:
