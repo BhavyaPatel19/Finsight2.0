@@ -115,6 +115,7 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
     from eval.metrics import cohen_kappa, mean
 
     matched = [r for r in rows if r["matched"]]
+    abstained = [r for r in matched if r["system"] == "UNVERIFIABLE"]
     agree = [r for r in matched if r["system"] == r["human"]]
     kappa = None
     if len(matched) >= 2:
@@ -131,6 +132,10 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
         "matched": len(matched),
         "claim_recall": round(len(matched) / len(rows), 4) if rows else None,
         "verdict_accuracy": round(len(agree) / len(matched), 4) if matched else None,
+        "abstained": len(abstained),
+        "verdict_accuracy_on_answered": round(len(agree) / (len(matched) - len(abstained)), 4)
+        if len(matched) > len(abstained)
+        else None,
         "kappa": kappa,
         "confusion": confusion,
         "system_claims": system_counts,
@@ -139,16 +144,22 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
     }
 
 
-async def run_pair(session, claims_id: int, actuals_id: int) -> tuple[list[dict], dict]:
-    from finsight.credisentiment.pipeline import process_for_credisentiment
-    from finsight.credisentiment.service import walk_the_talk
+async def run_pair(session, claims_id: int, actuals_id: int, engine: str = "v1") -> tuple[list[dict], dict]:
     from finsight.models import Document
 
-    for doc_id in (claims_id, actuals_id):
-        doc = session.get(Document, doc_id)
-        if doc.cs_status != "indexed":
-            process_for_credisentiment(session, doc_id)
-    result = await walk_the_talk(session, claims_id, actuals_id)
+    if engine == "v2":
+        from finsight.verification import verify
+
+        result = await verify(session, claims_id, actuals_id)
+    else:
+        from finsight.credisentiment.pipeline import process_for_credisentiment
+        from finsight.credisentiment.service import walk_the_talk
+
+        for doc_id in (claims_id, actuals_id):
+            doc = session.get(Document, doc_id)
+            if doc.cs_status != "indexed":
+                process_for_credisentiment(session, doc_id)
+        result = await walk_the_talk(session, claims_id, actuals_id)
     if result is None:
         return [], {}
     claims = json.loads(result.claims_json or "[]")
@@ -158,6 +169,9 @@ async def run_pair(session, claims_id: int, actuals_id: int) -> tuple[list[dict]
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tag", default="")
+    ap.add_argument(
+        "--engine", choices=["v1", "v2"], default="v2", help="v1 = credisentiment pipeline, v2 = finsight.verification"
+    )
     args = ap.parse_args()
 
     os.environ.setdefault("SECRET_KEY", "eval")
@@ -178,7 +192,9 @@ def main() -> None:
         for claims_key, actuals_key in pairs:
             label = f"{claims_key} → {actuals_key}"
             print(f"  running {label} …", flush=True)
-            system, meta = asyncio.run(run_pair(session, id_by_key[claims_key], id_by_key[actuals_key]))
+            system, meta = asyncio.run(
+                run_pair(session, id_by_key[claims_key], id_by_key[actuals_key], engine=args.engine)
+            )
             system_counts[label] = len(system)
             pair_meta[label] = meta
             subset = [g for g in gold if (g["claims_doc"], g["actuals_doc"]) == (claims_key, actuals_key)]
@@ -196,6 +212,7 @@ def main() -> None:
         "tag": args.tag,
         "provider": provider.name,
         "model": provider.default_model,
+        "engine": args.engine,
         "summary": summarise(rows, system_counts),
         "pairs": pair_meta,
         "rows": rows,
