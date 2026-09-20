@@ -47,6 +47,13 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def local_file(entry: dict, dest_dir: Path, fmt: str) -> Path:
+    """HTML as downloaded, or the locally rendered PDF (scripts/render_pdfs.py)."""
+    if fmt == "pdf":
+        return dest_dir / "pdf" / (Path(entry["file"]).stem + ".pdf")
+    return dest_dir / entry["file"]
+
+
 def download(entry: dict, dest_dir: Path, client: httpx.Client) -> Path:
     dest = dest_dir / entry["file"]
     if dest.exists() and entry.get("sha256") and sha256(dest) == entry["sha256"]:
@@ -95,7 +102,14 @@ def register(session: Session, entry: dict, path: Path) -> Document:
 
 
 def seed(
-    session: Session, *, index: bool = True, wtt: bool = False, reindex: bool = False, dest_dir: Path | None = None
+    session: Session,
+    *,
+    index: bool = True,
+    wtt: bool = False,
+    reindex: bool = False,
+    dest_dir: Path | None = None,
+    fmt: str = "html",
+    engine: str = "v1",
 ) -> dict[str, Document]:
     """Download + register (+ index) every manifest entry. Returns {key: Document}."""
     dest_dir = dest_dir or Path(config.DOCUMENTS_DIR)
@@ -103,11 +117,15 @@ def seed(
     docs: dict[str, Document] = {}
     with httpx.Client() as client:
         for entry in entries:
-            path = download(entry, dest_dir, client)
+            download(entry, dest_dir, client)
+            path = local_file(entry, dest_dir, fmt)
+            if not path.exists():
+                raise SystemExit(f"{path} missing — run `python -m scripts.render_pdfs` first")
             docs[entry["key"]] = register(session, entry, path)
 
     if index:
         from finsight.rag.service import process_for_rag
+        from finsight.retrieval import index_document
 
         for key, doc in docs.items():
             if doc.status == "indexed" and not reindex:
@@ -118,7 +136,7 @@ def seed(
                 session.add(doc)
                 session.commit()
             t0 = time.time()
-            result = process_for_rag(session, doc.id)
+            result = index_document(session, doc.id, force=True) if engine == "v2" else process_for_rag(session, doc.id)
             logger.info(
                 "indexed  %s -> %s in %.1fs",
                 key,
@@ -142,6 +160,18 @@ def main() -> None:
     ap.add_argument("--no-index", action="store_true", help="download and register only")
     ap.add_argument("--wtt", action="store_true", help="also build Walk-the-Talk chunks")
     ap.add_argument("--reindex", action="store_true", help="re-chunk and re-embed documents that are already indexed")
+    ap.add_argument(
+        "--format",
+        choices=["html", "pdf"],
+        default="html",
+        help="register the HTML exhibits or the locally rendered PDFs",
+    )
+    ap.add_argument(
+        "--engine",
+        choices=["v1", "v2"],
+        default="v1",
+        help="indexing pipeline (v2 = finsight.corpus + finsight.retrieval)",
+    )
     ap.add_argument("--write-hashes", action="store_true", help="record SHA-256 of downloaded files into the manifest")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -150,7 +180,9 @@ def main() -> None:
 
     init_db()
     with Session(engine) as session:
-        docs = seed(session, index=not args.no_index, wtt=args.wtt, reindex=args.reindex)
+        docs = seed(
+            session, index=not args.no_index, wtt=args.wtt, reindex=args.reindex, fmt=args.format, engine=args.engine
+        )
         paths = {key: Path(doc.pdf_path) for key, doc in docs.items()}
 
     if args.write_hashes:

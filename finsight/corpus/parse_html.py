@@ -77,6 +77,21 @@ def _looks_like_layout_table(rows: list[list[str]]) -> bool:
     return sum(len(c) for c in cells) / len(cells) > 60
 
 
+def _push_short(state: dict, value: str) -> None:
+    """Remember the last two short lines before a table: a title and, often, a units line."""
+    if value != state.get("last_short"):
+        state["prev_short"] = state.get("last_short")
+        state["last_short"] = value
+
+
+def _table_title(state: dict) -> str | None:
+    last, prev = state.get("last_short"), state.get("prev_short")
+    units = last and (last.startswith("(") or last.lower().startswith("in ") or len(last) < 12)
+    if last and prev and units:
+        return f"{prev} {last}"
+    return last
+
+
 def parse_html(raw: str, page_chars: int = PAGE_CHARS) -> ParsedDocument:
     from bs4 import BeautifulSoup
 
@@ -86,7 +101,15 @@ def parse_html(raw: str, page_chars: int = PAGE_CHARS) -> ParsedDocument:
 
     elements: list[Element] = []
     labels: list[tuple[str, int, int]] = []
-    state = {"section": None, "speaker": None, "last_short": None, "table_id": 0, "chars": 0, "page": 1}
+    state = {
+        "section": None,
+        "speaker": None,
+        "last_short": None,
+        "prev_short": None,
+        "table_id": 0,
+        "chars": 0,
+        "page": 1,
+    }
 
     def add(kind: str, text: str, **kw) -> None:
         text = _clean(text)
@@ -138,7 +161,7 @@ def parse_html(raw: str, page_chars: int = PAGE_CHARS) -> ParsedDocument:
                             add("speaker_turn" if state["speaker"] else "paragraph", c, speaker=state["speaker"])
                 continue
             state["table_id"] += 1
-            title = state["last_short"]
+            title = _table_title(state)
             header, data_rows = _split_header_rows(rows)
             group = None
             for r in data_rows:
@@ -172,7 +195,7 @@ def parse_html(raw: str, page_chars: int = PAGE_CHARS) -> ParsedDocument:
         if bold_only and name_like and el.name not in ("h1", "h2", "h3", "h4") and not text.endswith((".", "?", "!")):
             label = text.rstrip(":")
             state["speaker"] = label
-            state["last_short"] = label
+            _push_short(state, label)
             labels.append((label, state["page"], len(elements)))
             continue
         if (
@@ -181,15 +204,15 @@ def parse_html(raw: str, page_chars: int = PAGE_CHARS) -> ParsedDocument:
             or (bold_only and text.isupper() and len(text) < 80)
         ):
             state["section"] = text.rstrip(":")
-            state["last_short"] = text.rstrip(":")
+            _push_short(state, text.rstrip(":"))
             add("heading", text)
             continue
         if len(text) < 80 and text.endswith(":"):
-            state["last_short"] = text.rstrip(":")
+            _push_short(state, text.rstrip(":"))
             add("heading", text)
             continue
         if len(text) < 60:
-            state["last_short"] = text.rstrip(":")
+            _push_short(state, text.rstrip(":"))
         add("speaker_turn" if state["speaker"] else "paragraph", text, speaker=state["speaker"])
 
     return ParsedDocument(elements=finalize_speakers(elements, labels), total_pages=max(1, state["page"]))

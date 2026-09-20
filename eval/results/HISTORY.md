@@ -61,3 +61,32 @@ What the run says, reading the system's own explanations:
 - The run first returned **no claims at all**: `WTT_PARALLEL=4` against a single-slot local Ollama queued requests until they timed out. Concurrency now follows the provider. Worth remembering that a pipeline can "work" on a hosted API and fail silently on a local one.
 
 n=12 matched claims is too few to quote κ with confidence; the number is here so the next run (Groq 70B, higher claim cap, UNVERIFIABLE verdict) has something to be compared against.
+
+---
+
+# Redesign branch: ingestion v2 + retrieval v2 (PDF corpus is primary)
+
+Same 64 gold questions; the filings rendered to real PDFs (`documents/pdf/`, `FINSIGHT_CORPUS=pdf`) and the original HTML. "≤6k chars" = evidence inside the first 6,000 characters handed to the LLM (chunk-size-neutral).
+
+| corpus | engine | hit@1 | hit@5 | MRR@8 | nDCG@8 | ≤6k chars | chunk coverage | ms/query | run |
+|---|---|---|---|---|---|---|---|---|---|
+| PDF | old pipeline (v1, base reranker) | 0.688 | 0.875 | 0.771 | 0.788 | 0.859 | 96.9% | 600 | `retrieval_pdf-v1-baseline.json` |
+| PDF | v2, first cut (structured chunks + sentences, base reranker) | 0.672 | 0.859 | 0.746 | 0.760 | 0.875 | 100% | 452 | `retrieval_pdf-v2.json` |
+| PDF | + table titles from page geometry, Q&A context on answer chunks | 0.656 | 0.906 | 0.758 | 0.782 | 0.906 | 100% | 463 | – |
+| PDF | + `bge-reranker-v2-m3`, verbalised rows, table channel | **0.781** | **1.000** | **0.879** | **0.892** | **1.000** | 100% | 1,527 | `retrieval_pdf-v2-k8.json` |
+| PDF | ablation: no table channel | 0.766 | 0.953 | 0.849 | 0.864 | 0.953 | | | same run |
+| PDF | ablation: no period prior | 0.812 | 0.984 | 0.886 | 0.893 | 0.984 | | | same run |
+| PDF | ablation: 15 candidates instead of 20 | 0.781 | 0.984 | 0.871 | 0.882 | | | 1,129 | `retrieval_pdf-v2-pf125-c15.json` |
+| HTML | old pipeline (v1) with m3 reranker | 0.734 | 0.859 | 0.792 | 0.806 | | | 2,123 | `retrieval_html-v1-m3.json` |
+| HTML | v2 | 0.750 | 0.984 | 0.856 | 0.868 | | 100% | 1,520 | `retrieval_html-v2.json` |
+
+What moved the numbers, in order of size:
+
+1. **The reranker was the bottleneck, not the index.** `bge-reranker-base` scored an irrelevant transcript paragraph at 0.69–0.75 as long as it carried the document header, and the correct fact-sheet row at 0.001 without one — it was matching the header, not the content. `bge-reranker-v2-m3` scores the same irrelevant paragraph 0.03 and the row 0.98. Per-question cost ~1 s for 20 candidates on Apple silicon.
+2. **Verbalised table rows.** A row is indexed as `Revenues by Business Segments (in %) — Financial services: Quarter ended Mar 31, 2025 = 28.4; Dec 31, 2024 = 27.8; …` (header:value pairs) instead of `Financial services | 28.4 | 27.8 | …`. The verbatim row is still what the user sees and citations quote.
+3. **A table channel in first-stage retrieval** (dense + BM25 restricted to row/table chunks, 10 each): prose that merely *mentions* "financial services" otherwise crowds every row out of the top-20 before the reranker sees it. +0.047 hit@5.
+4. **Lossless structured ingestion** made the rest possible (chunk coverage 96.9% → 100%) but by itself was a wash on ranking — a fair comparison needs the context-budget view, because the old 1,500-char windows contained more text per hit.
+5. Table titles from page geometry (the two short lines above a table: title + units), and the preceding analyst question attached to an answer chunk's index text (the question carries the vocabulary the answer lacks).
+6. The period prior from the question is small on this corpus (hit@5 0.984 → 1.000, hit@1 −0.03); kept at ×1.25.
+
+Not done / next: embedding-model ablation (bge-base → bge-large / bge-m3), latency work on the reranker (batching, candidate pruning), and the same measurement on a bookmarked 200-page annual report, which this corpus does not contain.

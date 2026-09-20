@@ -15,7 +15,26 @@ import time
 
 from sqlmodel import Session
 
-MODES = ("dense", "bm25", "hybrid", "hybrid_rerank")
+MODES = (
+    "dense",
+    "bm25",
+    "hybrid",
+    "hybrid_rerank",
+    "v2",
+    "v2_chunks",
+    "v2_nosent",
+    "v2_noperiod",
+    "v2_norerank",
+    "v2_notables",
+)
+V2_MODES = {
+    "v2": {},
+    "v2_chunks": {"use_sentences": False, "use_period": False},
+    "v2_nosent": {"use_sentences": False},
+    "v2_noperiod": {"use_period": False},
+    "v2_norerank": {"use_rerank": False},
+    "v2_notables": {"use_tables": False},
+}
 DEFAULT_MODE = "hybrid_rerank"
 CANDIDATES = 20  # first-stage depth per retriever before fusion / reranking (ablation: 20 ≈ 30 in quality, 35% faster)
 
@@ -59,6 +78,14 @@ def retrieve(
     """Return {"chunks": [top_k hits], "timings_ms": {...}, "mode": mode}."""
     if mode not in MODES:
         raise ValueError(f"unknown retrieval mode {mode!r}; expected one of {MODES}")
+    if mode in V2_MODES:
+        from finsight.retrieval.search import retrieve as retrieve_v2
+
+        out = retrieve_v2(
+            session, question, top_k=top_k, document_ids=document_ids, candidates=candidates, **V2_MODES[mode]
+        )
+        out["mode"] = mode
+        return out
 
     from finsight.rag.bm25_store import bm25_search, build_bm25_index, is_built
     from finsight.rag.service import embed_query

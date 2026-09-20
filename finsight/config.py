@@ -10,8 +10,12 @@ PROJECT_ROOT = BASE_DIR.parent
 # Load .env from project root (where you run uvicorn from)
 load_dotenv(PROJECT_ROOT / ".env")
 
+# Evaluation corpora live side by side: FINSIGHT_CORPUS=pdf → finsight_pdf.db + chroma_db_pdf/
+_CORPUS = os.getenv("FINSIGHT_CORPUS", "").strip()
+_SUFFIX = f"_{_CORPUS}" if _CORPUS else ""
+
 # Database
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'finsight.db').as_posix()}")
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / f'finsight{_SUFFIX}.db').as_posix()}")
 
 # JWT — no fallback: a known default key makes every token forgeable.
 SECRET_KEY = os.getenv("SECRET_KEY", "")
@@ -55,11 +59,14 @@ OLLAMA_TIMEOUT_S = float(os.getenv("OLLAMA_TIMEOUT_S", "300"))
 # SEC EDGAR downloads (sample corpus). SEC requires an identifying User-Agent with a contact email.
 EDGAR_USER_AGENT = os.getenv("EDGAR_USER_AGENT", "FinSight research (set EDGAR_USER_AGENT)")
 
-# Embeddings (local, via sentence-transformers)
+# Embeddings and reranker (local, via sentence-transformers)
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
+# v2-m3 (568M) discriminates within a document far better than -base, which mostly matched the
+# chunk header; measured in eval/results/HISTORY.md. ~1 s for 20 candidates on Apple silicon.
+RERANKER_MODEL = os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
 
 # ChromaDB
-CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", str(PROJECT_ROOT / "chroma_db"))
+CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", str(PROJECT_ROOT / f"chroma_db{_SUFFIX}"))
 DOCUMENTS_DIR = PROJECT_ROOT / "documents"  # raw PDFs and extracted text
 
 # Ingestion — legacy (used by old chunk_text)

@@ -32,8 +32,11 @@ RESULTS = ROOT / "eval" / "results"
 
 
 def _norm(s: str) -> str:
-    s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
-    return re.sub(r"\s+", " ", s).strip().lower()
+    """Whitespace/quote/pipe-insensitive; PDF renders the ₹ glyph as '(ru)'/'(Rupee Symbol)', HTML as '( )'."""
+    s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"').replace("\xa0", " ")
+    s = s.replace("|", " ").lower()
+    s = re.sub(r"\(\s*(rupee symbol|ru)?\s*\)", " ", s)
+    return re.sub(r"\s+", " ", s).strip()
 
 
 def load_gold(path: Path = GOLD) -> list[dict]:
@@ -74,17 +77,25 @@ def is_relevant(hit: dict, item: dict, key_by_id: dict[int, str]) -> tuple[bool,
     return evidence, page
 
 
-def corpus_coverage(session, gold: list[dict], key_by_id: dict[int, str]) -> dict:
+def corpus_coverage(session, gold: list[dict], key_by_id: dict[int, str], engine: str = "v1") -> dict:
     """Upper bound: for how many items does *some* chunk contain the evidence?"""
-    from sqlmodel import select
-
-    from finsight.models import DocumentChunk
-
     chunks_by_key: dict[str, list[str]] = {}
-    for c in session.exec(select(DocumentChunk)).all():
-        key = key_by_id.get(c.document_id)
-        if key:
-            chunks_by_key.setdefault(key, []).append(_norm(c.text))
+    if engine == "v2":
+        from finsight.retrieval import all_chunks
+
+        for c in all_chunks():
+            key = key_by_id.get(c["metadata"].get("document_id"))
+            if key:
+                chunks_by_key.setdefault(key, []).append(_norm(c["text"]))
+    else:
+        from sqlmodel import select
+
+        from finsight.models import DocumentChunk
+
+        for c in session.exec(select(DocumentChunk)).all():
+            key = key_by_id.get(c.document_id)
+            if key:
+                chunks_by_key.setdefault(key, []).append(_norm(c.text))
     covered, missing = 0, []
     for item in gold:
         if not item["answerable"]:
@@ -112,12 +123,16 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
             continue
         res = retrieve(session, item["question"], mode=mode, top_k=k, candidates=candidates)
         rels, pages, docs_hit = [], [], set()
+        chars_before_hit, cum = None, 0
         for hit in res["chunks"]:
             ev, pg = is_relevant(hit, item, key_by_id)
             rels.append(int(ev))
             pages.append(int(pg))
             if ev:
                 docs_hit.add(key_by_id.get(hit["metadata"].get("document_id")))
+                if chars_before_hit is None:
+                    chars_before_hit = cum + len(hit.get("text", ""))
+            cum += len(hit.get("text", ""))
         n_gold_docs = len(item["docs"])
         per_q.append(
             {
@@ -133,6 +148,10 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
                 "page_hit@5": hit_at_k(pages, 5),
                 "docs_covered": len(docs_hit) / n_gold_docs if n_gold_docs else 0.0,
                 "first_rank": (rels.index(1) + 1) if 1 in rels else None,
+                # context-budget view: is the evidence inside the first N characters handed to the LLM?
+                "hit@6k": 1.0 if chars_before_hit is not None and chars_before_hit <= 6000 else 0.0,
+                "hit@12k": 1.0 if chars_before_hit is not None and chars_before_hit <= 12000 else 0.0,
+                "context_chars": cum,
             }
         )
         for stage, ms in res["timings_ms"].items():
@@ -156,6 +175,9 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
         "ndcg": agg("ndcg"),
         "p@5": agg("p@5"),
         "page_hit@5": agg("page_hit@5"),
+        "hit@6k": agg("hit@6k"),
+        "hit@12k": agg("hit@12k"),
+        "context_chars_mean": round(mean([q["context_chars"] for q in per_q])),
         "cross_doc_docs_covered": agg("docs_covered", "cross_doc") if "cross_doc" in types else None,
         "by_type": {
             t: {"n": sum(1 for q in per_q if q["type"] == t), "hit@5": agg("hit@5", t), "mrr": agg("rr", t)}
@@ -179,13 +201,14 @@ def write_markdown(report: dict, path: Path) -> None:
         "",
         f"Embeddings `{report['embedding_model']}` · reranker `{report['reranker']}` · first stage top-{report['candidates']} → top-{k}",
         "",
-        f"| mode | hit@1 | hit@3 | hit@5 | hit@{k} | MRR@{k} | nDCG@{k} | P@5 | latency (ms) |",
-        "|---|---|---|---|---|---|---|---|---|",
+        f"| mode | hit@1 | hit@3 | hit@5 | hit@{k} | MRR@{k} | nDCG@{k} | hit@6k chars | hit@12k chars | ctx chars | latency (ms) |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for m, r in modes.items():
         lines.append(
             f"| {m} | {r['hit@1']:.3f} | {r['hit@3']:.3f} | {r['hit@5']:.3f} | {r[f'hit@{k}']:.3f} | "
-            f"{r['mrr']:.3f} | {r['ndcg']:.3f} | {r['p@5']:.3f} | {r['latency_ms'].get('total', 0):.0f} |"
+            f"{r['mrr']:.3f} | {r['ndcg']:.3f} | {r.get('hit@6k', 0):.3f} | {r.get('hit@12k', 0):.3f} | "
+            f"{r.get('context_chars_mean', 0)} | {r['latency_ms'].get('total', 0):.0f} |"
         )
     lines += [
         "",
@@ -233,13 +256,19 @@ def main() -> None:
     from finsight.database.session import engine
     from finsight.models import DocumentChunk
 
+    eng = "v2" if all(m.startswith("v2") for m in args.modes) else "v1"
     gold = load_gold(args.gold)
     with Session(engine) as session:
         key_by_id = doc_key_by_id(session)
         if not key_by_id:
             raise SystemExit("no seeded documents found — run `python -m scripts.seed_demo` first")
-        n_chunks = len(session.exec(select(DocumentChunk)).all())
-        coverage = corpus_coverage(session, gold, key_by_id)
+        if eng == "v2":
+            from finsight.retrieval import all_chunks
+
+            n_chunks = len(all_chunks())
+        else:
+            n_chunks = len(session.exec(select(DocumentChunk)).all())
+        coverage = corpus_coverage(session, gold, key_by_id, engine=eng)
         print(f"corpus: {len(key_by_id)} docs, {n_chunks} chunks · coverage {coverage['coverage']:.1%}")
 
         modes: dict[str, dict] = {}
@@ -263,8 +292,13 @@ def main() -> None:
         "k": args.k,
         "candidates": args.candidates,
         "embedding_model": config.EMBEDDING_MODEL,
-        "reranker": "BAAI/bge-reranker-base",
-        "corpus": {"documents": len(key_by_id), "chunks": n_chunks},
+        "reranker": config.RERANKER_MODEL,
+        "corpus": {
+            "documents": len(key_by_id),
+            "chunks": n_chunks,
+            "format": os.getenv("FINSIGHT_CORPUS") or "html",
+            "engine": eng,
+        },
         "coverage": coverage,
         "modes": modes,
     }

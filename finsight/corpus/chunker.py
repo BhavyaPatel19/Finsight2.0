@@ -21,6 +21,7 @@ from finsight.corpus.elements import Element
 MAX_CHARS = 1200  # prose chunk target
 MIN_CHARS = 300  # merge short paragraphs up to at least this
 TABLE_GROUP_ROWS = 12
+QUESTION_MAX_CHARS = 500  # a turn this short before an answer is treated as the question it answers
 
 # Sentence boundary: terminal punctuation followed by whitespace and an upper-case/quote/digit start,
 # not after common financial abbreviations.
@@ -67,6 +68,25 @@ class Chunk:
     chunk_index: int = -1
 
 
+def verbalize_row(el: Element) -> str:
+    """'Financial services | 28.4 | 27.8' + header → 'Financial services: Mar 31, 2025 = 28.4; Dec 31, 2024 = 27.8'.
+    Pairing each value with its column header is what makes a table row match a question."""
+    cells = [c.strip() for c in el.text.split(" | ")]
+    header = [h.strip() for h in (el.table_header or [])]
+    if len(cells) < 2:
+        return el.text
+    label, values = cells[0], cells[1:]
+    cols = [h for h in header if h] if header else []
+    if cols and len(cols) == len(cells):  # header includes a label column
+        cols = cols[1:]
+    if cols and len(cols) >= len(values):
+        pairs = "; ".join(f"{c} = {v}" for c, v in zip(cols, values, strict=False))
+    else:
+        pairs = "; ".join(values)
+    prefix = " — ".join(x for x in (el.table_title, el.table_group) if x)
+    return f"{prefix} — {label}: {pairs}" if prefix else f"{label}: {pairs}"
+
+
 def _with_context(header: str, context: str | None, text: str) -> str:
     lines = [header] if header else []
     if context:
@@ -79,14 +99,20 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
     chunks: list[Chunk] = []
 
     def emit(
-        text: str, kind: str, first: Element, orders: list[int], sentences: list[str], context: str | None
+        text: str,
+        kind: str,
+        first: Element,
+        orders: list[int],
+        sentences: list[str],
+        context: str | None,
+        index_body: str | None = None,
     ) -> None:
         sec = f"{first.section}" if first.section else None
         ctx_lines = [x for x in (sec, context) if x]
         chunks.append(
             Chunk(
                 text=text,
-                index_text=_with_context(header, "\n".join(ctx_lines) or None, text),
+                index_text=_with_context(header, "\n".join(ctx_lines) or None, index_body or text),
                 kind=kind,
                 page=first.page,
                 section=first.section,
@@ -99,6 +125,7 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
     # ---- prose runs: consecutive paragraph/speaker_turn/heading elements with the same speaker ----
     i = 0
     n = len(elements)
+    last_question: str | None = None  # short preceding turn by another speaker (an analyst's question)
     while i < n:
         el = elements[i]
         if el.kind == "table_row":
@@ -109,7 +136,8 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
                 rows.append(elements[j])
                 j += 1
             for r in rows:
-                emit(r.text, "row", r, [r.order], [r.text], r.context_line)
+                # verbatim text for citations; the verbalised form (header:value pairs) is what gets indexed
+                emit(r.text, "row", r, [r.order], [r.text], None, index_body=verbalize_row(r))
             for k in range(0, len(rows), TABLE_GROUP_ROWS):
                 grp = rows[k : k + TABLE_GROUP_ROWS]
                 text = "\n".join(r.text for r in grp)
@@ -128,7 +156,13 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
         ):
             run.append(elements[j])
             j += 1
-        _emit_prose_run(run, max_chars, emit)
+        question_ctx = last_question if run and run[0].kind == "speaker_turn" else None
+        _emit_prose_run(run, max_chars, emit, question_ctx)
+        run_text = " ".join(e.text for e in run)
+        if run and run[0].kind == "speaker_turn" and len(run_text) <= QUESTION_MAX_CHARS:
+            last_question = f"{run[0].speaker}: {run_text}" if run[0].speaker else run_text
+        else:
+            last_question = None
         i = j
 
     for idx, c in enumerate(chunks):
@@ -136,7 +170,7 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
     return chunks
 
 
-def _emit_prose_run(run: list[Element], max_chars: int, emit) -> None:
+def _emit_prose_run(run: list[Element], max_chars: int, emit, question_ctx: str | None = None) -> None:
     """Pack a run of same-speaker prose into sentence-bounded chunks with one-sentence overlap."""
     sents: list[tuple[str, Element]] = []
     for el in run:
@@ -145,6 +179,8 @@ def _emit_prose_run(run: list[Element], max_chars: int, emit) -> None:
     if not sents:
         return
     context = run[0].context_line if run[0].kind == "speaker_turn" else None
+    if question_ctx and run[0].kind == "speaker_turn" and question_ctx.split(":")[0] != run[0].speaker:
+        context = f"[in reply to] {question_ctx}\n{context}" if context else f"[in reply to] {question_ctx}"
 
     start = 0
     while start < len(sents):

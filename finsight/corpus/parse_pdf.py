@@ -64,6 +64,21 @@ def _outline_sections(doc) -> list[tuple[int, str]]:
     return sorted((page, _clean(title)) for level, title, page in (doc.get_toc() or []) if level <= 2 and page > 0)
 
 
+def _push_short(state: dict, value: str) -> None:
+    """Remember the last two short lines before a table: a title and, often, a units line."""
+    if value != state.get("last_short"):
+        state["prev_short"] = state.get("last_short")
+        state["last_short"] = value
+
+
+def _table_title(state: dict) -> str | None:
+    last, prev = state.get("last_short"), state.get("prev_short")
+    units = last and (last.startswith("(") or last.lower().startswith("in ") or len(last) < 12)
+    if last and prev and units:
+        return f"{prev} {last}"
+    return last
+
+
 def parse_pdf(path: str) -> ParsedDocument:
     import fitz
 
@@ -73,7 +88,14 @@ def parse_pdf(path: str) -> ParsedDocument:
     outline = _outline_sections(doc)
     elements: list[Element] = []
     labels: list[tuple[str, int, int]] = []  # (label, page, order of the next element)
-    state = {"speaker": None, "section": None, "last_short": None, "table_id": 0, "pending_marker": None}
+    state = {
+        "speaker": None,
+        "section": None,
+        "last_short": None,
+        "prev_short": None,
+        "table_id": 0,
+        "pending_marker": None,
+    }
 
     def section_for(page: int) -> str | None:
         current = state["section"]
@@ -96,6 +118,22 @@ def parse_pdf(path: str) -> ParsedDocument:
         pg = pno + 1
         h = page.rect.height
         table_boxes = []
+        text_blocks = [b for b in page.get_text("dict")["blocks"] if b.get("type", 0) == 0]
+
+        def title_above(bbox, text_blocks=text_blocks) -> str | None:
+            """Up to two short text lines directly above the table: a title and often a units line."""
+            x0, y0, x1, _ = bbox
+            cands = []
+            for b in text_blocks:
+                bx0, by0, bx1, by1 = b["bbox"]
+                if by1 <= y0 + 2 and y0 - by1 < 70 and bx1 > x0 and bx0 < x1:
+                    t = _block_text(b)
+                    if t and len(t) < 90 and not _MARKER.match(t):
+                        cands.append((by1, t))
+            cands.sort(reverse=True)
+            picked = [t for _, t in cands[:2]]
+            return " ".join(reversed(picked)).rstrip(":") if picked else None
+
         try:
             for t in page.find_tables().tables:
                 rows = [[_clean(c or "") for c in r] for r in t.extract()]
@@ -104,6 +142,7 @@ def parse_pdf(path: str) -> ParsedDocument:
                     continue
                 table_boxes.append(fitz.Rect(t.bbox))
                 state["table_id"] += 1
+                title = title_above(t.bbox)
                 header, data_rows = _split_header_rows(rows)
                 group = None
                 for r in data_rows:
@@ -116,14 +155,14 @@ def parse_pdf(path: str) -> ParsedDocument:
                         " | ".join(cells),
                         pg,
                         table_id=state["table_id"],
-                        table_title=state["last_short"],
+                        table_title=title,
                         table_group=group,
                         table_header=header,
                     )
         except Exception:  # find_tables is best-effort across versions/layouts
             pass
 
-        blocks = page.get_text("dict")["blocks"]
+        blocks = text_blocks
         sizes = [s["size"] for b in blocks for line in b.get("lines", []) for s in line["spans"] if s["text"].strip()]
         body_size = sorted(sizes)[len(sizes) // 2] if sizes else 10.0
 
@@ -160,7 +199,7 @@ def parse_pdf(path: str) -> ParsedDocument:
                     and _SPEAKER_TEXT.match(first_text)
                 ):
                     state["speaker"] = first_text
-                    state["last_short"] = first_text
+                    _push_short(state, first_text)
                     labels.append((first_text, pg, len(elements)))
                     add(
                         "speaker_turn",
@@ -176,7 +215,7 @@ def parse_pdf(path: str) -> ParsedDocument:
             m = _SPEAKER_COLON.match(text)
             if m and len(m.group("name")) <= 40 and (all_bold or single_line or len(text) < 200):
                 state["speaker"] = m.group("name")
-                state["last_short"] = m.group("name")
+                _push_short(state, m.group("name"))
                 add("speaker_turn", m.group("rest"), pg, speaker=state["speaker"])
                 continue
             if (
@@ -187,7 +226,7 @@ def parse_pdf(path: str) -> ParsedDocument:
                 and not text.endswith((".", "?", "!", ":"))
             ):
                 state["speaker"] = text
-                state["last_short"] = text
+                _push_short(state, text)
                 labels.append((text, pg, len(elements)))
                 continue
             is_heading = (
@@ -195,11 +234,11 @@ def parse_pdf(path: str) -> ParsedDocument:
             ) or (len(text) < 80 and text.endswith(":"))
             if is_heading:
                 state["section"] = text.rstrip(":")
-                state["last_short"] = text.rstrip(":")
+                _push_short(state, text.rstrip(":"))
                 add("heading", text, pg)
                 continue
             if len(text) < 60:
-                state["last_short"] = text.rstrip(":")
+                _push_short(state, text.rstrip(":"))
             add("speaker_turn" if state["speaker"] else "paragraph", text, pg, speaker=state["speaker"])
 
     doc.close()

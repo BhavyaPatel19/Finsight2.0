@@ -1,6 +1,6 @@
 """
-Cross-encoder reranker using BAAI/bge-reranker-base.
-~275MB on VRAM. Loaded lazily on first use.
+Cross-encoder reranker (config.RERANKER_MODEL, default BAAI/bge-reranker-v2-m3).
+Loaded lazily on first use.
 """
 
 _reranker = None
@@ -11,7 +11,9 @@ def get_reranker():
     if _reranker is None:
         from sentence_transformers import CrossEncoder
 
-        _reranker = CrossEncoder("BAAI/bge-reranker-base", max_length=512)
+        from finsight.config import RERANKER_MODEL
+
+        _reranker = CrossEncoder(RERANKER_MODEL, max_length=512)
     return _reranker
 
 
