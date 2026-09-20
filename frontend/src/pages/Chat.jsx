@@ -187,6 +187,7 @@ export default function Chat() {
         role: 'ai',
         text: r.data.answer,
         sources: r.data.sources ?? [],
+        evidence: r.data.evidence ?? [],
         navigations: r.data.navigations ?? [],
         thinking: r.data.thinking ?? null,
         modelUsed: r.data.model_used ?? '',
@@ -439,6 +440,19 @@ export default function Chat() {
                           )}
                           {msg.thinking && (
                             <div style={{ paddingLeft: 38 }}><ThinkingPanel thinking={msg.thinking} /></div>
+                          )}
+                          {msg.evidence?.length > 0 && (
+                            <div className="chat-evidence" style={{ margin: '8px 0 4px', fontSize: 12, color: 'var(--text-muted)' }}>
+                              <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                                Evidence · {msg.evidence.filter(e => e.verified).length}/{msg.evidence.length} quotes found verbatim in the excerpts
+                              </div>
+                              {msg.evidence.map((e, i) => (
+                                <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                                  <span title={e.verified ? 'verified in the retrieved text' : 'NOT found in the retrieved text'}>{e.verified ? '✓' : '✗'}</span>
+                                  <span style={{ fontStyle: 'italic' }}>“{e.quote}”</span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                           {msg.sources?.length > 0 && (
                             <div className="chat-sources-row">

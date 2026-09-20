@@ -306,22 +306,67 @@ def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
 # Strict grounding prompt
 # ---------------------------------------------------------------------------
 
-FINANCIAL_RAG_PROMPT = """You are a financial analyst assistant. Your ONLY job is to answer questions using the document excerpts provided below.
+FINANCIAL_RAG_PROMPT = """You are a financial analyst assistant. Answer the question using ONLY the excerpts below.
 
-STRICT RULES:
-1. Answer ONLY using information present in the context below. Do not use any external knowledge.
-2. Quote numbers EXACTLY as they appear in the source. Do not round or paraphrase figures.
-3. For every fact you state, cite the source using this format: [Section: <section> > Page <page>]
-4. If the information is not found in the context, respond with exactly: "Not found in the selected documents."
-5. State units exactly as written in the source (crores, millions, %, basis points, etc.).
+RULES
+1. Use only the excerpts. No outside knowledge, no inference beyond what they state.
+2. Copy numbers and units exactly as written (crores, millions, %, basis points).
+3. Every fact carries a citation in this exact form: [<document type> <period>, Page <n>] — e.g. [earnings call transcript Q4 FY25, Page 3].
+4. If the excerpts do not contain the answer, the ANSWER line is exactly: Not found in the selected documents.
+5. Excerpts from different periods can look alike; check the period in each excerpt header before using it.
 
-Context ({n} sections from {doc_count} document(s)):
+FORMAT — two sections, nothing else:
+EVIDENCE:
+- "<verbatim sentence or table row copied from an excerpt>" [citation]
+- (1–4 lines; leave empty if nothing relevant)
+ANSWER:
+<1–3 sentences answering the question, each fact cited>
+
+EXCERPTS ({n} from {doc_count} document(s)):
 
 {context}
 
-Question: {question}
+QUESTION: {question}"""
 
-Answer with citations:"""
+
+_EVIDENCE_LINE = re.compile(r'^\s*[-•]\s*["“]?(.+?)["”]?\s*(\[[^\]]*\])?\s*$')
+
+
+def parse_answer(raw: str) -> tuple[str, list[str]]:
+    """Split the model output into (answer, [evidence quotes]). Tolerates missing sections."""
+    text = raw.strip()
+    m = re.search(r"EVIDENCE:\s*(.*?)\n\s*ANSWER:\s*(.*)$", text, re.S | re.I)
+    if not m:
+        m2 = re.search(r"ANSWER:\s*(.*)$", text, re.S | re.I)
+        return (m2.group(1).strip() if m2 else text), []
+    quotes = []
+    for line in m.group(1).splitlines():
+        lm = _EVIDENCE_LINE.match(line)
+        if lm and lm.group(1).strip() and not lm.group(1).strip().startswith("("):
+            quotes.append(lm.group(1).strip().strip('"“”'))
+    return m.group(2).strip(), quotes
+
+
+def verify_quotes(quotes: list[str], context_texts: list[str]) -> list[dict]:
+    """Each quote is checked as a normalised substring of some retrieved chunk."""
+
+    def norm(t: str) -> str:
+        t = (
+            t.replace("\u2019", "'")
+            .replace("\u201c", '"')
+            .replace("\u201d", '"')
+            .replace("|", " ")
+            .replace("\xa0", " ")
+        )
+        return re.sub(r"\s+", " ", t).strip().lower()
+
+    ctx = [norm(c) for c in context_texts]
+    out = []
+    for q in quotes:
+        nq = norm(q)
+        found = bool(nq) and any(nq in c for c in ctx)
+        out.append({"quote": q, "verified": found})
+    return out
 
 
 def _build_section_context(chunks: list[dict]) -> str:
@@ -337,13 +382,12 @@ def _build_section_context(chunks: list[dict]) -> str:
         fy = meta.get("fiscal_year", "")
 
         header = f"[{i + 1}]"
-        if symbol:
-            header += f" {symbol}"
         speaker = meta.get("speaker", "")
-        if doc_type:
-            header += f" · {doc_type}"
-        if fy:
-            header += f" · {fy}"
+        label = _DOC_TYPE_LABELS.get(doc_type or "", doc_type or "document")
+        period = " ".join(x for x in (meta.get("fiscal_quarter", ""), fy) if x)
+        header += f" {label} {period}".rstrip()
+        if symbol:
+            header += f" ({symbol})"
         if section:
             header += f" | {section}"
             if sub_section:
@@ -407,8 +451,11 @@ def answer_question(
     response = generate(prompt, model=model, max_tokens=2048, temperature=0.0)
     model_name = response.model
 
-    # 9. Parse thinking trace (reasoning models wrap it in <think> tags)
-    answer, thinking = _parse_deepseek_thinking(response.text)
+    # 9. Parse thinking trace (reasoning models wrap it in <think> tags), then EVIDENCE / ANSWER
+    raw, thinking = _parse_deepseek_thinking(response.text)
+    answer, quotes = parse_answer(raw)
+    context_texts = [c.get("text", "") for c in top_chunks]
+    evidence = verify_quotes(quotes, context_texts)
 
     # 10. Build navigation breadcrumbs (deduplicated)
     navigations = []
@@ -454,7 +501,8 @@ def answer_question(
         "thinking": thinking,
         "navigations": navigations,
         "sources": sources,
-        "context": [c.get("text", "") for c in top_chunks],  # full chunk texts (eval/judge; not in the API response)
+        "context": context_texts,  # full chunk texts (eval/judge; not in the API response)
+        "evidence": evidence,  # [{quote, verified}] — quotes the model copied, checked against the excerpts
         "model_used": model_name,
         "usage": {
             "prompt_tokens": response.prompt_tokens,

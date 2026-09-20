@@ -34,12 +34,18 @@ class RAGSource(BaseModel):
     snippet: str | None = None
 
 
+class EvidenceQuote(BaseModel):
+    quote: str
+    verified: bool
+
+
 class RAGQueryResponse(BaseModel):
     answer: str
     thinking: str | None = None
     navigations: list[NavigationStep] = []
     sources: list[RAGSource] = []
     model_used: str = ""
+    evidence: list[EvidenceQuote] = []
 
 
 class PrepareResponse(BaseModel):

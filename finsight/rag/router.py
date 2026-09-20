@@ -8,6 +8,7 @@ from finsight.llm import LLMError
 from finsight.models import User
 from finsight.rag.schemas import (
     AvailableDocument,
+    EvidenceQuote,
     NavigationStep,
     PrepareRequest,
     PrepareResponse,
@@ -95,4 +96,5 @@ def rag_query(
         navigations=[NavigationStep(**n) for n in result.get("navigations", [])],
         sources=[RAGSource(**s) for s in result.get("sources", [])],
         model_used=result.get("model_used", ""),
+        evidence=[EvidenceQuote(**e) for e in result.get("evidence", [])],
     )
