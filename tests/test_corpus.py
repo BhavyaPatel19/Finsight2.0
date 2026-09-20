@@ -189,3 +189,87 @@ class TestPdfTablesAcrossPages:
         assert row.text == "Gross profit | 1,428 | 5,872", "verbatim text is untouched (citations)"
         assert row.display_text == v, "the answerer sees the verbalised form"
         assert table.display_text and "Revenues: 3 months ended March 31, 2025 = 4,730" in table.display_text
+
+
+class TestIndianIrTranscripts:
+    """Tata Steel's transcripts label speakers as 'Name: Role – Company' or 'Name, Firm' in bold,
+    and PyMuPDF often glues the label onto the end of the previous speaker's block."""
+
+    def test_role_and_firm_labels_and_mid_block_split(self, tmp_path):
+        import fitz
+
+        path = tmp_path / "ts.pdf"
+        doc = fitz.open()
+        page = doc.new_page()
+        y = 80
+        page.insert_text((40, y), "Operator:", fontname="hebo", fontsize=10)
+        y += 14
+        page.insert_text(
+            (40, y), "Ladies and gentlemen, welcome to the Tata Steel analyst call.", fontname="helv", fontsize=10
+        )
+        y += 14  # label immediately after the text: same block in the text layer
+        page.insert_text((40, y), "Koushik Chatterjee: ED & CFO - Tata Steel Limited", fontname="hebo", fontsize=10)
+        y += 14
+        page.insert_text(
+            (40, y),
+            "Thank you, Naren. Consolidated EBITDA was Rs 6,762 crores for the quarter.",
+            fontname="helv",
+            fontsize=10,
+        )
+        y += 14
+        page.insert_text((40, y), "Amit Dixit, ICICI Securities", fontname="hebo", fontsize=10)
+        y += 14
+        page.insert_text(
+            (40, y), "Could you tell us the volume guidance for India for FY2026?", fontname="helv", fontsize=10
+        )
+        y += 14
+        page.insert_text((40, y), "Koushik Chatterjee: ED & CFO - Tata Steel Limited", fontname="hebo", fontsize=10)
+        y += 14
+        page.insert_text(
+            (40, y),
+            "We expect about 1.5 million tonnes of incremental volume from Kalinganagar.",
+            fontname="helv",
+            fontsize=10,
+        )
+        y += 14
+        page.insert_text((40, y), "Operator:", fontname="hebo", fontsize=10)
+        y += 14
+        page.insert_text((40, y), "Thank you. That concludes the call.", fontname="helv", fontsize=10)
+        doc.save(path)
+        doc.close()
+
+        parsed = parse_document(path)
+        turns = [(e.speaker, e.text) for e in parsed.elements if e.kind == "speaker_turn"]
+        assert [s for s, _ in turns] == [
+            "Operator",
+            "Koushik Chatterjee",
+            "Amit Dixit",
+            "Koushik Chatterjee",
+            "Operator",
+        ]
+        assert turns[1][1].startswith("Thank you, Naren.") and turns[2][1].startswith("Could you tell us")
+        assert not any("ED & CFO" in t for _, t in turns), "the role on the label line is not part of the turn"
+
+    def test_report_captions_are_not_speakers(self):
+        from finsight.corpus.parse_pdf import _label_name
+
+        assert _label_name("Koushik Chatterjee: ED & CFO – Tata Steel Limited") == "Koushik Chatterjee"
+        assert _label_name("Amit Dixit, ICICI Securities") == "Amit Dixit"
+        assert _label_name("Operator:") == "Operator"
+        assert _label_name("Salil Parekh") == "Salil Parekh"
+        for caption in ("NOTES", "Amount", "Total", "CORPORATE PARTICIPANTS", "Deferred tax:"):
+            assert _label_name(caption) is None, caption
+
+    def test_dialogue_gate_rejects_a_report_sized_cast(self):
+        from finsight.corpus.elements import Element
+        from finsight.corpus.structure import finalize_speakers
+
+        # 80 distinct bold Title-Case captions, each heading two blocks: an annual report, not a call
+        els, labels = [], []
+        for i in range(80):
+            name = f"Caption Number{i}"
+            labels.append((name, 1, len(els)))
+            for _ in range(2):
+                els.append(Element(kind="speaker_turn", text=f"text {i}", order=len(els), page=1, speaker=name))
+        out = finalize_speakers(els, labels)
+        assert not any(e.speaker for e in out) and sum(1 for e in out if e.kind == "heading") == 80

@@ -8,6 +8,8 @@ from finsight.corpus.elements import Element
 
 MIN_DISTINCT = 3  # at least this many distinct labels …
 MIN_REPEATING = 2  # … of which at least this many open ≥2 turns → the document is a dialogue
+MAX_DISTINCT = 60  # more distinct labels than any call has participants
+MIN_REPEATING_SHARE = 0.5  # in a call most labels recur; in a report most bold lines appear once
 
 
 def finalize_speakers(elements: list[Element], labels: list[tuple[str, int, int]]) -> list[Element]:
@@ -28,7 +30,13 @@ def finalize_speakers(elements: list[Element], labels: list[tuple[str, int, int]
             turns_per_speaker[el.speaker] += 1
         prev = el.speaker
     repeating = sum(1 for n in turns_per_speaker.values() if n >= 2)
-    is_transcript = len(turns_per_speaker) >= MIN_DISTINCT and repeating >= MIN_REPEATING
+    # A call has a cast of a few dozen at most; an annual report has thousands of bold
+    # Title-Case lines ("Deferred Tax", "Total Assets") that each head a block or two.
+    is_transcript = (
+        MIN_DISTINCT <= len(turns_per_speaker) <= MAX_DISTINCT
+        and repeating >= MIN_REPEATING
+        and repeating / len(turns_per_speaker) >= MIN_REPEATING_SHARE
+    )
     if is_transcript:
         return elements
 

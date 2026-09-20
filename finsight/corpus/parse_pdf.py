@@ -23,6 +23,24 @@ from finsight.corpus.structure import finalize_speakers
 
 _MARKER = re.compile(r"^(\d{1,2}[.)]|[-•·▪o§])$")
 _SPEAKER_TEXT = re.compile(r"^[A-Z][A-Za-z.'\-]+(?: [A-Z][A-Za-z.'\-]+){0,3}$")
+# "Koushik Chatterjee: ED & CFO – Tata Steel Limited" / "Amit Dixit: ICICI Securities" / "Operator:" — a bold
+# label line carrying the name, a colon and optionally the speaker's role or firm (Indian IR transcripts)
+# "Name: role", "Name, Firm" (analysts) or "Name:" — the separator after the name is a colon or a comma
+_SPEAKER_LABEL = re.compile(
+    r"^(?P<name>[A-Z][A-Za-z.'\-]+(?: [A-Z][A-Za-z.'\-]+){0,3}|Moderator|Operator|Host)\s*[:,](?:\s*(?P<role>[^:]{0,90}))?$"
+)
+
+
+def _label_name(text: str) -> str | None:
+    """The speaker a bold label line names, or None ("CORPORATE PARTICIPANTS" is a heading, not a person)."""
+    if text.isupper() and len(text) > 1:
+        return None  # "NOTES", "CORPORATE PARTICIPANTS"
+    if _SPEAKER_TEXT.match(text) and (" " in text or text in ("Moderator", "Operator", "Host")):
+        return text  # people have two names; "Amount" / "Total" are table captions
+    m = _SPEAKER_LABEL.match(text)
+    return m.group("name") if m else None
+
+
 _SPEAKER_COLON = re.compile(
     r"^(?P<name>[A-Z][A-Za-z.'\-]+(?: [A-Z][A-Za-z.'\-]+){0,3}|Moderator|Operator|Host)\s*:\s*(?P<rest>.+)$", re.S
 )
@@ -213,27 +231,45 @@ def parse_pdf(path: str) -> ParsedDocument:
             lines = block.get("lines", [])
             single_line = len(lines) == 1
 
+            # A bold label line anywhere in the block ("Koushik Chatterjee: ED & CFO – …" as the last line of the
+            # previous speaker's block is how some transcripts come out of the PDF): split the block there.
+            if len(lines) > 1:
+                cuts = []
+                for li, line in enumerate(lines):
+                    ls = [s for s in line["spans"] if s["text"].strip()]
+                    lt = _clean("".join(s["text"] for s in ls))
+                    if ls and all(_is_bold(s) for s in ls) and lt and len(lt) <= 100 and _label_name(lt):
+                        cuts.append((li, _label_name(lt)))
+                if cuts:
+                    start = 0
+                    for li, name in cuts:
+                        seg = _clean("\n".join("".join(s["text"] for s in line["spans"]) for line in lines[start:li]))
+                        if seg:
+                            add("speaker_turn" if state["speaker"] else "paragraph", seg, pg, speaker=state["speaker"])
+                        state["speaker"] = name
+                        _push_short(state, name)
+                        labels.append((name, pg, len(elements)))
+                        start = li + 1
+                    tail = _clean("\n".join("".join(s["text"] for s in line["spans"]) for line in lines[start:]))
+                    if tail:
+                        add("speaker_turn", tail, pg, speaker=state["speaker"])
+                    continue
+
             # "Name" in bold on the first line, the turn's text on the following lines of the same block
             if len(lines) > 1:
                 first = [s for s in lines[0]["spans"] if s["text"].strip()]
                 rest = [s for line in lines[1:] for s in line["spans"] if s["text"].strip()]
                 first_text = _clean("".join(s["text"] for s in first))
-                if (
-                    first
-                    and all(_is_bold(s) for s in first)
-                    and rest
-                    and not all(_is_bold(s) for s in rest)
-                    and len(first_text) <= 60
-                    and _SPEAKER_TEXT.match(first_text)
-                ):
-                    state["speaker"] = first_text
-                    _push_short(state, first_text)
-                    labels.append((first_text, pg, len(elements)))
+                name = _label_name(first_text) if first_text and len(first_text) <= 100 else None
+                if first and all(_is_bold(s) for s in first) and rest and not all(_is_bold(s) for s in rest) and name:
+                    state["speaker"] = name
+                    _push_short(state, name)
+                    labels.append((name, pg, len(elements)))
                     add(
                         "speaker_turn",
                         _clean("\n".join("".join(s["text"] for s in line["spans"]) for line in lines[1:])),
                         pg,
-                        speaker=first_text,
+                        speaker=name,
                     )
                     continue
 
@@ -246,16 +282,11 @@ def parse_pdf(path: str) -> ParsedDocument:
                 _push_short(state, m.group("name"))
                 add("speaker_turn", m.group("rest"), pg, speaker=state["speaker"])
                 continue
-            if (
-                single_line
-                and all_bold
-                and len(text) <= 60
-                and _SPEAKER_TEXT.match(text)
-                and not text.endswith((".", "?", "!", ":"))
-            ):
-                state["speaker"] = text
-                _push_short(state, text)
-                labels.append((text, pg, len(elements)))
+            name = _label_name(text) if single_line and all_bold and len(text) <= 100 else None
+            if name and not text.endswith((".", "?", "!")):
+                state["speaker"] = name
+                _push_short(state, name)
+                labels.append((name, pg, len(elements)))
                 continue
             is_heading = (
                 all_bold and len(text) < 100 and (text.endswith(":") or text.isupper() or max_size > body_size * 1.15)
