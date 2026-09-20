@@ -9,7 +9,8 @@ Labels:
           and sentences with no forward-looking cue (negative), from persisted
           WalkTheTalkResult rows — the LLM as teacher
 
-    python -m finsight.ml.claims.dataset            # writes eval/gold/claims_silver.jsonl and prints counts
+    python -m finsight.ml.claims.dataset                    # writes eval/gold/claims_silver.jsonl and prints counts
+    python -m finsight.ml.claims.dataset --label-with-llm   # + direct LLM labels for every cue sentence (the teacher)
 """
 
 from __future__ import annotations
@@ -89,6 +90,46 @@ def silver_labels(sentences: list[dict]) -> list[dict]:
     return out
 
 
+CLASSIFY_PROMPT = """Below are numbered sentences from a company's earnings call. Which of them state a FORWARD-LOOKING commitment, target, guidance or expectation by the company about a future period (revenue, margin, costs, hiring, deals, dividends, cash flow, tax rate, and the like)? A sentence about what already happened, an analyst's question, or a vague hope with no commitment is NOT one.
+
+{text}
+
+Return JSON: {{"claims": [<numbers of the sentences that are forward-looking commitments>]}}"""
+
+
+def llm_labels(sentences: list[dict], model: str | None = None, batch_size: int = 20) -> dict[str, int]:
+    """Direct yes/no labelling of every cue-passing sentence by the LLM — the teacher for the
+    encoder. Unlike the extraction pipeline it has no per-document cap or dedupe, so the
+    positive set is as complete as the teacher can make it. {norm(sentence): label}."""
+    from finsight.llm import generate
+    from finsight.verification.claims import _parse_json, is_candidate
+
+    cands = [x for x in sentences if is_candidate(x["sentence"])]
+    labels: dict[str, int] = {}
+    for i in range(0, len(cands), batch_size):
+        batch = cands[i : i + batch_size]
+        text = "\n".join(f"{n + 1}. {x['sentence']}" for n, x in enumerate(batch))
+        try:
+            r = generate(
+                CLASSIFY_PROMPT.format(text=text),
+                model=model,
+                max_tokens=800,
+                temperature=0.0,
+                json_mode=True,
+                think=False,
+            )
+            keep = {int(k) for k in (_parse_json(r.text).get("claims") or []) if str(k).strip().isdigit()}
+        except Exception as e:  # noqa: BLE001 — a failed batch is left unlabelled, not mislabelled
+            print(f"  batch {i // batch_size} failed: {e}")
+            continue
+        for n, x in enumerate(batch):
+            labels[_norm(x["sentence"])] = 1 if (n + 1) in keep else 0
+        print(
+            f"  labelled {min(i + batch_size, len(cands))}/{len(cands)} cue sentences · positives so far {sum(labels.values())}"
+        )
+    return labels
+
+
 def _lines(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -114,9 +155,28 @@ def gold_labels(sentences: list[dict]) -> list[dict]:
 
 
 def main() -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument(
+        "--label-with-llm",
+        action="store_true",
+        help="label every cue-passing sentence with the active LLM directly (more positives than the extraction runs keep)",
+    )
+    ap.add_argument("--model", default=None, help="teacher model (provider default if omitted)")
+    args = ap.parse_args()
+
     os.environ.setdefault("SECRET_KEY", "dataset")
     sents = transcript_sentences()
     silver = silver_labels(sents)
+    if args.label_with_llm:
+        direct = llm_labels(sents, model=args.model)
+        by_key = {_norm(x["sentence"]): x for x in silver}
+        for x in sents:
+            k = _norm(x["sentence"])
+            if k in direct:
+                by_key[k] = {**x, "label": direct[k], "source": "llm-classified"}
+        silver = list(by_key.values())
     gold = gold_labels(sents)
     gold_keys = {_norm(x["sentence"]) for x in gold}
     silver = [x for x in silver if _norm(x["sentence"]) not in gold_keys]  # gold is held out from training

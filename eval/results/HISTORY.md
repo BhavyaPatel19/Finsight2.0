@@ -91,6 +91,8 @@ What moved the numbers, in order of size:
 
 Not done / next: embedding-model ablation (bge-base → bge-large / bge-m3), latency work on the reranker (batching, candidate pruning), and the same measurement on a bookmarked 200-page annual report, which this corpus does not contain.
 
+Reindexed after the cross-page table-header fix (`4d956fe`, `9fb3edb`; `retrieval_pdf-v2-k8-final.json`): hit@1 0.781 → **0.797**, MRR 0.879 → **0.891**, nDCG 0.892 → 0.899, hit@5 stays 1.000, cross-document questions with both documents in the top-8 0.50 → 0.69. The interim reindex (`retrieval_pdf-v2-k8-headers.json`) had lost r054 because the units line above the fact sheet's rupee statement was no longer kept as the table title; fixed before the final run.
+
 ---
 
 # Redesign branch: Walk the Talk v2 (PDF corpus, `qwen3:14b` local)
@@ -109,7 +111,14 @@ Reading v2.0's own explanations, one failure explains 8 of the 11 disagreements:
 
 v2.1 showed the limit of prompting a 14B judge: told that a promise is never an outcome, it still graded four FY27 claims MET from Q1 FY27 numbers ("FY27 margin was reported as 21.1%") and from restated guidance. v2.2 moved both rules into code — a claim's period must have ended by the latest reported period of the actuals documents, and a cited evidence sentence that is itself forward-looking cannot support a verdict — and abstention recall went from 0.2 to 1.0 with κ from 0.06 to 0.50.
 
-What v2.2 still gets wrong, and what would fix it: it abstains on two claims a person would compute (free cash flow ÷ net profit; tax ÷ profit before tax — the numbers are in the fact sheet) → a derived-metrics step; it grades "the endeavour is to improve margins" MET when the margin was flat → a qualitative-claim rule (direction words vs a flat outcome); four soft, conversational commitments are never extracted → the claim detector (`finsight/ml/claims`). n = 21 matched claims: the κ is a direction, not a measurement.
+| v2.3 — + baseline retrieval for directional claims, derived ratios; **first run on a hosted model** (`wtt_pdf-v2.3-cerebras-gpt-oss-120b.json`, gpt-oss-120b via Cerebras) | **0.92** (23/25) | 0.65 | **0.91** (10/11) | 1.0 / 0.42 | 0.44 | MET→{MET 9, UNVERIFIABLE 5} · PARTIAL→{PARTIAL 1, UNVERIFIABLE 2} · MISSED→{MET 1} · UNVERIFIABLE→{UNVERIFIABLE 5} |
+| **v2.4** — + 5 retries honouring retry-after, 2-wide on Cerebras, token-overlap fallback on verdict quotes, component retrieval for ratio claims, period-aware column choice, rupee units (`wtt_pdf-v2.4-cerebras-gpt-oss-120b.json`) | **0.92** | **0.87** (20/23) | **0.88** (15/17) | 1.0 / **0.83** | **0.76** | MET→{MET 13, UNVERIFIABLE 1} · PARTIAL→{MET 2, PARTIAL 1} · MISSED→{MISSED 1} · UNVERIFIABLE→{UNVERIFIABLE 5} |
+
+v2.3 on gpt-oss-120b extracted two more of the labelled claims than qwen3:14b (the Project Maximus margin claim and the Rs 43 dividend among them) and was right on 10 of the 11 it graded — but it abstained on seven claims a person would grade, and each abstention had a mechanical cause rather than a judgement one: two were 429s from the free tier's 5-requests/minute bucket that exhausted three retries; one was a correct MET thrown away because the model wrote "adjusted" for "adjusted1" in its evidence quote; two were effective-tax-rate claims whose evidence never contained the tax and profit-before-tax rows; one was "Rs. 43" extracted with unit "$ mn". v2.4 fixes those in code (`6d6ed03`) and κ goes from 0.44 to 0.76 with abstention precision 0.42 → 0.83.
+
+What v2.4 still gets wrong: the two PARTIAL→MET disagreements are the same claim (FY26 effective tax rate guided at 29–30%, reported 26.4% because prior-year provisions were reversed). The direction-aware rule treats a lower tax rate as a beat; the human label says a one-off reversal is not delivery on guidance. That is a labelling judgement, recorded here rather than tuned away. The one MET→UNVERIFIABLE is the 40–50 bps acquisition-growth claim, whose outcome ("acquisitions contributed about 70 bps") the evidence retrieval does not surface. n = 23 matched claims.
+
+What v2.2 still got wrong, and what fixed it: it abstains on two claims a person would compute (free cash flow ÷ net profit; tax ÷ profit before tax — the numbers are in the fact sheet) → a derived-metrics step; it grades "the endeavour is to improve margins" MET when the margin was flat → a qualitative-claim rule (direction words vs a flat outcome); four soft, conversational commitments are never extracted → the claim detector (`finsight/ml/claims`). n = 21 matched claims: the κ is a direction, not a measurement.
 
 What already works in v2.0 and did not in v1: the FY26 growth beat (3.1% vs 1–3%) is MET by the direction-aware rule; the margin actual is found in the fact sheet rather than "not mentioned"; a claim whose quote is not in the source cannot exist; a verdict whose quote is not in the evidence cannot stand.
 
@@ -121,11 +130,39 @@ What already works in v2.0 and did not in v1: the FY26 growth beat (3.1% vs 1–
 
 | run | generator | judge | correct | partial | incorrect | faithfulness | number recall | abstain (unans.) | false abstain | cited | cited pages ⊆ retrieved | p50 latency |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `generation_pdf-v2-qwen3-14b.json` | qwen3:14b (local) | qwen3:14b | 82.8% | 9.4% | 7.8% | 0.894 (n=62) | 0.791 | 75% | 3.1% | 90% | 100% | 54 s |
+| `generation_pdf-v2-qwen3-14b.json` | qwen3:14b (local) | qwen-3.8-27b | 82.8% | 4.7% | 10.9% | 0.894 (n=62) | 0.791 | 75% | 3.1% | 90% | 100% | 54 s |
+| `generation_pdf-v2-cerebras-gpt-oss-120b.json` — same index | gpt-oss-120b (Cerebras) | qwen-3.8-27b | 85.9% | 3.1% | 10.9% | 0.820 (n=61) | 0.708 | 92% | 4.7% | 26% | 100% | 2.1 s |
+| **`generation_pdf-v2.1-cerebras-gpt-oss-120b.json`** — cross-page table headers, verbalised rows in the prompt, citation borrowing (`4d956fe`, `9fb3edb`) | gpt-oss-120b (Cerebras) | qwen-3.8-27b | **95.3%** | 3.1% | **1.6%** | **0.926** (n=64) | 0.762 | **100%** | **0%** | **100%** | 100% | 2.1 s |
+
+Correctness in all three rows is graded by `qwen-3.8-27b` with the question-anchored rubric (`0af5362`, re-judged with `--rejudge`); the qwen3:14b row was first self-judged at 82.8 / 9.4 / 7.8 under the old rubric. Generator and judge are different model families for every row.
 
 What the qwen3:14b run showed (it started before `6a93531`, so it ran the prompt without the source-hint line):
 
 - **Five of the eleven non-correct answers were the same table-reading defect.** "The excerpts provide multiple figures for Q4 FY25 gross profit (5,872 and 1,428)", net profit "3,313 and 3,158", the FY26 margin given as the quarter's 20.9% instead of the year's 20.3%. The rows reached the model as `Gross profit | 1,428 | 1,345 | 5,872 | 5,587` — no column headers — because the EDGAR press releases put the statement's header row at the foot of one page and the body at the top of the next, and the parser dropped the header-only table. Fixed in `4d956fe` (headers carry across the page break; the prompt shows `label: column = value` rows); measured in the next run.
 - The 3 unanswerable questions counted as "answered" were soft abstentions ("is not explicitly stated in the excerpts") that miss the exact `Not found…` phrase. The metric is strict on purpose; the number is 100% if those count.
 - Two errors are period slips a person could also make (headcount asked for Mar-2024→Mar-2025 answered with Mar-2025→Mar-2026; final dividend Rs 25 given where the total Rs 48 was asked).
-- Judge and generator are the same model. The gpt-oss-120b rows below use `qwen-3.8-27b` as an independent judge.
+- Judge and generator are the same model. The gpt-oss-120b rows use `qwen-3.8-27b` as an independent judge.
+
+What the two gpt-oss-120b runs showed:
+
+- **The table-header fix is worth 10 points.** Same model, same judge, same questions: 85.9% → 95.3% correct and 10.9% → 1.6% incorrect once rows reached the model as `Gross profit: 3 months ended March 31, 2025 = 1,428; Year ended March 31, 2025 = 5,872` instead of four bare numbers. r027, r050, r053, r063 flipped from wrong to right; r054 (rupee revenue) came back after the units line above the table was kept as its title.
+- **gpt-oss reads a source named in the question as a filter.** "…on the Q4 FY25 call" with the fact in the press release excerpt → "Not found", with the reasoning trace saying so. A rule in the RULES block did not change it; a parenthetical on the QUESTION line did (`6a93531`).
+- **gpt-oss cites in EVIDENCE but not in ANSWER** (26% of answers cited in run 1). Rather than fight the model, an answer with no page citation borrows the citations of its verified evidence quotes — those were checked verbatim against the excerpts, so the pages are grounded. 100% cited in run 2, all pages within the retrieved set.
+- **The judge rubric was stricter than the questions.** 11 of 13 "partial" grades were complete answers marked down for omitting context the reference carried but the question never asked for ("85.2%" without "up 30 bps QoQ"). The rubric now grades against the question; `--rejudge` re-graded every run so the rows compare like for like.
+- The one remaining incorrect answer (r028) gives the final dividend (₹22 vs ₹20) where the reference wants the FY total (₹43 vs ₹38) — a defensible reading of the question, left as is.
+- Faithfulness 0.926 with 64 judged answers; latency p50 2.1 s against 54 s locally.
+
+---
+
+# Claim detector (encoder fine-tune)
+
+`make train-claim-detector` — ModernBERT-base on LLM-labelled silver, evaluated on 68 hand-labelled sentences never used in training. Full card: [`docs/MODEL_CARD_claim_detector.md`](../../docs/MODEL_CARD_claim_detector.md).
+
+| model | precision | recall | F1 |
+|---|---|---|---|
+| cue regex (the pipeline's gate today) | 0.403 | **0.964** | 0.568 |
+| FinBERT-FLS zero-shot | 0.649 | 0.857 | **0.739** |
+| ModernBERT, 3 epochs, 41 silver positives | 0.667 | 0.429 | 0.522 |
+| ModernBERT, 8 epochs, 63 silver positives (direct LLM labelling) | **0.941** | 0.571 | 0.711 |
+
+The gate needs recall, so the regex stays; the encoder is a precision instrument (ranking candidates, flagging disagreements) and is not wired into the pipeline. Every gain between the two runs came from 22 more positives — the next step is more companies, not more epochs.
