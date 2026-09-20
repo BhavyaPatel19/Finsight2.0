@@ -45,6 +45,32 @@ def is_directional(claim: Claim) -> bool:
     return t.get("kind") in ("min", "max") and (t.get("value") or 0) == 0
 
 
+def find_components(session: Session, claim: Claim, document_ids: list[int], top_k: int = 2) -> list[dict]:
+    """For a ratio claim (effective tax rate, FCF conversion) the evidence must contain both
+    figures a person would divide; ask the index for each component by name, rows first."""
+    from finsight.verification.derived import ratio_for
+
+    ratio = ratio_for(claim.metric)
+    if not ratio:
+        return []
+    out: list[dict] = []
+    for q in ratio.queries:
+        res = retrieve(
+            session,
+            f"{q} {claim.period or ''}",
+            top_k=top_k + 2,
+            document_ids=document_ids,
+            candidates=16,
+            use_period=False,
+        )
+        hits = sorted(
+            res["chunks"],
+            key=lambda h: (h["metadata"].get("kind") not in ("row", "table"), -(h.get("reranker_score") or 0.0)),
+        )
+        out.extend(_as_evidence(h) for h in hits[:top_k])
+    return out
+
+
 def find_baseline(session: Session, claim: Claim, document_ids: list[int], top_k: int = 3) -> list[dict]:
     """The metric as reported in the period the claim was made — the "current level" a
     directional claim is measured from. Same retrieval as the evidence, over the
@@ -104,19 +130,18 @@ def find_evidence(session: Session, claim: Claim, document_ids: list[int], top_k
         key=lambda h: (h.get("reranker_score") or 0.0) * outcome_weight(h["text"], h["metadata"].get("kind")),
         reverse=True,
     )[:top_k]
-    out = []
-    for h in ranked:
-        m = h["metadata"]
-        out.append(
-            {
-                "id": h["id"],
-                "text": m.get("display_text") or h["text"],  # rows as "label: column = value; …"
-                "document_id": m.get("document_id"),
-                "doc_type": m.get("doc_type"),
-                "page": m.get("page_number"),
-                "speaker": m.get("speaker") or None,
-                "kind": m.get("kind"),
-                "score": h.get("reranker_score"),
-            }
-        )
-    return out
+    return [_as_evidence(h) for h in ranked]
+
+
+def _as_evidence(h: dict) -> dict:
+    m = h["metadata"]
+    return {
+        "id": h["id"],
+        "text": m.get("display_text") or h["text"],  # rows as "label: column = value; …"
+        "document_id": m.get("document_id"),
+        "doc_type": m.get("doc_type"),
+        "page": m.get("page_number"),
+        "speaker": m.get("speaker") or None,
+        "kind": m.get("kind"),
+        "score": h.get("reranker_score"),
+    }

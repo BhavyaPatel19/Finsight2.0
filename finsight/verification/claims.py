@@ -55,9 +55,11 @@ For each claim return:
 - "metric": the measured quantity in a few words (e.g. "revenue growth (constant currency)", "operating margin", "effective tax rate", "free cash flow as % of net profit", "freshers hired")
 - "period": the period the claim is about, in the company's terms (e.g. "FY26", "Q1 FY26", "FY26 and beyond") or null
 - "target": an object describing the numeric target if there is one, else null:
-    {{"kind": "range"|"point"|"min"|"max", "low": number|null, "high": number|null, "value": number|null, "unit": "%"|"bps"|"$ bn"|"$ mn"|"Rs cr"|"count"|"x"|""}}
+    {{"kind": "range"|"point"|"min"|"max", "low": number|null, "high": number|null, "value": number|null, "unit": "%"|"bps"|"$ bn"|"$ mn"|"Rs cr"|"Rs per share"|"count"|"x"|""}}
+    The unit is the one written in the quote — never convert currencies.
     Examples: "0% to 3%" → {{"kind":"range","low":0,"high":3,"unit":"%"}}; "above 100% of net profit" → {{"kind":"min","value":100,"unit":"%"}};
-    "over 20,000 freshers" → {{"kind":"min","value":20000,"unit":"count"}}; "lower than FY25" → null (qualitative)
+    "over 20,000 freshers" → {{"kind":"min","value":20000,"unit":"count"}}; "total payout for FY'25 will be Rs. 43" → {{"kind":"point","value":43,"unit":"Rs per share"}};
+    "lower than FY25" → null (qualitative)
 
 Text:
 {text}

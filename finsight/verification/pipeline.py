@@ -25,6 +25,7 @@ from finsight.verification.claims import candidate_sentences, extract_claims
 from finsight.verification.evidence import (
     actuals_documents,
     find_baseline,
+    find_components,
     find_evidence,
     is_directional,
     period_documents,
@@ -53,7 +54,12 @@ def latest_reported_period(session: Session, doc_ids: list[int]) -> tuple[int, i
 
 
 def _parallel() -> int:
-    return 1 if get_provider().name == "ollama" else 4
+    name = get_provider().name
+    if name == "ollama":
+        return 1  # one model slot
+    if name == "cerebras":
+        return 2  # free tier is 5 requests/min; four in flight just trades 429s for waits
+    return 4
 
 
 def overall_score(verdicts: list[str]) -> float | None:
@@ -91,6 +97,8 @@ async def verify(
 
     async def one(claim):
         evidence = find_evidence(session, claim, doc_ids)
+        seen = {e["id"] for e in evidence}
+        evidence += [e for e in find_components(session, claim, doc_ids) if e["id"] not in seen]
         baseline = find_baseline(session, claim, baseline_ids) if is_directional(claim) else None
         async with sem:
             v = await judge_claim(claim, evidence, model=model, latest_reported=latest, baseline=baseline)

@@ -20,13 +20,13 @@ def _delay(attempt: int, response: httpx.Response | None) -> float:
         ra = response.headers.get("retry-after")
         if ra:
             try:
-                return min(float(ra), 30.0)
+                return min(float(ra), 60.0)
             except ValueError:
                 pass
-    return min(2.0**attempt, 20.0)
+    return min(2.0**attempt, 30.0)
 
 
-def post_with_retry(client: httpx.Client, url: str, *, attempts: int = 3, **kw) -> httpx.Response:
+def post_with_retry(client: httpx.Client, url: str, *, attempts: int = 5, **kw) -> httpx.Response:
     last: Exception | None = None
     for attempt in range(attempts):
         try:
@@ -49,7 +49,7 @@ def post_with_retry(client: httpx.Client, url: str, *, attempts: int = 3, **kw) 
     raise LLMError(f"request to {url} failed: {last}") from last
 
 
-async def apost_with_retry(client: httpx.AsyncClient, url: str, *, attempts: int = 3, **kw) -> httpx.Response:
+async def apost_with_retry(client: httpx.AsyncClient, url: str, *, attempts: int = 5, **kw) -> httpx.Response:
     last: Exception | None = None
     for attempt in range(attempts):
         try:

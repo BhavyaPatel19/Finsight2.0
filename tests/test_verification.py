@@ -496,3 +496,45 @@ class TestDirectionalClaims:
         seen.clear()
         asyncio.run(vd.judge_claim(self._claim(None), ev))
         assert "BASELINE — the metric" not in seen["prompt"]
+
+
+class TestDerivedFromVerbalisedRows:
+    def test_picks_the_period_column(self):
+        from finsight.verification.derived import derived_actual
+
+        rows = [
+            "Statement of Comprehensive Income — Income tax expense: 3 months ended March 31, 2026 = 300; "
+            "3 months ended March 31, 2025 = 280; Year ended March 31, 2026 = 1,190; Year ended March 31, 2025 = 1,100",
+            "Statement of Comprehensive Income — Profit before income taxes: 3 months ended March 31, 2026 = 1,200; "
+            "3 months ended March 31, 2025 = 1,100; Year ended March 31, 2026 = 4,506; Year ended March 31, 2025 = 4,300",
+        ]
+        fy = derived_actual("effective tax rate", rows, "FY26")
+        q = derived_actual("effective tax rate", rows, "Q4 FY26")
+        assert fy and fy[0] == 26.4, fy
+        assert q and q[0] == 25.0, q
+
+    def test_verdict_quote_overlap_fallback(self, monkeypatch):
+        import asyncio
+
+        async def fake(prompt, **kw):
+            class R:
+                text = (
+                    '{"verdict": "MET", "actual_value": "20.3%", "actual_number": 20.3, "evidence_id": "e1", '
+                    '"evidence_quote": "Reported IFRS operating margin was 20.3% and adjusted operating margin at 21.0%", '
+                    '"explanation": "in range"}'
+                )
+
+            return R()
+
+        monkeypatch.setattr(vd, "agenerate", fake)
+        ev = [
+            {
+                "id": "e1",
+                "text": "Reported IFRS operating margin was at 20.3% and adjusted1 operating margin at 21.0% for FY26.",
+                "doc_type": "press_release",
+                "page": 1,
+                "kind": "paragraph",
+            }
+        ]
+        v = asyncio.run(vd.judge_claim(_claim({"kind": "range", "low": 20, "high": 22, "unit": "%"}), ev))
+        assert v.verdict == "MET" and v.method != "downgraded:quote-not-found"

@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass
 
 from finsight.llm import LLMError, agenerate
-from finsight.verification.claims import Claim
+from finsight.verification.claims import Claim, _match_quote
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +265,10 @@ async def judge_claim(
                     if nq and nq in _norm(e["text"]):
                         cited, ok = e, True
                         break
+            if not ok:  # or trimmed / lightly rephrased it: ≥ 70% of its tokens in one block (as for claims)
+                hit = _match_quote(str(quote), [{"sentence": e["text"], **e} for e in evidence])
+                if hit is not None:
+                    cited, ok = hit, True
         if not ok:
             verdict, method = "UNVERIFIABLE", "downgraded:quote-not-found"
         elif cited.get("kind") not in ("row", "table") and is_forward_looking(str(quote)):
@@ -284,7 +288,11 @@ async def judge_claim(
     from finsight.verification.derived import derived_actual
 
     unit = (claim.target or {}).get("unit") or ""
-    derived = derived_actual(claim.metric, [e["text"] for e in evidence]) if claim.target and unit == "%" else None
+    derived = (
+        derived_actual(claim.metric, [e["text"] for e in evidence], claim.period)
+        if claim.target and unit == "%"
+        else None
+    )
     if derived is not None:
         actual_number, note = derived
         if verdict == "UNVERIFIABLE":
