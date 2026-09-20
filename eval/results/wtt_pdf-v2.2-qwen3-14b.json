@@ -1,0 +1,315 @@
+{
+  "timestamp": "2026-09-20T08:52:16+00:00",
+  "git_sha": "c0365f1",
+  "tag": "pdf-v2.2-qwen3-14b",
+  "provider": "ollama",
+  "model": "qwen3:14b",
+  "engine": "v2",
+  "summary": {
+    "labelled": 25,
+    "matched": 21,
+    "claim_recall": 0.84,
+    "verdict_accuracy": 0.7143,
+    "abstained": 9,
+    "verdict_accuracy_on_answered": 0.8333,
+    "abstain_recall": 1.0,
+    "abstain_precision": 0.5556,
+    "kappa": 0.5,
+    "confusion": {
+      "MET": {
+        "MET": 10,
+        "UNVERIFIABLE": 2,
+        "MISSED": 1
+      },
+      "PARTIAL": {
+        "UNVERIFIABLE": 2
+      },
+      "MISSED": {
+        "MET": 1
+      },
+      "UNVERIFIABLE": {
+        "UNVERIFIABLE": 5
+      }
+    },
+    "system_claims": {
+      "INFY_concall_Q1FY26 → INFY_concall_Q4FY26": 12,
+      "INFY_concall_Q4FY25 → INFY_concall_Q1FY26": 28,
+      "INFY_concall_Q4FY25 → INFY_concall_Q4FY26": 28,
+      "INFY_concall_Q4FY25 → INFY_factsheet_Q4FY26": 28,
+      "INFY_concall_Q4FY26 → INFY_concall_Q1FY27": 28
+    },
+    "mean_match_similarity": 0.871,
+    "unmatched_ids": [
+      "w010",
+      "w020",
+      "w007",
+      "w011"
+    ]
+  },
+  "pairs": {
+    "INFY_concall_Q1FY26 → INFY_concall_Q4FY26": {
+      "overall_score": 92.9,
+      "narrative": "The management credibility score is 92.9/100, based on 7 verifiable claims, of which 6 were fully met, 1 was partially met, and none were missed. The company delivered on key commitments related to revenue guidance, margin stability, free cash flow conversion, and cash generation, demonstrating strong alignment between stated expectations and actual results. However, 5 claims could not be verified due to lack of information in the filings, including guidance on tax rates, H2 performance, and the top-end environment, which limits the completeness of the assessment."
+    },
+    "INFY_concall_Q4FY25 → INFY_concall_Q1FY26": {
+      "overall_score": 87.5,
+      "narrative": "The management credibility score is 87.5/100, based on 4 verifiable claims, of which 3 were fully met and 1 was partially met. The company successfully delivered on its operating margin guidance (20.8%), confirmed the impact of Q1 acquisitions on revenue growth (40 basis points), and aligned its guidance with current expectations. However, the claim about improving margins from the current environment was only partially met, as margins actually declined slightly. Of the 24 unverifiable claims, many relate to forward-looking expectations, guidance rationale, and specific operational targets that were not supported by the filings."
+    },
+    "INFY_concall_Q4FY25 → INFY_concall_Q4FY26": {
+      "overall_score": 90.6,
+      "narrative": "The management credibility score is 90.6/100, based on 16 verifiable claims, of which 14 were fully met, 1 was partially met, and 1 was missed. The majority of the claims related to financial performance, hiring, and guidance methodology were successfully verified and delivered as promised. However, 12 claims could not be verified due to lack of available data or insufficient disclosure in filings. While the company generally met its stated objectives, the inability to verify a significant portion of the commitments limits full confidence in the completeness and transparency of management’s communication."
+    },
+    "INFY_concall_Q4FY25 → INFY_factsheet_Q4FY26": {
+      "overall_score": 90.6,
+      "narrative": "The management credibility score is 90.6/100, based on 16 verifiable claims, of which 14 were fully met, 1 was partially met, and 1 was missed. The majority of the claims related to financial performance, hiring, and guidance methodology were successfully verified and delivered as committed. However, 12 claims could not be verified due to lack of available data or insufficient disclosure in filings. While the company generally met its key commitments, the inability to verify a significant portion of the claims introduces some uncertainty regarding the completeness and transparency of management’s communication."
+    },
+    "INFY_concall_Q4FY26 → INFY_concall_Q1FY27": {
+      "overall_score": 64.3,
+      "narrative": "The management credibility score is 64.3/100 based on 7 verifiable claims, of which 4 were fully met, 1 was partially met, and 2 were missed. Only 2 claims could be verified as delivered, while 5 were either partially or fully unmet. A total of 21 claims could not be verified due to lack of information in the filings. This suggests a mixed track record in delivering on commitments, with significant gaps in transparency and verification."
+    }
+  },
+  "rows": [
+    {
+      "id": "w012",
+      "matched": true,
+      "similarity": 0.929,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company has revised its FY26 revenue guidance to 1% to 3% in constant currency terms.",
+      "system_explanation": "The company achieved a revenue growth of 3.1% in constant currency for FY26, which falls within the claimed range of 1.0% to 3.0%.",
+      "category": "revenue"
+    },
+    {
+      "id": "w013",
+      "matched": true,
+      "similarity": 0.75,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company's margin guidance remains unchanged at 20% to 22%.",
+      "system_explanation": "The reported operating margin for FY26 was 20.3%, which falls within the claimed range of 20.0% to 22%.",
+      "category": "margin"
+    },
+    {
+      "id": "w014",
+      "matched": true,
+      "similarity": 0.833,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects the effective tax rate for FY26 to be in the range of 29% to 30%.",
+      "system_explanation": "The evidence does not contain the reported effective tax rate for FY26, which is required to verify whether the claim of 29% to 30% was achieved.",
+      "category": "tax"
+    },
+    {
+      "id": "w015",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects FY26 free cash flows to be above 100% of net profit.",
+      "system_explanation": "The evidence explicitly states that adjusted free cash flow as a percentage of net profit was 106% for FY26, which meets the target of at least 100%.",
+      "category": "cash_flow"
+    },
+    {
+      "id": "w016",
+      "matched": true,
+      "similarity": 0.5,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects H2 to be weaker than H1.",
+      "system_explanation": "The evidence indicates that H1 is expected to be stronger than H2, which directly contradicts the earlier claim that H2 would be weaker than H1.",
+      "category": "growth"
+    },
+    {
+      "id": "w017",
+      "matched": true,
+      "similarity": 0.9,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to generate 100% plus conversion of free cash flow to net profit.",
+      "system_explanation": "The evidence shows that adjusted free cash flow conversion to net profit was 106% for FY26, which meets the target of at least 100%.",
+      "category": "cash_flow"
+    },
+    {
+      "id": "w018",
+      "matched": true,
+      "similarity": 0.917,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects FY26 third party to be lower than FY25 third party.",
+      "system_explanation": "The evidence confirms that third-party costs were lower in FY26 compared to FY25, as the company reported a 1% reduction in third-party costs as a percentage of revenue.",
+      "category": "cost"
+    },
+    {
+      "id": "w010",
+      "matched": false,
+      "similarity": 0.1,
+      "human": "MET",
+      "system": null,
+      "category": "compensation"
+    },
+    {
+      "id": "w019",
+      "matched": true,
+      "similarity": 0.562,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects that closing acquisitions in Q1 would add 40 to 50 basis points to full-year revenue growth, which is not included in the current guidance.",
+      "system_explanation": "The evidence shows that the acquisitions closed in Q1 contributed 40 basis points to sequential revenue growth, not full-year revenue growth as claimed.",
+      "category": "margin"
+    },
+    {
+      "id": "w020",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "MET",
+      "system": null,
+      "category": "growth"
+    },
+    {
+      "id": "w001",
+      "matched": true,
+      "similarity": 0.929,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects growth for financial year '26 to be between 0% and 3% in constant currency terms.",
+      "system_explanation": "The company achieved a revenue growth of 3.1% in constant currency terms for FY26, which falls within the claimed range of 0% to 3%.",
+      "category": "revenue"
+    },
+    {
+      "id": "w002",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects operating margin for financial year 2026 to be between 20% and 22%.",
+      "system_explanation": "The reported operating margin for FY26 was 20.3%, which falls within the claimed range of 20% to 22%.",
+      "category": "margin"
+    },
+    {
+      "id": "w003",
+      "matched": true,
+      "similarity": 0.929,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects free cash flow as a percentage of net profit for FY'26 to be above 100%.",
+      "system_explanation": "The evidence explicitly states that adjusted free cash flow as a percentage of net profit for FY26 was 106%, which meets the target of being above 100%.",
+      "category": "cash_flow"
+    },
+    {
+      "id": "w004",
+      "matched": true,
+      "similarity": 0.929,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects effective tax rate for financial year '26 to be between 29% and 30%.",
+      "system_explanation": "The evidence does not contain the reported effective tax rate for FY26, only guidance for FY27 and references to tax provisions and orders, which are not sufficient to determine the actual effective tax rate for FY26.",
+      "category": "tax"
+    },
+    {
+      "id": "w005",
+      "matched": true,
+      "similarity": 0.9,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects to hire over 20,000 freshers in FY'26.",
+      "system_explanation": "The evidence explicitly states that the company on boarded more than 20,000 freshers in FY26, meeting the target of at least 20,000.",
+      "category": "hiring"
+    },
+    {
+      "id": "w006",
+      "matched": true,
+      "similarity": 0.833,
+      "human": "MISSED",
+      "system": "MET",
+      "system_claim": "The company endeavours to improve margins from where they are for FY'26.",
+      "system_explanation": "The company achieved an adjusted operating margin of 21.0% in FY26, which aligns with the claim that the company endeavours to improve margins for FY26.",
+      "category": "margin"
+    },
+    {
+      "id": "w007",
+      "matched": false,
+      "similarity": 0.375,
+      "human": "PARTIAL",
+      "system": null,
+      "category": "margin"
+    },
+    {
+      "id": "w008",
+      "matched": true,
+      "similarity": 0.929,
+      "human": "MET",
+      "system": "MISSED",
+      "system_claim": "The company expects FY'26 third-party costs to be lower than FY'25.",
+      "system_explanation": "The evidence confirms that third-party costs for FY'26 were lower than FY'25 by 1% as a percentage of revenue, meeting the claim's target of at least 0.0 percentage change.",
+      "category": "cost"
+    },
+    {
+      "id": "w009",
+      "matched": true,
+      "similarity": 0.833,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects that closing acquisitions in Q1 would add 40 to 50 basis points to full-year revenue growth, which is not included in the current guidance.",
+      "system_explanation": "The evidence shows that acquisitions contributed 70 basis points to full-year growth, which is above the claimed range of 40 to 50 basis points, but the claim was that the contribution was not included in the current guidance. However, the actual contribution (70 bps) exceeds the claimed range, and the guidance for FY26 already included the contribution of acquisitions, thus the claim was not achieved.",
+      "category": "growth"
+    },
+    {
+      "id": "w011",
+      "matched": false,
+      "similarity": 0.25,
+      "human": "MET",
+      "system": null,
+      "category": "dividend"
+    },
+    {
+      "id": "w021",
+      "matched": true,
+      "similarity": 0.938,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company's revenue growth guidance for FY27 is 1.5% to 3.5% year-on-year in constant currency terms.",
+      "system_explanation": "FY27 has not ended: the latest reported period is Q1 FY27, the claim needs Q4 FY27.",
+      "category": "revenue"
+    },
+    {
+      "id": "w022",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company's operating margin guidance for FY27 is 20% to 22%.",
+      "system_explanation": "FY27 has not ended: the latest reported period is Q1 FY27, the claim needs Q4 FY27.",
+      "category": "margin"
+    },
+    {
+      "id": "w023",
+      "matched": true,
+      "similarity": 0.938,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to hire a similar number of freshers in FY27 as it did in FY26, which was more than 20,000.",
+      "system_explanation": "FY27 has not ended: the latest reported period is Q1 FY27, the claim needs Q4 FY27.",
+      "category": "hiring"
+    },
+    {
+      "id": "w024",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects third-party cost for FY27 to remain at similar levels as FY26 despite a further reduction in onsite mix by 0.75% to 1%.",
+      "system_explanation": "FY27 has not ended: the latest reported period is Q1 FY27, the claim needs Q4 FY27.",
+      "category": "cost"
+    },
+    {
+      "id": "w025",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects effective tax rates for FY27 to be in the range of 29% to 30%.",
+      "system_explanation": "FY27 has not ended: the latest reported period is Q1 FY27, the claim needs Q4 FY27.",
+      "category": "tax"
+    }
+  ]
+}
