@@ -22,7 +22,13 @@ from finsight.llm import LLMError, agenerate, get_provider
 from finsight.models import Document, WalkTheTalkResult
 from finsight.retrieval import index as ix
 from finsight.verification.claims import candidate_sentences, extract_claims
-from finsight.verification.evidence import actuals_documents, find_evidence
+from finsight.verification.evidence import (
+    actuals_documents,
+    find_baseline,
+    find_evidence,
+    is_directional,
+    period_documents,
+)
 from finsight.verification.verdict import judge_claim
 
 logger = logging.getLogger(__name__)
@@ -81,10 +87,13 @@ async def verify(
     latest = latest_reported_period(session, doc_ids)
     sem = asyncio.Semaphore(parallel)
 
+    baseline_ids = period_documents(session, claims_doc)
+
     async def one(claim):
         evidence = find_evidence(session, claim, doc_ids)
+        baseline = find_baseline(session, claim, baseline_ids) if is_directional(claim) else None
         async with sem:
-            v = await judge_claim(claim, evidence, model=model, latest_reported=latest)
+            v = await judge_claim(claim, evidence, model=model, latest_reported=latest, baseline=baseline)
         return claim, v, evidence
 
     results = await asyncio.gather(*(one(c) for c in claims))

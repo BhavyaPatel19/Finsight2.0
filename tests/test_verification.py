@@ -422,3 +422,77 @@ class TestDerived:
         )
         v2 = asyncio.run(vd.judge_claim(c2, ev, latest_reported=(26, 4)))
         assert v2.verdict == "MET" and v2.actual_number == 26.4, "lower tax than guided is a beat"
+
+
+class TestDirectionalClaims:
+    def _claim(self, target):
+        from finsight.verification.claims import Claim
+
+        return Claim(
+            "c1",
+            "we expect third-party costs to be lower than FY25",
+            "q",
+            "cost",
+            "third-party costs",
+            "FY26",
+            target,
+            "d1:c1",
+        )
+
+    def test_is_directional(self):
+        from finsight.verification.evidence import is_directional
+
+        assert is_directional(self._claim(None))
+        assert is_directional(self._claim({"kind": "min", "value": 0.0, "unit": "percentage change"}))
+        assert is_directional(self._claim({"kind": "max", "value": 0, "unit": "%"}))
+        assert not is_directional(self._claim({"kind": "range", "low": 29.0, "high": 30.0, "unit": "%"}))
+        assert not is_directional(self._claim({"kind": "min", "value": 100.0, "unit": "%"}))
+
+    def test_numeric_rule_leaves_direction_only_targets_to_the_judge(self):
+        # "lower than FY25" became {min, 0, percentage change}; the actual "-1" was graded MISSED
+        # by the level rule although the cost fell. Direction-only targets are the judge's call.
+        assert (
+            vd.numeric_verdict({"kind": "min", "value": 0.0, "unit": "percentage change"}, -1.0, "third-party costs")
+            is None
+        )
+        assert vd.numeric_verdict({"kind": "max", "value": 0, "unit": "%"}, 1.0, "attrition") is None
+        assert vd.numeric_verdict({"kind": "min", "value": 100.0, "unit": "%"}, 106.0, "fcf conversion") == "MET"
+
+    def test_baseline_blocks_reach_the_prompt(self, monkeypatch):
+        import asyncio
+
+        seen = {}
+
+        async def fake(prompt, **kw):
+            seen["prompt"] = prompt
+
+            class R:
+                text = '{"verdict": "MISSED", "actual_value": "21.0%", "actual_number": 21.0, "evidence_id": "e1", "evidence_quote": "Operating margin was 21.0%", "explanation": "flat"}'
+
+            return R()
+
+        monkeypatch.setattr(vd, "agenerate", fake)
+        ev = [
+            {
+                "id": "e1",
+                "text": "Operating margin was 21.0% for FY26.",
+                "doc_type": "press_release",
+                "page": 1,
+                "kind": "paragraph",
+            }
+        ]
+        base = [
+            {
+                "id": "b1",
+                "text": "Operating margin was 21.1% for FY25.",
+                "doc_type": "press_release",
+                "page": 1,
+                "kind": "paragraph",
+            }
+        ]
+        v = asyncio.run(vd.judge_claim(self._claim(None), ev, baseline=base))
+        assert "BASELINE — the metric" in seen["prompt"] and "21.1% for FY25" in seen["prompt"]
+        assert v.verdict == "MISSED"
+        seen.clear()
+        asyncio.run(vd.judge_claim(self._claim(None), ev))
+        assert "BASELINE — the metric" not in seen["prompt"]

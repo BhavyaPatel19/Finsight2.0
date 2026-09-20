@@ -29,13 +29,14 @@ CLAIM (made earlier): {claim}
 
 EVIDENCE from the later period's filings (each block has an id):
 {evidence}
-
+{baseline}
 Rules:
 - Only REPORTED RESULTS count as evidence (figures that were achieved, e.g. "revenue grew 3.1%", "margin was 21%", a fact-sheet row). A sentence that itself makes a promise or gives guidance ("we expect…", "guidance for FY27 is…", "will…") is NOT an outcome — never grade a claim against another promise, and never treat a restated or later-period guidance as contradicting the claim.
 - Read periods carefully: evidence about a different period than the claim's is not evidence for the claim.
 - MET: the evidence shows the commitment was achieved (a range target is MET when the actual falls inside it; "above X" when actual ≥ X).
 - MISSED: the evidence shows it was not achieved.
 - PARTIAL: achieved in part or in direction but not in full (e.g. margin improved but less than promised; a qualitative promise only partly delivered).
+- A directional claim ("improve from current levels", "lower than last year", "maintain") is judged against the BASELINE figure from when the claim was made: better in the promised direction is MET, unchanged is PARTIAL for an improvement promise (MET for "maintain"), worse is MISSED. Without a baseline figure such a claim is UNVERIFIABLE.
 - UNVERIFIABLE: the evidence does not contain the reported result needed (including when it only contains promises or guidance). Do NOT guess. Use this whenever the number or fact is simply not there.
 - "actual_value": the actual figure or outcome as stated in the evidence, with unit; null if UNVERIFIABLE.
 - "actual_number": the actual as a plain number in the target's unit if the target is numeric, else null.
@@ -106,6 +107,11 @@ def numeric_verdict(target: dict | None, actual: float | None, metric: str | Non
     if not target or actual is None:
         return None
     kind = target.get("kind")
+    unit = (target.get("unit") or "").lower()
+    if "change" in unit or (kind in ("min", "max") and (target.get("value") or 0) == 0):
+        # "lower than last year" / "at least no worse": a direction, not a level — the sign of the
+        # model's actual_number is ambiguous here, so the verdict is left to the judge.
+        return None
     d = direction(metric)
     if kind == "range":
         lo, hi = target["low"], target["high"]
@@ -189,8 +195,20 @@ def _target_text(t: dict | None) -> str:
     return {"min": "at least", "max": "at most", "point": "about"}[t["kind"]] + f" {t['value']} {u}".rstrip()
 
 
+def _blocks(items: list[dict]) -> str:
+    return "\n\n".join(
+        f"[{e['id']}] ({e.get('doc_type')}, page {e.get('page')}{', ' + e['speaker'] if e.get('speaker') else ''})\n{e['text']}"
+        for e in items
+    )
+
+
 async def judge_claim(
-    claim: Claim, evidence: list[dict], *, model: str | None = None, latest_reported: tuple[int, int] | None = None
+    claim: Claim,
+    evidence: list[dict],
+    *,
+    model: str | None = None,
+    latest_reported: tuple[int, int] | None = None,
+    baseline: list[dict] | None = None,
 ) -> Verdict:
     # A full-year or quarter commitment cannot have an outcome before that period has ended.
     if period_has_ended(claim.period, latest_reported) is False:
@@ -207,16 +225,19 @@ async def judge_claim(
             f"{claim.period} has not ended: the latest reported period is Q{latest_reported[1]} FY{latest_reported[0]:02d}, the claim needs Q{q} FY{fy:02d}.",
             "period-not-ended",
         )
-    blocks = "\n\n".join(
-        f"[{e['id']}] ({e.get('doc_type')}, page {e.get('page')}{', ' + e['speaker'] if e.get('speaker') else ''})\n{e['text']}"
-        for e in evidence
+    baseline_text = (
+        "\nBASELINE — the metric as reported in the period the claim was made (compare the evidence against this "
+        "for 'improve' / 'lower than' / 'maintain' claims):\n" + _blocks(baseline) + "\n"
+        if baseline
+        else ""
     )
     prompt = VERIFY_PROMPT.format(
         claim=claim.claim,
         metric=claim.metric or "-",
         period=claim.period or "-",
         target=_target_text(claim.target),
-        evidence=blocks or "(none)",
+        evidence=_blocks(evidence) or "(none)",
+        baseline=baseline_text,
     )
     try:
         resp = await agenerate(prompt, model=model, max_tokens=600, temperature=0.0, json_mode=True, think=False)

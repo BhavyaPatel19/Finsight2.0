@@ -15,16 +15,42 @@ from finsight.retrieval.search import retrieve
 from finsight.verification.claims import Claim
 
 
-def actuals_documents(session: Session, actuals_doc: Document) -> list[int]:
-    """All indexed documents for the same symbol and period as the chosen actuals document."""
+def period_documents(session: Session, doc: Document) -> list[int]:
+    """All indexed documents for the same symbol and period as `doc`."""
     stmt = select(Document).where(
-        Document.symbol == actuals_doc.symbol,
-        Document.fiscal_year == actuals_doc.fiscal_year,
-        Document.fiscal_quarter == actuals_doc.fiscal_quarter,
+        Document.symbol == doc.symbol,
+        Document.fiscal_year == doc.fiscal_year,
+        Document.fiscal_quarter == doc.fiscal_quarter,
         Document.status == "indexed",
     )
     ids = [d.id for d in session.exec(stmt).all()]
-    return ids or [actuals_doc.id]
+    return ids or [doc.id]
+
+
+def actuals_documents(session: Session, actuals_doc: Document) -> list[int]:
+    """All indexed documents for the same symbol and period as the chosen actuals document."""
+    return period_documents(session, actuals_doc)
+
+
+def is_directional(claim: Claim) -> bool:
+    """A claim judged against where the metric stood when it was made ("improve margins from
+    current levels", "third-party costs lower than FY25", "similar range") rather than against
+    an absolute number: no target, a zero-change target, or a target expressed as a change."""
+    t = claim.target
+    if not t:
+        return True
+    unit = (t.get("unit") or "").lower()
+    if "change" in unit:
+        return True
+    return t.get("kind") in ("min", "max") and (t.get("value") or 0) == 0
+
+
+def find_baseline(session: Session, claim: Claim, document_ids: list[int], top_k: int = 3) -> list[dict]:
+    """The metric as reported in the period the claim was made — the "current level" a
+    directional claim is measured from. Same retrieval as the evidence, over the
+    claims-period filings, keeping only blocks that report a figure."""
+    hits = find_evidence(session, claim, document_ids, top_k=top_k + 3)
+    return [h for h in hits if _NUMBERS.search(h["text"]) and outcome_weight(h["text"], h.get("kind")) >= 0.75][:top_k]
 
 
 _GUIDANCE_WORDS = re.compile(
