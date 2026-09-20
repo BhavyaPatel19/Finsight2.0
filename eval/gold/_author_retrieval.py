@@ -553,13 +553,48 @@ ITEMS: list[dict] = [
     ),
     dict(q="How many employees does Wipro have?", a="Not found in the selected documents.", type="unanswerable", ev={}),
     # near-miss negatives: same company, periods or facts the corpus does not contain
-    dict(q="What was Infosys's Q3 FY26 operating margin?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="What was Infosys's revenue for the quarter ended December 31, 2025?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="What was Infosys's free cash flow in FY24 in US dollars?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="How much did Infosys spend on capital expenditure in FY25?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="How many patents did Infosys file in FY26?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="How many development centres does Infosys operate?", a="Not found in the selected documents.", type="unanswerable", ev={}),
-    dict(q="How many Infosys employees are based in Europe?", a="Not found in the selected documents.", type="unanswerable", ev={}),
+    dict(
+        q="What was Infosys's Q3 FY26 operating margin?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="What was Infosys's revenue for the quarter ended December 31, 2025?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="What was Infosys's free cash flow in FY24 in US dollars?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="How much did Infosys spend on capital expenditure in FY25?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="How many patents did Infosys file in FY26?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="How many development centres does Infosys operate?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
+    dict(
+        q="How many Infosys employees are based in Europe?",
+        a="Not found in the selected documents.",
+        type="unanswerable",
+        ev={},
+    ),
     dict(q="In what year was Infosys founded?", a="Not found in the selected documents.", type="unanswerable", ev={}),
 ]
 

@@ -116,7 +116,10 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
 
     matched = [r for r in rows if r["matched"]]
     abstained = [r for r in matched if r["system"] == "UNVERIFIABLE"]
+    should_abstain = [r for r in matched if r["human"] == "UNVERIFIABLE"]
     agree = [r for r in matched if r["system"] == r["human"]]
+    answered = [r for r in matched if r["system"] != "UNVERIFIABLE" and r["human"] != "UNVERIFIABLE"]
+    agree_answered = [r for r in answered if r["system"] == r["human"]]
     kappa = None
     if len(matched) >= 2:
         try:
@@ -133,8 +136,14 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
         "claim_recall": round(len(matched) / len(rows), 4) if rows else None,
         "verdict_accuracy": round(len(agree) / len(matched), 4) if matched else None,
         "abstained": len(abstained),
-        "verdict_accuracy_on_answered": round(len(agree) / (len(matched) - len(abstained)), 4)
-        if len(matched) > len(abstained)
+        "verdict_accuracy_on_answered": round(len(agree_answered) / len(answered), 4) if answered else None,
+        "abstain_recall": round(
+            sum(1 for r in should_abstain if r["system"] == "UNVERIFIABLE") / len(should_abstain), 4
+        )
+        if should_abstain
+        else None,
+        "abstain_precision": round(sum(1 for r in abstained if r["human"] == "UNVERIFIABLE") / len(abstained), 4)
+        if abstained
         else None,
         "kappa": kappa,
         "confusion": confusion,

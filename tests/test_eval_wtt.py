@@ -55,3 +55,22 @@ def test_each_system_claim_used_once():
     system = [{"claim": "revenue growth of 3% in FY26", "verdict": "MET"}]
     rows = match_claims(gold, system)
     assert sum(r["matched"] for r in rows) == 1
+
+
+def test_abstention_metrics():
+    rows = [
+        {
+            "id": "a",
+            "matched": True,
+            "similarity": 1.0,
+            "human": "UNVERIFIABLE",
+            "system": "UNVERIFIABLE",
+            "category": "x",
+        },
+        {"id": "b", "matched": True, "similarity": 1.0, "human": "UNVERIFIABLE", "system": "MET", "category": "x"},
+        {"id": "c", "matched": True, "similarity": 1.0, "human": "MET", "system": "UNVERIFIABLE", "category": "x"},
+        {"id": "d", "matched": True, "similarity": 1.0, "human": "MET", "system": "MET", "category": "x"},
+    ]
+    s = summarise(rows, {"p": 4})
+    assert s["abstained"] == 2 and s["abstain_recall"] == 0.5 and s["abstain_precision"] == 0.5
+    assert s["verdict_accuracy"] == 0.5 and s["verdict_accuracy_on_answered"] == 1.0
