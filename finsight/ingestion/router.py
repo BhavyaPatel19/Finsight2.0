@@ -10,7 +10,6 @@ from finsight.ingestion.access import get_accessible_document, visible_documents
 from finsight.ingestion.file_manager import (
     delete_document,
     get_document_context,
-    process_document,
 )
 from finsight.ingestion.service import (
     register_document,
@@ -85,16 +84,20 @@ def document_process(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Extract text, chunk, and index a document to ChromaDB."""
-    get_accessible_document(session, current_user, document_id)
-    doc = process_document(session, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found or no PDF")
+    """Parse, chunk and index a document (same route the Chat page's 'prepare' uses)."""
+    from finsight.retrieval import index_document
+
+    doc = get_accessible_document(session, current_user, document_id)
+    if not doc.pdf_path:
+        raise HTTPException(status_code=404, detail="Document has no file")
+    result = index_document(session, document_id, force=True)
+    session.refresh(doc)
     return {
         "document_id": doc.id,
         "status": doc.status,
         "chunk_count": doc.chunk_count,
         "error": doc.error_message,
+        **{k: v for k, v in result.items() if k in ("chunks", "sentences", "total_pages", "seconds")},
     }
 
 

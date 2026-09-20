@@ -133,9 +133,16 @@ def text_for_index(header: str, chunk: dict) -> str:
 
 
 def process_for_rag(session: Session, document_id: int) -> dict:
+    """Index a document for retrieval. Delegates to the v2 engine (finsight.retrieval)."""
+    from finsight.retrieval import index_document
+
+    return index_document(session, document_id)
+
+
+def _process_for_rag_v1(session: Session, document_id: int) -> dict:
     """
-    On-demand: extract structured text → page-aware chunks → embed → ChromaDB.
-    Uses smart chunking (concall-aware).
+    Legacy: extract structured text → page-aware chunks → embed → ChromaDB.
+    Kept for the eval's like-for-like comparison (scripts/seed_demo.py --engine v1).
     """
     from finsight.ingestion.parsers import chunk_smart, extract_structured_document
 
@@ -332,6 +339,7 @@ def _build_section_context(chunks: list[dict]) -> str:
         header = f"[{i + 1}]"
         if symbol:
             header += f" {symbol}"
+        speaker = meta.get("speaker", "")
         if doc_type:
             header += f" · {doc_type}"
         if fy:
@@ -341,6 +349,8 @@ def _build_section_context(chunks: list[dict]) -> str:
             if sub_section:
                 header += f" > {sub_section}"
         header += f" | Page {page}"
+        if speaker:
+            header += f" | Speaker: {speaker}"
 
         parts.append(f"{header}\n{chunk.get('text', '')}")
     return "\n\n---\n\n".join(parts) if parts else "No relevant context found."
@@ -359,7 +369,7 @@ def answer_question(
     period: str | None = None,
     top_k: int = 8,
     model: str | None = None,
-    retrieval_mode: str = "hybrid_rerank",
+    retrieval_mode: str = "v2",
 ) -> dict:
     """
     Hybrid RAG pipeline:

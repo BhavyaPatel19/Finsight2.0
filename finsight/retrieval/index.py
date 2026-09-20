@@ -106,6 +106,7 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
         header = context_header(doc)
         chunks = chunk_elements(parsed.elements, header=header)
         delete_document(document_id)
+        _write_text_and_pages(session, doc, parsed)
 
         base_meta = {
             "document_id": document_id,
@@ -184,6 +185,35 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
         session.add(doc)
         session.commit()
         return {"status": "error", "document_id": document_id, "message": str(e)[:500]}
+
+
+def _write_text_and_pages(session: Session, doc: Document, parsed) -> None:
+    """Verbatim full text next to the source file, and one PageMetadata row per page,
+    for the parts of the app that still read them (document detail, division sentiment)."""
+    from pathlib import Path
+
+    from sqlmodel import select
+
+    from finsight.models import PageMetadata
+
+    pages: dict[int, list[str]] = {}
+    sections: dict[int, str | None] = {}
+    for el in parsed.elements:
+        pages.setdefault(el.page, []).append(el.text)
+        sections.setdefault(el.page, el.section)
+    try:
+        text_path = Path(doc.pdf_path).with_suffix(".txt")
+        text_path.write_text("\n\n".join("\n\n".join(pages[p]) for p in sorted(pages)), encoding="utf-8")
+        doc.text_path = str(text_path)
+    except OSError:
+        logger.warning("could not write text file for document %s", doc.id)
+    for row in session.exec(select(PageMetadata).where(PageMetadata.document_id == doc.id)).all():
+        session.delete(row)
+    for p in sorted(pages):
+        session.add(
+            PageMetadata(document_id=doc.id, page_number=p, section_title=sections.get(p), text="\n\n".join(pages[p]))
+        )
+    session.commit()
 
 
 # ---------------------------------------------------------------------------

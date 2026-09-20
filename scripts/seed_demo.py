@@ -124,7 +124,7 @@ def seed(
             docs[entry["key"]] = register(session, entry, path)
 
     if index:
-        from finsight.rag.service import process_for_rag
+        from finsight.rag.service import _process_for_rag_v1 as process_for_rag
         from finsight.retrieval import index_document
 
         for key, doc in docs.items():

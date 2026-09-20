@@ -168,6 +168,9 @@ def delete_document(session: Session, document_id: int) -> dict:
     embeddings_deleted = 0
     try:
         embeddings_deleted = delete_by_document_id(document_id)
+        from finsight.retrieval import delete_document as delete_v2
+
+        delete_v2(document_id)
     except Exception:
         pass
 
@@ -210,7 +213,9 @@ def get_document_context(session: Session, document_id: int) -> dict | None:
     if not doc:
         return None
 
-    chunk_count = len(session.exec(select(DocumentChunk).where(DocumentChunk.document_id == document_id)).all())
+    chunk_count = doc.chunk_count or len(
+        session.exec(select(DocumentChunk).where(DocumentChunk.document_id == document_id)).all()
+    )
 
     return {
         "id": doc.id,
