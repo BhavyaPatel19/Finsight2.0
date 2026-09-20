@@ -292,3 +292,67 @@ class TestQuoteMatching:
             == "c1"
         )
         assert cl._match_quote("We will double revenue by 2030 through acquisitions in Europe.", self.batch) is None
+
+
+class TestPeriodGuard:
+    def test_period_parsing(self):
+        assert vd.claim_period_end("FY27") == (27, 4)
+        assert vd.claim_period_end("Q1 FY26") == (26, 1)
+        assert vd.claim_period_end("fiscal '27") == (27, 4)
+        assert vd.claim_period_end("FY26 and beyond") is None
+        assert vd.claim_period_end(None) is None
+
+    def test_has_ended(self):
+        assert vd.period_has_ended("FY27", (27, 1)) is False  # one quarter of FY27 reported
+        assert vd.period_has_ended("FY26", (26, 4)) is True
+        assert vd.period_has_ended("FY26", (27, 1)) is True
+        assert vd.period_has_ended("Q1 FY26", (26, 1)) is True
+        assert vd.period_has_ended("medium term", (27, 1)) is None
+
+    def test_judge_short_circuits_before_the_llm(self, monkeypatch):
+        async def boom(prompt, **kw):
+            raise AssertionError("LLM must not be called")
+
+        monkeypatch.setattr(vd, "agenerate", boom)
+        c = cl.Claim(
+            id="c",
+            claim="FY27 margin 20–22%",
+            quote="q",
+            category="margin",
+            metric="operating margin",
+            period="FY27",
+            target={"kind": "range", "low": 20, "high": 22, "value": None, "unit": "%"},
+            source_chunk="s",
+        )
+        v = asyncio.run(vd.judge_claim(c, EVIDENCE, latest_reported=(27, 1)))
+        assert v.verdict == "UNVERIFIABLE" and v.method == "period-not-ended"
+
+    def test_promise_cited_as_evidence_is_downgraded(self, monkeypatch):
+        ev = [
+            {
+                "id": "d8:c4",
+                "text": "We expect effective tax rate for the year to be in the range of 29% to 30%.",
+                "doc_type": "concall",
+                "page": 4,
+                "kind": "prose",
+            }
+        ]
+
+        async def fake(prompt, **kw):
+            return LLMResponse(
+                text='{"verdict": "MET", "actual_value": "29-30%", "actual_number": 29.5, "evidence_id": "d8:c4", "evidence_quote": "We expect effective tax rate for the year to be in the range of 29% to 30%.", "explanation": "x"}',
+                model="m",
+                provider="t",
+            )
+
+        monkeypatch.setattr(vd, "agenerate", fake)
+        v = asyncio.run(
+            vd.judge_claim(
+                _claim(
+                    {"kind": "range", "low": 29, "high": 30, "value": None, "unit": "%"}, metric="effective tax rate"
+                ),
+                ev,
+            )
+        )
+        assert v.verdict == "UNVERIFIABLE" and v.method == "downgraded:evidence-is-a-promise"
+        assert vd.is_forward_looking("Adjusted operating margin was stable at 21%.") is False

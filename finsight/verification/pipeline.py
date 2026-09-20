@@ -30,6 +30,22 @@ logger = logging.getLogger(__name__)
 SCORE = {"MET": 1.0, "PARTIAL": 0.5, "MISSED": 0.0}
 
 
+def latest_reported_period(session: Session, doc_ids: list[int]) -> tuple[int, int] | None:
+    """(fy, quarter) of the most recent actuals document, from Document.fiscal_year/fiscal_quarter."""
+    import re
+
+    best = None
+    for d in session.exec(select(Document).where(Document.id.in_(doc_ids))).all():  # type: ignore[attr-defined]
+        m = re.search(r"(\d{2,4})", d.fiscal_year or "")
+        if not m:
+            continue
+        fy = int(m.group(1)) % 100
+        q = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}.get((d.fiscal_quarter or "Q4").upper(), 4)
+        if best is None or (fy, q) > best:
+            best = (fy, q)
+    return best
+
+
 def _parallel() -> int:
     return 1 if get_provider().name == "ollama" else 4
 
@@ -62,12 +78,13 @@ async def verify(
 
     # Stage 2 — evidence from all documents of the actuals period, then a verdict per claim
     doc_ids = actuals_documents(session, actuals_doc)
+    latest = latest_reported_period(session, doc_ids)
     sem = asyncio.Semaphore(parallel)
 
     async def one(claim):
         evidence = find_evidence(session, claim, doc_ids)
         async with sem:
-            v = await judge_claim(claim, evidence, model=model)
+            v = await judge_claim(claim, evidence, model=model, latest_reported=latest)
         return claim, v, evidence
 
     results = await asyncio.gather(*(one(c) for c in claims))

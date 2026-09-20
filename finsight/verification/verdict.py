@@ -140,6 +140,46 @@ def numeric_verdict(target: dict | None, actual: float | None, metric: str | Non
     return None
 
 
+_Q = {"Q1": 1, "Q2": 2, "Q3": 3, "Q4": 4}
+_FORWARD_ONLY = re.compile(
+    r"\b(expect(s|ed)?|guidance|guide|will|shall|target(s)?|aim|outlook|plan(s|ned)?|anticipate|forecast)\b", re.I
+)
+_REPORTED = re.compile(
+    r"\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|"
+    r"achieved|improved|expanded|generated|returned|paid|crossed|remained|ended|recruited)\b",
+    re.I,
+)
+
+
+def claim_period_end(period: str | None) -> tuple[int, int] | None:
+    """('FY27' → (27, 4)), ('Q1 FY26' → (26, 1)); None when the period is not a single FY/quarter."""
+    if not period:
+        return None
+    m = re.search(
+        r"\b(?:Q([1-4])\s*)?(?:FY|fiscal(?: year)?|financial year)\s*'?(?:20)?(\d{2})\b(?:\s*Q([1-4]))?", period, re.I
+    )
+    if not m:
+        return None
+    if re.search(r"\b(and beyond|onwards|medium|long)\b", period, re.I):
+        return None
+    fy = int(m.group(2))
+    q = int(m.group(1) or m.group(3) or 4)
+    return fy, q
+
+
+def period_has_ended(period: str | None, latest_reported: tuple[int, int] | None) -> bool | None:
+    """True/False when both sides are known; None when the claim's period cannot be parsed."""
+    end = claim_period_end(period)
+    if end is None or latest_reported is None:
+        return None
+    return latest_reported >= end
+
+
+def is_forward_looking(text: str) -> bool:
+    """A sentence that promises rather than reports (no reported-result verb, at least one forward cue)."""
+    return bool(_FORWARD_ONLY.search(text)) and not _REPORTED.search(text)
+
+
 def _target_text(t: dict | None) -> str:
     if not t:
         return "qualitative"
@@ -149,7 +189,24 @@ def _target_text(t: dict | None) -> str:
     return {"min": "at least", "max": "at most", "point": "about"}[t["kind"]] + f" {t['value']} {u}".rstrip()
 
 
-async def judge_claim(claim: Claim, evidence: list[dict], *, model: str | None = None) -> Verdict:
+async def judge_claim(
+    claim: Claim, evidence: list[dict], *, model: str | None = None, latest_reported: tuple[int, int] | None = None
+) -> Verdict:
+    # A full-year or quarter commitment cannot have an outcome before that period has ended.
+    if period_has_ended(claim.period, latest_reported) is False:
+        fy, q = claim_period_end(claim.period)
+        return Verdict(
+            claim.id,
+            "UNVERIFIABLE",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            f"{claim.period} has not ended: the latest reported period is Q{latest_reported[1]} FY{latest_reported[0]:02d}, the claim needs Q{q} FY{fy:02d}.",
+            "period-not-ended",
+        )
     blocks = "\n\n".join(
         f"[{e['id']}] ({e.get('doc_type')}, page {e.get('page')}{', ' + e['speaker'] if e.get('speaker') else ''})\n{e['text']}"
         for e in evidence
@@ -189,6 +246,9 @@ async def judge_claim(claim: Claim, evidence: list[dict], *, model: str | None =
                         break
         if not ok:
             verdict, method = "UNVERIFIABLE", "downgraded:quote-not-found"
+        elif cited.get("kind") not in ("row", "table") and is_forward_looking(str(quote)):
+            # the model cited a promise ("we expect…", "guidance is…") as if it were a result
+            verdict, method = "UNVERIFIABLE", "downgraded:evidence-is-a-promise"
         else:
             page, doc_type = cited.get("page"), cited.get("doc_type")
 
