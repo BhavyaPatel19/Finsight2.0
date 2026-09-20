@@ -1,128 +1,119 @@
 # FinSight
 
-**Grounded question-answering and claim verification over Indian company filings — with the retrieval pipeline measured, not just built.**
+**Grounded question-answering and claim verification over company filings — rebuilt around measurement.**
 
-FinSight ingests earnings-call transcripts, press releases and annual reports, answers questions with page-level citations from a hybrid BM25 + dense retriever with cross-encoder reranking, and checks whether management *walked the talk*: it extracts forward-looking claims from one quarter's call and grades them MET / MISSED / PARTIAL against the next period's actuals. A React dashboard wraps it with market data, watchlists and FinBERT sentiment.
+FinSight ingests earnings-call transcripts, press releases, fact sheets and annual reports (PDF or HTML), answers questions with page-level citations, and checks whether management *walked the talk*: it extracts forward-looking commitments from one quarter's call and grades them **MET / MISSED / PARTIAL / UNVERIFIABLE** against the next period's filings, with the evidence quote for every verdict. A React dashboard wraps it with market data, watchlists and FinBERT sentiment by division.
 
-[![CI](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml/badge.svg)](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml)
+[![CI](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml/badge.svg?branch=experiment%2Faccuracy-redesign)](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+
+> **Branches.** `main` is the original project as built. This branch, `experiment/accuracy-redesign`, is a from-scratch rebuild of the accuracy-critical core — ingestion, retrieval, verification — driven by an audit of every process ([docs/PIPELINE_AUDIT.md](docs/PIPELINE_AUDIT.md)) and measured at every step ([eval/results/HISTORY.md](eval/results/HISTORY.md)).
 
 ---
 
 ## In numbers
 
-Retrieval over 8 Infosys filings (145 chunks), 64 gold questions, relevance = the retrieved chunk contains the gold evidence quote ([methodology](docs/EVALUATION.md), [history of what changed](eval/results/HISTORY.md)):
+Eight public Infosys filings (SEC EDGAR 6-K exhibits: four earnings-call transcripts, two press releases, two fact sheets, Q4 FY25 → Q1 FY27), **rendered to real multi-page PDFs** because PDF is the product's primary input. 64 gold questions with verbatim evidence quotes; a retrieved chunk counts only if it contains the quote.
 
-| retrieval mode | hit@1 | hit@5 | MRR@8 | nDCG@8 | ms/query |
-|---|---|---|---|---|---|
-| dense (BGE-base) | 0.328 | 0.578 | 0.450 | 0.513 | 32 |
-| BM25 | 0.312 | 0.625 | 0.449 | 0.506 | <1 |
-| hybrid (RRF) | 0.422 | 0.766 | 0.556 | 0.606 | 16 |
-| **hybrid + rerank (production)** | **0.656** | **0.844** | **0.738** | **0.764** | 641–877 |
+| retrieval, PDF corpus | hit@1 | hit@5 | MRR@8 | evidence within first 6k chars |
+|---|---|---|---|---|
+| original pipeline | 0.688 | 0.875 | 0.771 | 0.859 |
+| **redesign (v2)** | **0.781** | **1.000** | **0.879** | **1.000** |
 
-The production path started at hit@5 **0.578** — below BM25 alone — and reached **0.844** through four measured fixes, none of which changed the architecture: the reranker was scoring 512 *characters* instead of 512 tokens, BM25 hits carried no page numbers, and neither the embedder nor the reranker could tell a Q4 FY25 filing from a Q4 FY26 one until a `company · doc type · period` header was prepended at index time.
+Same on the HTML originals: hit@5 0.859 → 0.984. Chunk coverage — the share of questions whose evidence exists in *any* chunk — went from 96.9% to 100%, because the original chunker silently dropped 11–35% of the text of several documents.
 
-End-to-end answers on the same 64 questions, generated and judged by a local `qwen3:14b` (Groq/70B cross-check pending — [why that matters](docs/EVALUATION.md#2-generation-python--m-evalgeneration)):
-
-| metric | value |
-|---|---|
-| correct vs human reference (judge) | **87.5%** (partial 7.8%, incorrect 4.7%) |
-| faithfulness — answer claims supported by retrieved text (judge) | **0.947** |
-| abstains on the 4 unanswerable questions | 100% |
-| answers carrying a `[… Page N]` citation / cited pages actually retrieved | 95% / 100% |
-
-Every "incorrect" answer was an abstention on a retrieval miss, not a fabricated number. The first generation run also caught a production bug: Ollama's default 2k context window silently truncated the 4k-token RAG prompt from the front, so local models never saw the grounding rules.
-
-Walk the Talk against 15 human-labelled claims (`qwen3:14b`): **claim recall 0.80**, verdict agreement 0.58 three-way / 0.75 MET-vs-not (κ 0.10 / 0.40, n=12). Weak — and diagnosable: four of the five wrong verdicts are the model saying the actuals "do not mention" the fact, i.e. retrieval-of-actuals misses and one genuinely unverifiable claim with no `UNVERIFIABLE` verdict to reach for. That is the next change; the numbers are in [`eval/results/HISTORY.md`](eval/results/HISTORY.md) so it can be measured.
+End-to-end answers (correctness vs human reference, faithfulness, abstention) and Walk-the-Talk agreement with 15 human-labelled claims: original pipeline **87.5% correct / faithfulness 0.947** and **κ 0.10** respectively (local `qwen3:14b`); the v2 runs are in progress and will replace this line.
 
 ---
 
-## What it does
+## What the audit found
 
-| | |
-|---|---|
-| ![Chat](frontend/public/screenshots/chat.jpeg) | **Grounded Q&A.** Ask across selected filings; answers cite `[Section > Page N]`, show the retrieved passages, and say *"Not found in the selected documents."* rather than guess. Reasoning-model traces are shown when available. |
-| ![CrediSentiment](frontend/public/screenshots/credisentiment.jpeg) | **Walk the Talk.** Pick a "claims" document and a later "actuals" document. Stage 1 extracts forward-looking commitments (revenue, margin, capex, hiring, …); stage 2 retrieves the matching actuals and grades each claim, with an overall credibility score and narrative. FinBERT scores sentiment per business division. |
-| ![Market](frontend/public/screenshots/market.jpeg) | **Market.** NSE quotes, candlesticks, instrument search, fundamentals and news. Works out of the box on free delayed data (yfinance); links a Zerodha Kite account for live broker data. |
-| ![Dashboard](frontend/public/screenshots/dashboard.jpeg) | **Portfolio & watchlists.** Holdings synced from Zerodha, multiple watchlists with notes, and an LLM digest of the day's movers. |
+Reading every process end to end, on the PDFs the product actually ingests ([full audit](docs/PIPELINE_AUDIT.md)):
+
+- **Transcript PDFs were never recognised as transcripts** — the speaker regex needed a colon that PDF text does not have — so they were cut into fixed 1,500-character windows mid-sentence. Fact sheets *were* misdetected as transcripts by the same regex and lost 18–35% of their text to a chunker that discarded everything before the first "speaker" on each page.
+- **Tables were read as one cell per line.** `find_tables()` was never called; rows lost their headers; two gold facts did not survive extraction at all.
+- **Three indexing routes for one document.** The Documents page's *Process* button ran a 512-character window chunker with no page numbers, and the Chat page then trusted its output.
+- **The reranker was matching headers, not content**: `bge-reranker-base` scored an irrelevant paragraph 0.69–0.75 as long as it carried the document header, and the correct fact-sheet row 0.001 without one.
+- **Claim verification retrieved "actuals" per *category*** with a dense-only search over one document; four of five wrong verdicts said "the actuals do not mention…" while the fact sat in the sibling press release or fact sheet.
+- Ollama's default 2k context truncated the 4k-token RAG prompt from the front; `WTT_PARALLEL=4` deadlocked a single-slot local model into returning zero claims; `passlib` broke registration on fresh installs.
 
 ---
 
-## Architecture
+## Architecture (v2)
 
 ```mermaid
 flowchart LR
-  subgraph Ingest
-    A[PDF / HTML filing] --> B[extract_structured_document<br/>PyMuPDF pages + TOC · HTML → synthetic pages]
-    B --> C[chunk_smart<br/>speaker turns for calls · section/page for reports]
-    C --> D[(SQLite<br/>chunks · metadata)]
-    C --> E[(ChromaDB<br/>BGE-base embeddings<br/>+ context header)]
+  subgraph corpus [finsight/corpus — ingestion]
+    A[PDF / HTML] --> B[typed elements<br/>paragraph · speaker turn · heading · table row with header]
+    B --> C[lossless chunker<br/>sentence-bounded prose, one-sentence overlap<br/>row chunks + grouped tables]
   end
-  subgraph Query
-    Q[question] --> R1[dense top-20]
-    Q --> R2[BM25 top-20]
-    R1 & R2 --> F[Reciprocal Rank Fusion]
-    F --> RR[bge-reranker-base<br/>header + chunk]
-    RR --> P[strict grounding prompt<br/>cite Section > Page]
-    P --> L[LLM provider<br/>Groq · Ollama]
-    L --> ANS[answer + citations + sources]
+  subgraph retrieval [finsight/retrieval]
+    C --> D[(chunks · sentences<br/>ChromaDB + number-aware BM25)]
+    Q[question] --> E[dense + BM25 over sentences → parents<br/>+ table channel]
+    D --> E
+    E --> F[RRF × period prior]
+    F --> G[bge-reranker-v2-m3<br/>on verbalised index text]
+    G --> H[strict grounded prompt · Groq / Ollama]
   end
-  E --> R1
-  E --> R2
+  subgraph verification [finsight/verification — Walk the Talk]
+    C --> I[forward-looking sentences]
+    I --> J[typed claims<br/>metric · period · target range · verbatim quote]
+    J --> K[per-claim evidence<br/>all filings of the actuals period]
+    K --> L[verdict + evidence quote<br/>numeric targets computed · UNVERIFIABLE allowed]
+  end
 ```
 
-**Walk the Talk** is a separate two-stage pipeline on its own section-aware chunks (3,500 chars): keyword pre-filter → batched claim extraction (JSON mode) → per-claim semantic retrieval of actuals → verdict + explanation → credibility score.
-
-Backend: FastAPI · SQLModel/SQLite · ChromaDB · sentence-transformers · rank-bm25 · PyMuPDF · yfinance. Frontend: React 18 + Vite · Recharts · Framer Motion.
+Two texts per chunk: the **verbatim** source (what citations quote, what the user sees) and an **index text** carrying `company · document type · period · section · speaker`, with table rows verbalised as `title — label: column = value; …`. The embedder, BM25 and the reranker all see the same enriched text.
 
 ---
 
 ## Quickstart
 
-Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+. Ollama is optional.
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+. Optional: Ollama (local models), Chrome (to render the sample PDFs).
 
 ```bash
-git clone https://github.com/BhavyaPatel19/Finsight2.0.git && cd Finsight2.0
+git clone -b experiment/accuracy-redesign https://github.com/BhavyaPatel19/Finsight2.0.git && cd Finsight2.0
 make install                              # uv sync + npm ci
 
 cp .env.example .env
-#   SECRET_KEY=$(openssl rand -hex 32)                 required
-#   GROQ_API_KEY=gsk_...                               recommended: free at console.groq.com; else Ollama is used
-#   EDGAR_USER_AGENT="FinSight research you@example.com"   only for the sample corpus (SEC policy)
+#   SECRET_KEY=$(openssl rand -hex 32)                       required
+#   GROQ_API_KEY=gsk_...                                     recommended (free at console.groq.com); else Ollama is used
+#   EDGAR_USER_AGENT="FinSight research you@example.com"     only to download the sample corpus (SEC policy)
 
-make seed                                 # download 8 public Infosys filings from SEC EDGAR, index them (~2 min, downloads BGE models on first run)
-make dev                                  # API on http://127.0.0.1:8000  (Swagger at /docs)
-cd frontend && npm run dev                # UI on http://localhost:5173
+uv run python -m scripts.seed_demo --engine v2   # download 8 public Infosys filings from SEC EDGAR and index them
+make dev                                          # API on http://127.0.0.1:8000 (Swagger at /docs)
+cd frontend && npm run dev                        # UI on http://localhost:5173
 ```
 
-Register a user, open **Chat**, select the seeded documents and ask *"What FY26 guidance did Infosys give in April 2025, and what did it deliver?"*
+Register a user, open **Chat**, select the seeded documents and ask *"What FY26 guidance did Infosys give in April 2025, and what did it deliver?"*. Open **CrediSentiment → Walk the Talk**, pick the Q4 FY25 call as claims and the Q4 FY26 call as actuals.
 
-**Fully local, no keys:** install [Ollama](https://ollama.ai), `ollama pull llama3.1:8b`, leave `GROQ_API_KEY` unset. Set `OLLAMA_NUM_CTX=8192` (the default) — Ollama's stock 2k window silently truncates the ~4k-token RAG prompt.
+**Fully local:** install [Ollama](https://ollama.ai), `ollama pull qwen3:14b` (or any chat model), leave `GROQ_API_KEY` unset. The first run downloads `bge-base-en-v1.5` (embeddings) and `bge-reranker-v2-m3` (~2 GB); reranking costs ~1 s per query on Apple silicon.
 
 ---
 
 ## Evaluation
 
 ```bash
-make eval-retrieval        # 4 modes × 64 questions, ~2 min; writes eval/results/retrieval_<tag>.json + retrieval_latest.md
-make eval-generation       # answers every question, deterministic checks + LLM judge; needs Groq or Ollama
-uv run python -m eval.wtt  # Walk-the-Talk vs 15 human-labelled claims: recall, verdict accuracy, Cohen's κ
+uv run python -m scripts.render_pdfs                                  # HTML exhibits → real PDFs (headless Chrome)
+FINSIGHT_CORPUS=pdf uv run python -m scripts.seed_demo --format pdf --engine v2
+FINSIGHT_CORPUS=pdf uv run python -m eval.retrieval --modes v2 v2_notables v2_noperiod   # hit@k, MRR, nDCG, evidence-within-6k-chars
+FINSIGHT_CORPUS=pdf uv run python -m eval.generation                  # correctness / faithfulness (LLM judge) + deterministic checks
+FINSIGHT_CORPUS=pdf uv run python -m eval.wtt --engine v2             # claim recall, verdict agreement, κ vs 15 human labels
 ```
 
-The gold set is regenerated from an authoring script that **fails if any evidence quote is missing from the source text**, so it cannot drift. Full methodology, definitions and what is *not* measured: [docs/EVALUATION.md](docs/EVALUATION.md).
+`FINSIGHT_CORPUS=pdf` keeps the PDF corpus in its own database and vector store so the HTML and PDF paths can be compared side by side; `--engine v1` runs the original pipeline on the same gold set. The gold set is regenerated by an authoring script that **fails if any evidence quote is missing from the source text**. Methodology, definitions and what is not measured: [docs/EVALUATION.md](docs/EVALUATION.md). Every change that moved a number, with the number: [eval/results/HISTORY.md](eval/results/HISTORY.md).
 
 ---
 
-## Design decisions
+## Design principles of the rebuild
 
-- **Hybrid retrieval with RRF, then a cross-encoder.** Financial questions are half keyword (`"attrition"`, `"$4,730"`) and half semantic; BM25 and dense each win on different questions and RRF needs no score calibration. The reranker is worth its ~600 ms only once it sees the full chunk *and* the period header — the eval history shows both.
-- **Contextual headers at index time, not in the stored text.** `Infosys Ltd (INFY) · earnings call transcript · Q4 FY25` is prepended to what gets embedded, BM25-tokenised and reranked; the stored chunk stays verbatim so citations quote the filing.
-- **Provider layer.** `finsight/llm/` exposes one `generate()`; Groq (hosted, free tier) and Ollama (local) are config. Responses carry model, token usage and latency; failures raise `LLMError` (the API returns 503) instead of `"[LLM error: …]"` strings that used to be parsed as answers.
-- **Market data is a provider too.** yfinance by default so a fresh clone works; Zerodha Kite is an opt-in upgrade for users who link an account. Instrument search uses a bundled public NIFTY 500 list with Yahoo search as fallback.
-- **HTML filings get synthetic pages.** EDGAR exhibits have no page breaks; text is cut into ~3,000-character pages at paragraph boundaries so citations stay locatable, and bold-only paragraphs become `Speaker:` lines so transcripts still chunk by turn.
-- **Own judge instead of RAGAS.** The RAGAS build in the lock file could not import against current LangChain and pulled in four heavy packages; the replacement is ~100 lines on the provider layer with the prompts in the repo, plus deterministic checks (number recall, abstention, citation validity) that need no judge at all.
-- **Public data only.** Everything in the sample corpus is a public SEC filing; company IR sites and BSE refuse programmatic access, and the previous User-Agent-rotating scraper was removed from the supported path.
+1. **Lossless by construction.** Parsing produces typed elements; chunking is a total function over them with a tested invariant — every element's text is in some chunk.
+2. **Structure is context.** Table rows carry title and header; transcript chunks carry the speaker and the analyst question they answer; every chunk carries company, document type and period.
+3. **Retrieve small, return big.** Sentences are indexed for precision and mapped back to their parent chunk; a dedicated table channel guarantees numeric questions get row candidates into fusion.
+4. **Numbers are checked, not trusted.** A verdict on a numeric target (a range, "above 100%") is computed from the extracted actual; the LLM extracts, code decides.
+5. **Abstain explicitly.** RAG answers "Not found in the selected documents."; verification returns `UNVERIFIABLE`, and any MET/MISSED/PARTIAL must cite a quote that is verifiably in the retrieved text or it is downgraded.
+6. **Every change is a row in the history file.** Nothing lands without a before/after on the same gold set.
 
 ---
 
@@ -131,48 +122,47 @@ The gold set is regenerated from an authoring script that **fails if any evidenc
 | variable | default | purpose |
 |---|---|---|
 | `SECRET_KEY` | — (required) | JWT signing; startup fails without it |
-| `ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | CORS |
-| `LLM_PROVIDER` | `auto` | `auto` (Groq if key set, else Ollama) · `groq` · `ollama` |
-| `GROQ_API_KEY`, `GROQ_MODEL` | —, `llama-3.3-70b-versatile` | hosted inference |
-| `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `OLLAMA_NUM_CTX` | `http://localhost:11434`, `llama3.1:8b`, `8192` | local inference |
-| `WTT_MODEL` | provider default | override for claim extraction / verification |
-| `MARKET_DATA_PROVIDER` | `auto` | `auto` (Zerodha for linked users, else yfinance) · `yfinance` · `zerodha` |
-| `ZERODHA_API_KEY`, `ZERODHA_API_SECRET`, `ZERODHA_REDIRECT_URI` | — | optional Kite Connect app |
+| `LLM_PROVIDER` · `GROQ_API_KEY` · `GROQ_MODEL` | `auto` · — · `llama-3.3-70b-versatile` | hosted inference |
+| `OLLAMA_BASE_URL` · `OLLAMA_MODEL` · `OLLAMA_NUM_CTX` · `OLLAMA_TIMEOUT_S` | `http://localhost:11434` · `llama3.1:8b` · `8192` · `300` | local inference |
+| `WTT_MODEL` | provider default | model for claim extraction / verification |
+| `EMBEDDING_MODEL` · `RERANKER_MODEL` | `BAAI/bge-base-en-v1.5` · `BAAI/bge-reranker-v2-m3` | retrieval models |
+| `MARKET_DATA_PROVIDER` · `ZERODHA_*` | `auto` · — | yfinance by default; Zerodha Kite if configured and linked |
+| `FINSIGHT_CORPUS` | — | `pdf` → separate DB/vector store for the PDF eval corpus |
 | `EDGAR_USER_AGENT` | — | required by SEC to download the sample corpus |
-| `DATABASE_URL`, `CHROMA_PERSIST_DIR`, `EMBEDDING_MODEL` | SQLite file, `./chroma_db`, `BAAI/bge-base-en-v1.5` | storage & embeddings |
+| `ALLOWED_ORIGINS` · `DATABASE_URL` · `CHROMA_PERSIST_DIR` | dev server · SQLite file · `./chroma_db` | infrastructure |
 
 ---
 
 ## Repository map
 
 ```
-finsight/           FastAPI backend
-  llm/              provider layer (Groq, Ollama), /llm/models
-  rag/              retrieval.py (4 modes) · service.py (index + answer) · bm25_store · reranker · vectorstore
-  ingestion/        parsers (PDF + HTML) · uploads (validated) · file_manager
-  credisentiment/   Walk the Talk pipeline + prompts · FinBERT division sentiment
-  market/           providers (yfinance, Zerodha) · fundamentals · insights · news · bundled NIFTY 500 list
-  auth/ zerodha/ portfolio/ watchlist/ credibility/ scraper/ models/
-eval/               gold sets · retrieval / generation / wtt harnesses · judge · results
-scripts/seed_demo.py  downloads + indexes the sample corpus
-frontend/           React + Vite
-tests/              142 tests (pytest); models and LLMs are stubbed, so the suite runs in ~10 s
+finsight/corpus/        ingestion v2: elements.py · parse_pdf.py · parse_html.py · structure.py (transcript gate) · chunker.py
+finsight/retrieval/     index.py (chunks + sentences) · search.py (fusion, table channel, rerank) · periods.py · text.py
+finsight/verification/  claims.py · evidence.py · verdict.py · pipeline.py · sentiment.py
+finsight/rag/           answer_question (grounded prompt), legacy v1 index kept for the eval comparison
+finsight/llm/           provider layer (Groq, Ollama)
+finsight/market/        providers (yfinance, Zerodha) · fundamentals · news
+finsight/{auth,ingestion,credisentiment,watchlist,portfolio,zerodha}/   app modules
+eval/                   gold sets · retrieval / generation / wtt harnesses · judge · results + HISTORY.md
+scripts/                seed_demo.py (download + index) · render_pdfs.py
+docs/                   PIPELINE_AUDIT.md · REDESIGN.md · EVALUATION.md
+tests/                  177 tests; models and LLMs stubbed, runs in ~11 s
 ```
 
 ---
 
-## Limitations and roadmap
+## Limitations
 
-- Documents are shared across users (no per-user scoping yet); the app is single-tenant in practice.
-- Answers are not streamed; the chat's typing effect is client-side.
-- JWTs live in `localStorage`; Zerodha access tokens are stored unencrypted; the Zerodha OAuth flow lacks a `state` parameter. Fine for a local tool, not for a public deployment.
-- Walk the Talk agrees with the human labels on 7 of 12 matched claims (κ 0.10). The gold set is 15 claims from one company and one labeller; the verdict scheme lacks `UNVERIFIABLE`; stage 2 caps at 35 claims. Extending the labels (more companies, a second labeller), adding the abstain verdict and re-measuring come first; fine-tuning a small encoder for claim detection and an NLI cross-encoder for verdicts — with the LLM as teacher and narrator — is the planned modelling step after that.
-- Retrieval numbers are from one corpus (Infosys, four quarters). Expect different behaviour on 200-page annual reports with real page numbers.
+- The corpus is one company, four quarters, filings rendered from HTML. Real scanned or multi-column annual reports will stress the PDF parser in ways this corpus does not; the eval is built so that adding them is a manifest entry plus questions.
+- Walk-the-Talk labels: 15 claims, one labeller. κ is reported but too small to lean on until the set is larger and a second labeller has graded it.
+- The judge in the generation eval is a local 14B model; a hosted 70B run with a different judge is the planned cross-check.
+- Reranking with v2-m3 costs ~1 s/query; latency work (candidate pruning, batching) is not done.
+- Documents are per-user; the app is otherwise single-tenant in practice. Answers are not streamed.
 
 ---
 
 ## Data and licence
 
-Sample corpus: Form 6-K exhibits filed with the U.S. SEC by Infosys Ltd, downloaded from EDGAR at seed time (SHA-256 pinned in `eval/gold/documents.json`; not redistributed). NIFTY 500 constituent list from NSE Indices (`finsight/market/data/README.md`). Prices via Yahoo Finance (delayed) or the user's own Zerodha account.
+Sample corpus: Form 6-K exhibits filed with the U.S. SEC by Infosys Ltd, downloaded from EDGAR at seed time (SHA-256 pinned in `eval/gold/documents.json`, not redistributed). NIFTY 500 constituent list from NSE Indices. Prices via Yahoo Finance (delayed) or the user's own Zerodha account.
 
 Code is MIT licensed — see [LICENSE](LICENSE).
