@@ -123,6 +123,7 @@ FINSIGHT_CORPUS=pdf uv run python -m eval.wtt --engine v2             # claim re
 |---|---|---|
 | `SECRET_KEY` | — (required) | JWT signing; startup fails without it |
 | `LLM_PROVIDER` · `GROQ_API_KEY` · `GROQ_MODEL` | `auto` · — · `openai/gpt-oss-120b` | hosted inference (enable the model in your Groq project first) |
+| `CEREBRAS_API_KEY` · `CEREBRAS_MODEL` | — · `gpt-oss-120b` | same models via Cerebras; `auto` falls back to it when no Groq key is set |
 | `OLLAMA_BASE_URL` · `OLLAMA_MODEL` · `OLLAMA_NUM_CTX` · `OLLAMA_TIMEOUT_S` | `http://localhost:11434` · `llama3.1:8b` · `8192` · `300` | local inference |
 | `WTT_MODEL` | provider default | model for claim extraction / verification |
 | `EMBEDDING_MODEL` · `RERANKER_MODEL` | `BAAI/bge-base-en-v1.5` · `BAAI/bge-reranker-v2-m3` | retrieval models |

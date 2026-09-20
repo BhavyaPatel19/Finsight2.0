@@ -34,6 +34,7 @@ class TestSelection:
     def test_auto_falls_back_to_ollama(self, monkeypatch):
         monkeypatch.setattr(config, "LLM_PROVIDER", "auto")
         monkeypatch.setattr(config, "GROQ_API_KEY", "")
+        monkeypatch.setattr(config, "CEREBRAS_API_KEY", "")
         assert resolve_provider_name() == "ollama"
         assert isinstance(get_provider(), OllamaProvider)
 
@@ -249,3 +250,47 @@ class TestModelsEndpoint:
         )
         r = api_client.get("/llm/models", headers=auth_headers)
         assert r.json()["default_model"] == "qwen3:14b"
+
+
+# ---------------------------------------------------------------------------
+# Cerebras (same wire format as Groq)
+# ---------------------------------------------------------------------------
+
+
+class TestCerebras:
+    def test_defaults_and_request(self):
+        from finsight.llm.groq import CerebrasProvider
+
+        seen = {}
+
+        def handler(request):
+            seen["url"] = str(request.url)
+            seen["body"] = json.loads(request.content)
+            return httpx.Response(200, json=_groq_ok("ok", model="gpt-oss-120b"))
+
+        p = CerebrasProvider(api_key="csk-test", transport=httpx.MockTransport(handler))
+        r = p.generate("q?", json_mode=True, think=False)
+        assert p.name == "cerebras" and r.provider == "cerebras"
+        assert seen["url"] == "https://api.cerebras.ai/v1/chat/completions"
+        assert seen["body"]["model"] == "gpt-oss-120b" and seen["body"]["reasoning_effort"] == "low"
+        assert [m["id"] for m in CerebrasProvider(api_key="").available_models()] == ["gpt-oss-120b", "qwen-3.8-27b"]
+
+    def test_missing_key_names_its_own_env_var(self):
+        from finsight.llm.base import LLMError
+        from finsight.llm.groq import CerebrasProvider
+
+        with pytest.raises(LLMError, match="CEREBRAS_API_KEY"):
+            CerebrasProvider(api_key="").generate("x")
+
+    def test_auto_prefers_groq_then_cerebras_then_ollama(self, monkeypatch):
+        from finsight import config
+        from finsight.llm import resolve_provider_name
+
+        monkeypatch.setattr(config, "LLM_PROVIDER", "auto")
+        monkeypatch.setattr(config, "GROQ_API_KEY", "g")
+        monkeypatch.setattr(config, "CEREBRAS_API_KEY", "c")
+        assert resolve_provider_name() == "groq"
+        monkeypatch.setattr(config, "GROQ_API_KEY", "")
+        assert resolve_provider_name() == "cerebras"
+        monkeypatch.setattr(config, "CEREBRAS_API_KEY", "")
+        assert resolve_provider_name() == "ollama"
