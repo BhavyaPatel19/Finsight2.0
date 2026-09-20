@@ -134,6 +134,40 @@ def judge_correctness_cached(item, answer, judge_model):
     return judge_correctness(item["question"], item["answer"], answer, model=judge_model)
 
 
+def rejudge(path: Path, judge_model: str | None) -> None:
+    """Re-run only the correctness judge over a finished run's answers (the rubric changed, or a
+    different judge is wanted); the generator output is untouched and the previous grades are kept."""
+    from eval.retrieval import git_sha
+
+    report = json.loads(path.read_text())
+    gold = {
+        g["id"]: g
+        for g in json.loads(json.dumps([json.loads(line) for line in GOLD.read_text().splitlines() if line.strip()]))
+    }
+    n = 0
+    for row in report["rows"]:
+        item = gold.get(row["id"])
+        if not item or not item["answerable"] or "answer" not in row:
+            continue
+        row.setdefault("correctness_history", []).append(row.get("correctness"))
+        row["correctness"] = judge_correctness_cached(item, row["answer"], judge_model)
+        n += 1
+        print(f"  {row['id']} {row['correctness'].get('grade', '')}")
+    report["summary"] = summarise(report["rows"])
+    report["judge_model"] = judge_model or report.get("judge_model")
+    report.setdefault("rejudged", []).append(
+        {
+            "judge_model": judge_model,
+            "git_sha": git_sha(),
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            "n": n,
+        }
+    )
+    path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
+    print(json.dumps(report["summary"]["correctness"], indent=1))
+    print(f"re-judged {n} answers in {path.relative_to(ROOT)}")
+
+
 def summarise(rows: list[dict]) -> dict:
     from eval.metrics import mean
 
@@ -256,7 +290,17 @@ def main() -> None:
     )
     ap.add_argument("--gold", type=Path, default=GOLD)
     ap.add_argument("--tag", default="")
+    ap.add_argument(
+        "--rejudge",
+        type=Path,
+        default=None,
+        help="re-grade correctness of the stored answers in this results JSON (no generation) with --judge-model",
+    )
     args = ap.parse_args()
+
+    if args.rejudge:
+        rejudge(args.rejudge, args.judge_model)
+        return
 
     os.environ.setdefault("SECRET_KEY", "eval")
     from sqlmodel import Session

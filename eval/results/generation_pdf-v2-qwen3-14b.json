@@ -4,7 +4,7 @@
   "tag": "pdf-v2-qwen3-14b",
   "provider": "ollama",
   "model": "qwen3:14b",
-  "judge_model": null,
+  "judge_model": "qwen-3.8-27b",
   "top_k": 8,
   "summary": {
     "n": 76,
@@ -20,9 +20,9 @@
     "faithfulness_n": 62,
     "correctness": {
       "correct": 0.828125,
-      "partial": 0.09375,
-      "incorrect": 0.078125,
-      "unknown": 0.0
+      "partial": 0.046875,
+      "incorrect": 0.109375,
+      "unknown": 0.015625
     },
     "correctness_n": 64,
     "latency_ms_mean": 63700,
@@ -35,7 +35,7 @@
       "explanatory": {
         "n": 2,
         "number_recall": 1.0,
-        "correct": 0.5
+        "correct": 1.0
       },
       "factual": {
         "n": 2,
@@ -45,12 +45,12 @@
       "guidance": {
         "n": 9,
         "number_recall": 0.812,
-        "correct": 0.889
+        "correct": 1.0
       },
       "numeric": {
         "n": 47,
         "number_recall": 0.789,
-        "correct": 0.83
+        "correct": 0.787
       }
     }
   },
@@ -94,8 +94,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the revenue growth guidance of 0% to 3% in constant currency terms for FY26 as provided by Infosys during the Q4 FY25 call, matching the reference answer exactly."
-      }
+        "reason": "The answer correctly identifies the revenue growth guidance for FY26 as 0%-3% in constant currency, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the revenue growth guidance of 0% to 3% in constant currency terms for FY26 as provided by Infosys during the Q4 FY25 call, matching the reference answer exactly."
+        }
+      ]
     },
     {
       "id": "r002",
@@ -136,8 +142,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same operating margin guidance (20% to 22%) as the reference answer and provides additional context about the source (Q4 FY25 results press release and earnings call transcript), which does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the operating margin guidance as 20%-22% for FY26, which matches the reference answer of 20% to 22%. The additional context regarding the source documents is acceptable extra detail."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same operating margin guidance (20% to 22%) as the reference answer and provides additional context about the source (Q4 FY25 results press release and earnings call transcript), which does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r003",
@@ -178,8 +190,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the revenue as $19.277 billion (equivalent to $19.3 billion) and the constant-currency growth as 4.2%, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer provides the revenue as $19,277 million, which is equivalent to the reference's $19.3 bn (rounded). It also correctly states the constant-currency growth as 4.2%, matching the reference. The question asked for both revenue and constant-currency growth, and both are answered accurately."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the revenue as $19.277 billion (equivalent to $19.3 billion) and the constant-currency growth as 4.2%, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r004",
@@ -215,8 +233,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same number (80 basis points) as the reference and provides additional context (document type, period, page number) without contradicting the reference."
-      }
+        "reason": "The answer correctly states that acquisitions contributed 80 basis points to Infosys's FY25 growth, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same number (80 basis points) as the reference and provides additional context (document type, period, page number) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r005",
@@ -257,8 +281,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the operating margin for FY25 as 21.1% and accurately mentions the improvement of 50 basis points (0.5%) over FY24. The additional detail about the document type, period, and page number does not contradict the reference and is considered extra information, which is acceptable."
-      }
+        "reason": "The answer correctly states the operating margin for FY25 as 21.1% and the improvement over FY24 as 50 basis points (or 0.5%), which matches the reference exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the operating margin for FY25 as 21.1% and accurately mentions the improvement of 50 basis points (0.5%) over FY24. The additional detail about the document type, period, and page number does not contradict the reference and is considered extra information, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r006",
@@ -304,8 +334,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the free cash flow of $4.1 bn and the percentage of net profit (129%) as mentioned in the reference. Additional details about tax refunds do not contradict the reference and are considered extra information, which is acceptable."
-      }
+        "reason": "The answer correctly identifies the free cash flow as $4.1 bn and the percentage of net profit as 129%, matching the reference. The additional detail about adjusted net profit is extra correct context and does not contradict the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the free cash flow of $4.1 bn and the percentage of net profit (129%) as mentioned in the reference. Additional details about tax refunds do not contradict the reference and are considered extra information, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r007",
@@ -346,8 +382,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the number of large deals (96) and the total contract value ($11.6 billion), which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the number of large deals (96) and the total contract value ($11.6 billion) as stated in the reference. The reference includes additional context (56% net new) which the question did not ask for, so its omission does not affect the grade."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the number of large deals (96) and the total contract value ($11.6 billion), which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r008",
@@ -388,8 +430,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the number of large deals (24) and the percentage of net new deals (63%), which matches the reference. The additional detail about the source (earnings call transcript) is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the number of large deals (24) and the net new share (63%) as stated in the reference. It omits the TCV ($2.6 bn), but the question did not ask for the TCV, only the number of deals and the net new share."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the number of large deals (24) and the percentage of net new deals (63%), which matches the reference. The additional detail about the source (earnings call transcript) is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r009",
@@ -430,8 +478,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that Europe grew at 15% year-on-year in constant currency and represented 30% of Infosys' revenues, which matches the reference answer. Additional context about the document sources does not contradict the reference and is considered extra detail."
-      }
+        "reason": "The answer correctly identifies the growth rate (15% in constant currency) and the revenue share (30%) as stated in the reference. It omits the comparison to the company rate (3x), but the instructions state that extra context in the reference that the question did not explicitly ask for is not required in the answer. The core facts requested are accurate."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that Europe grew at 15% year-on-year in constant currency and represented 30% of Infosys' revenues, which matches the reference answer. Additional context about the document sources does not contradict the reference and is considered extra detail."
+        }
+      ]
     },
     {
       "id": "r010",
@@ -472,8 +526,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the same facts and numbers as the reference answer, mentioning the growth percentages for Financial Services (12.6%) and Manufacturing (14%) in constant currency. The additional detail about the document type and page does not contradict the reference and is considered extra information, which is acceptable."
-      }
+        "reason": "The answer correctly identifies the two verticals (Financial Services and Manufacturing) and their respective growth rates (12.6% and 14%) as stated in the reference. It also correctly notes the 'constant currency' context, which is part of the reference's specific metric definition. The extra citation tag does not affect the correctness of the factual content."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the same facts and numbers as the reference answer, mentioning the growth percentages for Financial Services (12.6%) and Manufacturing (14%) in constant currency. The additional detail about the document type and page does not contradict the reference and is considered extra information, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r011",
@@ -514,8 +574,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer provides the same headcount number (323,578) and attrition rate (14.1%) as the reference. It also includes additional context about the attrition rate being 'voluntary' and referring to 'LTM - IT Services', which does not contradict the reference and is considered extra detail."
-      }
+        "reason": "The answer provides the exact headcount (323,578) and attrition rate (14.1%) requested in the question, matching the reference values. The additional context about 'voluntary' and 'LTM - IT Services' is specific detail that does not contradict the reference, and the omission of the year-on-year change is acceptable as it was not explicitly asked for in the question."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer provides the same headcount number (323,578) and attrition rate (14.1%) as the reference. It also includes additional context about the attrition rate being 'voluntary' and referring to 'LTM - IT Services', which does not contradict the reference and is considered extra detail."
+        }
+      ]
     },
     {
       "id": "r012",
@@ -556,8 +622,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same numbers as the reference (15,000 in FY25 and over 20,000 planned for FY26) and includes additional context about the sources, which does not contradict the reference."
-      }
+        "reason": "The answer correctly states that Infosys hired 15,000 freshers in FY25 and plans to hire over 20,000 in FY26, which matches the reference exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same numbers as the reference (15,000 in FY25 and over 20,000 planned for FY26) and includes additional context about the sources, which does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r013",
@@ -598,8 +670,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts/numbers as the reference (29% to 30%) and includes additional context about the document sources, which is acceptable and does not contradict the reference."
-      }
+        "reason": "The answer correctly states the expected effective tax rate for FY26 as 29% to 30%, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts/numbers as the reference (29% to 30%) and includes additional context about the document sources, which is acceptable and does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r014",
@@ -640,8 +718,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts and numbers as the reference answer (cash position of $5.56 bn and ROE of 29%) and includes an additional correct detail (source: earnings call transcript Q4 FY25, Page 4)."
-      }
+        "reason": "The answer provides the exact same figures for both the consolidated cash position ($5.56 bn) and ROE (29%) as the reference answer. The additional citation does not affect the correctness of the facts provided."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts and numbers as the reference answer (cash position of $5.56 bn and ROE of 29%) and includes an additional correct detail (source: earnings call transcript Q4 FY25, Page 4)."
+        }
+      ]
     },
     {
       "id": "r015",
@@ -691,9 +775,15 @@
         ]
       },
       "correctness": {
-        "grade": "partial",
-        "reason": "The answer includes some correct information, such as the 3.5% reduction and the mention of third-party costs. However, it adds details not present in the reference, such as 'slipped deals' and references to specific pages in the earnings call transcript, which are not mentioned in the reference answer. Additionally, the reference answer attributes the decline to 'reduced third-party costs and seasonal weakness,' while the answer introduces 'revenue' as part of the third-party factor, which is not explicitly stated in the reference."
-      }
+        "grade": "correct",
+        "reason": "The answer correctly identifies the 3.5% decline, the primary cause (third-party costs/revenue), and the proportion (two-thirds) attributed to this factor, matching the reference. It also correctly mentions seasonality as a contributing factor, which aligns with the reference's mention of 'seasonal weakness'. The additional details about slipped deals are consistent with the context of third-party revenue decline."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer includes some correct information, such as the 3.5% reduction and the mention of third-party costs. However, it adds details not present in the reference, such as 'slipped deals' and references to specific pages in the earnings call transcript, which are not mentioned in the reference answer. Additionally, the reference answer attributes the decline to 'reduced third-party costs and seasonal weakness,' while the answer introduces 'revenue' as part of the third-party factor, which is not explicitly stated in the reference."
+        }
+      ]
     },
     {
       "id": "r016",
@@ -734,8 +824,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that most Infosys employees received wage hikes in January and that middle-level to senior-level employees received theirs effective April 1st, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies that most employees received hikes in January and middle to senior level employees effective April 1st, which matches the reference exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that most Infosys employees received wage hikes in January and that middle-level to senior-level employees received theirs effective April 1st, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r017",
@@ -776,8 +872,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the 40 basis points margin headwind attributed to M&A-related costs in FY25 and adds the detail that it was a one-off charge linked to an acquisition, which is consistent with the reference answer."
-      }
+        "reason": "The answer correctly identifies the 40 basis points margin headwind and notes it was a one-off charge, which aligns perfectly with the reference answer."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the 40 basis points margin headwind attributed to M&A-related costs in FY25 and adds the detail that it was a one-off charge linked to an acquisition, which is consistent with the reference answer."
+        }
+      ]
     },
     {
       "id": "r018",
@@ -818,8 +920,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that Infosys expects FY26 free cash flows to be above 100% of net profit, which matches the reference answer. It also provides additional context about the source of the information without contradicting the reference."
-      }
+        "reason": "The answer correctly states that Infosys expects FY26 free cash flows to be above 100% of net profit, which matches the reference answer exactly. The additional context regarding the source of the information does not contradict the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that Infosys expects FY26 free cash flows to be above 100% of net profit, which matches the reference answer. It also provides additional context about the source of the information without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r019",
@@ -859,9 +967,15 @@
         ]
       },
       "correctness": {
-        "grade": "correct",
-        "reason": "The answer correctly states the revenue amount ($4,730 million) and the year-on-year growth rate (4.8% in constant currency). The additional mention of [<document type> <period>, Page <n>] does not contradict the reference and is considered extra detail, which is acceptable."
-      }
+        "grade": "partial",
+        "reason": "The answer provides the correct revenue figure ($4,730 million) and the constant currency growth (4.8%), but it omits the reported terms growth (3.6%) which is part of the 'year-on-year growth' asked in the question and provided in the reference. While the question asks for 'the' growth, the reference provides two distinct metrics (constant currency and reported), and omitting one makes the answer incomplete relative to the full scope of the reference's answer to that specific part of the question."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the revenue amount ($4,730 million) and the year-on-year growth rate (4.8% in constant currency). The additional mention of [<document type> <period>, Page <n>] does not contradict the reference and is considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r020",
@@ -897,8 +1011,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the correct operating margin of 21.0% for Infosys's Q4 FY25, which matches the reference answer. The additional detail about the source (press release) does not contradict the reference and is considered acceptable."
-      }
+        "reason": "The answer correctly identifies the operating margin as 21.0%, which matches the reference. The reference includes additional context about the year-on-year increase, but the question only asked for the margin itself, so the answer is complete and accurate."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the correct operating margin of 21.0% for Infosys's Q4 FY25, which matches the reference answer. The additional detail about the source (press release) does not contradict the reference and is considered acceptable."
+        }
+      ]
     },
     {
       "id": "r021",
@@ -934,8 +1054,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that Infosys has been named one of the World's Most Ethical Companies by Ethisphere for the fifth consecutive year as of 2025, which matches the reference answer."
-      }
+        "reason": "The answer correctly identifies that Infosys has been named one of the World's Most Ethical Companies for the fifth consecutive year, which matches the reference answer of 'Five consecutive years'."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that Infosys has been named one of the World's Most Ethical Companies by Ethisphere for the fifth consecutive year as of 2025, which matches the reference answer."
+        }
+      ]
     },
     {
       "id": "r022",
@@ -975,9 +1101,15 @@
         ]
       },
       "correctness": {
-        "grade": "partial",
-        "reason": "The answer provides the correct numbers but expresses them in crores instead of millions as in the reference. This could lead to confusion since 2,861 crores is significantly larger than 2,861 million. The reference uses 'million' while the answer uses 'crores', which are different units of measurement."
-      }
+        "grade": "incorrect",
+        "reason": "The answer uses the unit 'crores' instead of 'million' as specified in the reference. While the numerical digits (2,861 and 1,773) match, the unit is wrong, making the financial values incorrect (2,861 crores is approximately $340 million, not $2,861 million)."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer provides the correct numbers but expresses them in crores instead of millions as in the reference. This could lead to confusion since 2,861 crores is significantly larger than 2,861 million. The reference uses 'million' while the answer uses 'crores', which are different units of measurement."
+        }
+      ]
     },
     {
       "id": "r023",
@@ -1018,8 +1150,14 @@
       },
       "correctness": {
         "grade": "incorrect",
-        "reason": "The answer claims that the information is not explicitly stated, but the reference provides a specific number (28.4%) for the share of Infosys revenue from Financial Services in Q4 FY25. The answer contradicts the reference by stating that the revenue share is not provided, when in fact it is."
-      }
+        "reason": "The answer states that the information was not found in the excerpts, but the reference provides the specific value (28.4%). Therefore, the answer contradicts the reference by claiming the data is missing when it is actually available."
+      },
+      "correctness_history": [
+        {
+          "grade": "incorrect",
+          "reason": "The answer claims that the information is not explicitly stated, but the reference provides a specific number (28.4%) for the share of Infosys revenue from Financial Services in Q4 FY25. The answer contradicts the reference by stating that the revenue share is not provided, when in fact it is."
+        }
+      ]
     },
     {
       "id": "r024",
@@ -1060,8 +1198,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same percentages for North America and Europe as the reference answer, and includes a citation to the source, which is an acceptable addition and does not contradict the reference."
-      }
+        "reason": "The answer provides the exact same percentages for North America (57.1%) and Europe (31.2%) as the reference answer, directly addressing the question."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same percentages for North America and Europe as the reference answer, and includes a citation to the source, which is an acceptable addition and does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r025",
@@ -1085,8 +1229,14 @@
       "false_abstain": true,
       "correctness": {
         "grade": "partial",
-        "reason": "The answer correctly states the employee counts for December 31, 2024 (323,578) and March 31, 2024 (317,240), but it incorrectly states that the employee count for March 31, 2025 is not found in the selected documents, while the reference answer includes the number 323,578 for March 31, 2025. This discrepancy makes the answer partially correct."
-      }
+        "reason": "The answer provides the correct employee counts for December 31, 2024 (323,578) and March 31, 2024 (317,240). However, it fails to provide the employee count for March 31, 2025, which is explicitly asked for in the question and present in the reference (323,379). Since one part of the question is unanswered/missing, the grade is partial."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer correctly states the employee counts for December 31, 2024 (323,578) and March 31, 2024 (317,240), but it incorrectly states that the employee count for March 31, 2025 is not found in the selected documents, while the reference answer includes the number 323,578 for March 31, 2025. This discrepancy makes the answer partially correct."
+        }
+      ]
     },
     {
       "id": "r026",
@@ -1127,8 +1277,14 @@
       },
       "correctness": {
         "grade": "partial",
-        "reason": "The answer provides the correct figure for Q4 FY25 (14.1%) but states 13.7% for the same period a year earlier, whereas the reference answer states 12.6%. This discrepancy in the earlier period's figure makes the answer partially correct."
-      }
+        "reason": "The answer correctly identifies the Q4 FY25 voluntary attrition rate as 14.1%, which matches the reference. However, it states the rate a year earlier (Q4 FY24) was 13.7%, whereas the reference states it was 12.6%. Since one of the two specific data points requested in the question is incorrect, the grade is partial."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer provides the correct figure for Q4 FY25 (14.1%) but states 13.7% for the same period a year earlier, whereas the reference answer states 12.6%. This discrepancy in the earlier period's figure makes the answer partially correct."
+        }
+      ]
     },
     {
       "id": "r027",
@@ -1152,8 +1308,14 @@
       "false_abstain": true,
       "correctness": {
         "grade": "incorrect",
-        "reason": "The answer incorrectly claims that the value in USD is not found in the selected documents, while the reference answer explicitly provides the USD value of $1,428 million. The answer contradicts the reference by stating that the information is not available when it actually is."
-      }
+        "reason": "The reference provides the specific value ($1,428 million), but the answer claims the information was not found in the documents. This contradicts the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "incorrect",
+          "reason": "The answer incorrectly claims that the value in USD is not found in the selected documents, while the reference answer explicitly provides the USD value of $1,428 million. The answer contradicts the reference by stating that the information is not available when it actually is."
+        }
+      ]
     },
     {
       "id": "r028",
@@ -1199,8 +1361,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the dividend per share for FY25 (₹43.00) and FY24 (₹38.00), and accurately mentions the 13.2% increase, which matches the reference answer. Additional context about the document type and page does not affect the correctness of the factual information provided."
-      }
+        "reason": "The answer correctly states the FY25 dividend as Rs 43.00 and the FY24 dividend as Rs 38.00, which matches the reference. It also correctly calculates the percentage increase as 13.2%. All facts align with the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the dividend per share for FY25 (₹43.00) and FY24 (₹38.00), and accurately mentions the 13.2% increase, which matches the reference answer. Additional context about the document type and page does not affect the correctness of the factual information provided."
+        }
+      ]
     },
     {
       "id": "r029",
@@ -1241,8 +1409,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same percentage (20.7%) as the reference and correctly attributes it to the top 10 clients in Q4 FY25. Additional context about the document and page numbers does not contradict the reference and is considered extra detail."
-      }
+        "reason": "The answer provides the exact percentage (20.7%) specified in the reference answer for the top 10 clients' revenue contribution in Q4 FY25. The additional context regarding the source document does not contradict the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same percentage (20.7%) as the reference and correctly attributes it to the top 10 clients in Q4 FY25. Additional context about the document and page numbers does not contradict the reference and is considered extra detail."
+        }
+      ]
     },
     {
       "id": "r030",
@@ -1278,8 +1452,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the correct USD/INR exchange rate (86.10) for Q4 FY25 and correctly references the fact sheet, matching the reference answer exactly."
-      }
+        "reason": "The answer provides the exact exchange rate (86.10) specified in the reference answer. The additional context regarding the source document is acceptable extra detail."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the correct USD/INR exchange rate (86.10) for Q4 FY25 and correctly references the fact sheet, matching the reference answer exactly."
+        }
+      ]
     },
     {
       "id": "r031",
@@ -1329,9 +1509,15 @@
         ]
       },
       "correctness": {
-        "grade": "partial",
-        "reason": "The answer correctly states that Infosys raised its FY26 revenue guidance from 0%–3% to 1%–3% in constant currency. However, it does not mention that the margin guidance remained unchanged at 20%–22%, which is a key part of the reference answer. Additionally, the answer includes extra details about the reasons for the revision and assumptions, which are not present in the reference."
-      }
+        "grade": "correct",
+        "reason": "The answer correctly identifies the change in revenue guidance from 0%-3% to 1%-3% in constant currency, which matches the reference. The reference also mentions margin guidance, but the question specifically asks about 'revenue guidance', so the omission of margin details does not make the answer partial or incorrect."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer correctly states that Infosys raised its FY26 revenue guidance from 0%–3% to 1%–3% in constant currency. However, it does not mention that the margin guidance remained unchanged at 20%–22%, which is a key part of the reference answer. Additionally, the answer includes extra details about the reasons for the revision and assumptions, which are not present in the reference."
+        }
+      ]
     },
     {
       "id": "r032",
@@ -1372,8 +1558,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts and numbers as the reference (2.6% sequential and 3.8% year-on-year constant-currency growth rates) and includes additional document references without contradicting the reference answer."
-      }
+        "reason": "The answer provides the exact same figures as the reference for both the sequential growth rate (2.6%) and the year-on-year constant-currency growth rate (3.8%)."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts and numbers as the reference (2.6% sequential and 3.8% year-on-year constant-currency growth rates) and includes additional document references without contradicting the reference answer."
+        }
+      ]
     },
     {
       "id": "r033",
@@ -1414,8 +1606,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the free cash flow of $884 million and that it was 109% of net profit, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the free cash flow as $884 million and states it was 109% of net profit, matching the reference facts. The reference's additional context about it being the fifth consecutive quarter is not required by the question."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the free cash flow of $884 million and that it was 109% of net profit, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r034",
@@ -1461,8 +1659,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the operating margin (20.8%) and the changes (down 20 bps QoQ and 30 bps YoY), matching the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer provides the exact operating margin (20.8%) and the specific movements (down 20 bps QoQ and 30 bps YoY) that match the reference answer perfectly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the operating margin (20.8%) and the changes (down 20 bps QoQ and 30 bps YoY), matching the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r035",
@@ -1503,8 +1707,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that third-party costs fell by 60 basis points in Q1 FY26 and reduced to 7.3% of revenue, which matches the reference answer. The additional detail about the document type and page does not contradict the reference and is considered extra information."
-      }
+        "reason": "The answer correctly states that third-party costs fell by 60 basis points and reduced to 7.3% of revenue, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that third-party costs fell by 60 basis points in Q1 FY26 and reduced to 7.3% of revenue, which matches the reference answer. The additional detail about the document type and page does not contradict the reference and is considered extra information."
+        }
+      ]
     },
     {
       "id": "r036",
@@ -1545,8 +1755,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the 12.3% year-on-year growth for Europe in Q1 FY26 and mentions that it is more than three times the company's overall growth rate, which aligns with the reference answer. Additional context (e.g., the source) does not contradict the reference and is considered acceptable."
-      }
+        "reason": "The answer correctly states the year-on-year growth rate for Europe in Q1 FY26 as 12.3%, which matches the reference. It also correctly includes the comparison to the company average (more than three times), which is consistent with the reference's 'over 3x the company average'."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the 12.3% year-on-year growth for Europe in Q1 FY26 and mentions that it is more than three times the company's overall growth rate, which aligns with the reference answer. Additional context (e.g., the source) does not contradict the reference and is considered acceptable."
+        }
+      ]
     },
     {
       "id": "r037",
@@ -1582,8 +1798,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact (85.2%) as the reference and includes an additional correct detail (source: earnings call transcript Q1 FY26 (INFY), Page 3), which does not contradict the reference."
-      }
+        "reason": "The answer provides the exact figure (85.2%) requested in the question, which matches the reference. The reference includes additional context (up 30 basis points QoQ) which the question did not ask for, so its omission does not affect the grade."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact (85.2%) as the reference and includes an additional correct detail (source: earnings call transcript Q1 FY26 (INFY), Page 3), which does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r038",
@@ -1624,8 +1846,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact/number as the reference (3.1%) and provides additional context about where the information was found, which is acceptable and does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the full-year FY26 constant-currency revenue growth as 3.1%, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact/number as the reference (3.1%) and provides additional context about where the information was found, which is acceptable and does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r039",
@@ -1666,8 +1894,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same revenue growth guidance (1.5% to 3.5% year-on-year in constant currency) as the reference. It also adds additional context about a later revision, which does not contradict the reference and is considered extra correct detail."
-      }
+        "reason": "The answer correctly states the revenue growth guidance of 1.5% to 3.5% year-on-year in constant currency for FY27, which matches the reference. The additional information about the revision is extra context not required by the question but does not contradict the core fact requested."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same revenue growth guidance (1.5% to 3.5% year-on-year in constant currency) as the reference. It also adds additional context about a later revision, which does not contradict the reference and is considered extra correct detail."
+        }
+      ]
     },
     {
       "id": "r040",
@@ -1713,8 +1947,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that Infosys signed 96 large deals in FY26 with a TCV of $15 billion, which aligns with the reference. It also mentions the $14.9 billion figure from the press release, which is additional context but does not contradict the reference. All key facts from the reference are accurately reflected."
-      }
+        "reason": "The answer correctly identifies the number of large deals (96) and the TCV ($15 billion / $14.9 billion) as stated in the reference. It accurately reflects the data provided in the reference, including the distinction between the press release figure and the earnings call figure."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that Infosys signed 96 large deals in FY26 with a TCV of $15 billion, which aligns with the reference. It also mentions the $14.9 billion figure from the press release, which is additional context but does not contradict the reference. All key facts from the reference are accurately reflected."
+        }
+      ]
     },
     {
       "id": "r041",
@@ -1750,8 +1990,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact and number as the reference answer (31.6%) and includes additional context (document type, period, page number) without contradicting the reference."
-      }
+        "reason": "The answer provides the exact same figure (31.6%) as the reference answer for the specific question asked."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact and number as the reference answer (31.6%) and includes additional context (document type, period, page number) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r042",
@@ -1787,8 +2033,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states that acquisitions contributed 70 basis points to Infosys's FY26 revenue growth, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies that acquisitions contributed 70 basis points to Infosys's FY26 revenue growth, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states that acquisitions contributed 70 basis points to Infosys's FY26 revenue growth, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r043",
@@ -1829,8 +2081,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts and numbers as the reference (1.3% decline, seasonality, and slower decision-making in March) and adds supporting context (earnings call transcript and results fact sheet) without contradicting the reference."
-      }
+        "reason": "The answer correctly identifies the 1.3% decline and the reasons (seasonality and slower decision-making in March) as stated in the reference. The omission of 'in constant currency' is acceptable as the core facts and numbers match the reference for the specific question asked."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts and numbers as the reference (1.3% decline, seasonality, and slower decision-making in March) and adds supporting context (earnings call transcript and results fact sheet) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r044",
@@ -1871,8 +2129,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts and numbers as the reference answer (22.8% for Q4 FY26 and 23.1% for Q3 FY26). The additional document references do not contradict the reference answer and are considered extra detail, which is acceptable."
-      }
+        "reason": "The answer correctly states the onsite mix at the end of Q4 FY26 as 22.8%, which matches the reference. It also correctly notes the reduction from 23.1% in Q3, which is consistent with the reference. All facts align with the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts and numbers as the reference answer (22.8% for Q4 FY26 and 23.1% for Q3 FY26). The additional document references do not contradict the reference answer and are considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r045",
@@ -1908,8 +2172,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the annualized operating-margin impact of 0.7% from the acquisitions post closure, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies the 0.7% annualized operating-margin impact expected from the specified acquisitions, matching the reference. The reference includes 'approximately' and 'full-year' which are consistent with the answer's '0.7%' and 'annualized'."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the annualized operating-margin impact of 0.7% from the acquisitions post closure, which matches the reference answer. The additional detail about the document type and page is extra but does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r046",
@@ -1945,8 +2215,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same revenue figure ($20,158 million) as the reference and correctly mentions that it is in US dollars. The additional detail about the document type and page does not contradict the reference and is considered extra information, which is acceptable."
-      }
+        "reason": "The answer provides the exact revenue figure ($20,158 million) found in the reference. The reference's additional context about crossing the $20 billion mark is not required by the question, so its omission does not affect the correctness."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same revenue figure ($20,158 million) as the reference and correctly mentions that it is in US dollars. The additional detail about the document type and page does not contradict the reference and is considered extra information, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r047",
@@ -1987,8 +2263,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the same facts and numbers as the reference answer (revenues of $5,040 million and an operating margin of 20.9%). It also includes additional context (references to the press release and earnings call transcript) without contradicting the reference."
-      }
+        "reason": "The answer correctly states the Q4 FY26 revenues as $5,040 million and the operating margin as 20.9%, which matches the reference values exactly. The additional context about the source is acceptable."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the same facts and numbers as the reference answer (revenues of $5,040 million and an operating margin of 20.9%). It also includes additional context (references to the press release and earnings call transcript) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r048",
@@ -2029,8 +2311,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact and number as the reference answer, and includes an additional detail about the source (Q4 FY26 results press release), which does not contradict the reference and is acceptable."
-      }
+        "reason": "The answer correctly identifies the free cash flow as $3.7 billion for FY26, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact and number as the reference answer, and includes an additional detail about the source (Q4 FY26 results press release), which does not contradict the reference and is acceptable."
+        }
+      ]
     },
     {
       "id": "r049",
@@ -2071,8 +2359,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact ($14.9 billion) as the reference and includes additional correct details (net new percentage of 55%) without contradicting the reference."
-      }
+        "reason": "The answer correctly identifies the $14.9 billion figure for large deal wins in FY26, which matches the reference. The additional detail about the net new percentage is extra correct context and does not contradict the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact ($14.9 billion) as the reference and includes additional correct details (net new percentage of 55%) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r050",
@@ -2133,8 +2427,14 @@
       },
       "correctness": {
         "grade": "incorrect",
-        "reason": "The answer contradicts the reference by stating that the information was not found in the documents, while the reference explicitly provides the net profit after non-controlling interests for FY26 as $3,313 million."
-      }
+        "reason": "The answer claims the documents do not provide the net profit in USD terms, which contradicts the reference answer that explicitly states the value is $3,313 million. The answer fails to provide the requested figure."
+      },
+      "correctness_history": [
+        {
+          "grade": "incorrect",
+          "reason": "The answer contradicts the reference by stating that the information was not found in the documents, while the reference explicitly provides the net profit after non-controlling interests for FY26 as $3,313 million."
+        }
+      ]
     },
     {
       "id": "r051",
@@ -2170,8 +2470,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same number as the reference (328,594) and includes additional context about the document type and page, which does not contradict the reference."
-      }
+        "reason": "The answer provides the exact same number (328,594) as the reference for the specific date asked in the question."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same number as the reference (328,594) and includes additional context about the document type and page, which does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r052",
@@ -2222,8 +2528,14 @@
       },
       "correctness": {
         "grade": "incorrect",
-        "reason": "The answer states a dividend of ru25 per share for FY26, which contradicts the reference answer of Rs 48.00. The numbers provided in the answer are different from those in the reference, leading to an incorrect response."
-      }
+        "reason": "The answer states the dividend is Rs 25, whereas the reference states it is Rs 48.00. This is a direct contradiction of the specific fact requested."
+      },
+      "correctness_history": [
+        {
+          "grade": "incorrect",
+          "reason": "The answer states a dividend of ru25 per share for FY26, which contradicts the reference answer of Rs 48.00. The numbers provided in the answer are different from those in the reference, leading to an incorrect response."
+        }
+      ]
     },
     {
       "id": "r053",
@@ -2268,9 +2580,15 @@
         ]
       },
       "correctness": {
-        "grade": "partial",
-        "reason": "The answer correctly notes that the full FY26 annual operating margin is not explicitly stated in the documents, but it does not mention the Q4 FY26 operating margin percentages (e.g., 20.3%) that are provided in the excerpts. The reference answer includes the 20.3% figure, which is present in the documents, but the answer misses this detail."
-      }
+        "grade": "incorrect",
+        "reason": "The answer claims the information was not found, but the reference provides the specific figure (20.3%)."
+      },
+      "correctness_history": [
+        {
+          "grade": "partial",
+          "reason": "The answer correctly notes that the full FY26 annual operating margin is not explicitly stated in the documents, but it does not mention the Q4 FY26 operating margin percentages (e.g., 20.3%) that are provided in the excerpts. The reference answer includes the 20.3% figure, which is present in the documents, but the answer misses this detail."
+        }
+      ]
     },
     {
       "id": "r054",
@@ -2306,8 +2624,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the revenue figure of 178,650 crore for FY26, which matches the reference. The additional detail about the source (fact sheet) does not contradict the reference and is considered acceptable."
-      }
+        "reason": "The answer provides the exact revenue figure (178,650 crore) matching the reference. The reference includes an additional percentage increase (9.6%) which the question did not explicitly ask for, so its omission does not make the answer partial or incorrect."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the revenue figure of 178,650 crore for FY26, which matches the reference. The additional detail about the source (fact sheet) does not contradict the reference and is considered acceptable."
+        }
+      ]
     },
     {
       "id": "r055",
@@ -2348,8 +2672,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same fact (8.2% of Infosys revenue came from AI services in Q1 FY27) as the reference answer, and includes additional context about the source of the information, which is acceptable and does not contradict the reference."
-      }
+        "reason": "The answer correctly states that 8.2% of Infosys revenue came from AI services in Q1 FY27, which matches the reference answer exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same fact (8.2% of Infosys revenue came from AI services in Q1 FY27) as the reference answer, and includes additional context about the source of the information, which is acceptable and does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r056",
@@ -2405,8 +2735,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same facts and numbers as the reference (1.5% to 3% year-on-year growth in constant currency) and adds additional context without contradicting the reference."
-      }
+        "reason": "The answer correctly states the revised FY27 revenue guidance as 1.5% to 3% year-on-year growth in constant currency, which matches the reference exactly. The additional context provided (previous guidance, reasons for revision) is extra detail that does not contradict the reference and is therefore acceptable."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same facts and numbers as the reference (1.5% to 3% year-on-year growth in constant currency) and adds additional context without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r057",
@@ -2446,9 +2782,15 @@
         ]
       },
       "correctness": {
-        "grade": "correct",
-        "reason": "The answer correctly states the same facts and numbers as the reference answer ($3.6 billion in large deal wins and a 61% net-new share). The additional document references do not contradict the reference and are considered extra detail, which is acceptable."
-      }
+        "grade": "unknown",
+        "reason": ""
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the same facts and numbers as the reference answer ($3.6 billion in large deal wins and a 61% net-new share). The additional document references do not contradict the reference and are considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r058",
@@ -2494,8 +2836,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the same facts and numbers as the reference (2.4% YoY and 1% QoQ in constant currency). The additional document references do not contradict the reference answer and are considered extra detail, which is acceptable."
-      }
+        "reason": "The answer correctly identifies the year-on-year growth as 2.4% and the sequential growth as 1% in constant currency, which matches the reference exactly."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the same facts and numbers as the reference (2.4% YoY and 1% QoQ in constant currency). The additional document references do not contradict the reference answer and are considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r059",
@@ -2536,8 +2884,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same number as the reference answer ($955 million) and includes additional context about the document type and page numbers, which does not contradict the reference."
-      }
+        "reason": "The answer correctly identifies Infosys's free cash flow in Q1 FY27 as $955 million, which matches the reference value of $955 mn. The inclusion of citations does not affect the correctness of the factual answer."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same number as the reference answer ($955 million) and includes additional context about the document type and page numbers, which does not contradict the reference."
+        }
+      ]
     },
     {
       "id": "r060",
@@ -2573,8 +2927,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer states the same number (20%) as the reference and provides additional context (new vendor consolidation deals) without contradicting the reference."
-      }
+        "reason": "The answer correctly identifies that 20% of the large deal TCV came from vendor consolidation, which matches the reference answer of 'About 20%'."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer states the same number (20%) as the reference and provides additional context (new vendor consolidation deals) without contradicting the reference."
+        }
+      ]
     },
     {
       "id": "r061",
@@ -2630,8 +2990,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states that Infosys delivered a revenue growth of 3.1% in constant currency for FY26, which matches the reference. Additional context about the factors contributing to the growth (lower third-party costs, reduced onsite mix, and acquisitions) does not contradict the reference and is considered extra detail, which is acceptable."
-      }
+        "reason": "The answer correctly states the FY26 revenue growth as 3.1% in constant currency, which matches the reference. It also correctly notes that this was at the top of the 0%-3% guidance range (described as exceeding the initial guidance, which is consistent with being at the top end). The extra details provided do not contradict the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states that Infosys delivered a revenue growth of 3.1% in constant currency for FY26, which matches the reference. Additional context about the factors contributing to the growth (lower third-party costs, reduced onsite mix, and acquisitions) does not contradict the reference and is considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r062",
@@ -2672,8 +3038,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the evolution of Infosys's FY26 revenue guidance from 0%–3% in April 2025 to 1%–3% in July 2025, and includes additional context about constant currency, which does not contradict the reference answer."
-      }
+        "reason": "The answer correctly identifies the evolution of the revenue guidance from 0%-3% in April 2025 to 1%-3% in July 2025, matching the reference facts. The reference's additional context regarding margin guidance is not required by the question, so its omission does not affect the grade."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the evolution of Infosys's FY26 revenue guidance from 0%–3% in April 2025 to 1%–3% in July 2025, and includes additional context about constant currency, which does not contradict the reference answer."
+        }
+      ]
     },
     {
       "id": "r063",
@@ -2714,8 +3086,14 @@
       },
       "correctness": {
         "grade": "incorrect",
-        "reason": "The answer contradicts the reference by providing different numbers (328,594 to 337,034) instead of the correct numbers stated in the reference (323,578 to 328,594)."
-      }
+        "reason": "The answer contradicts the reference. The reference states the headcount changed from 323,578 to 328,594, whereas the answer claims it changed from 328,594 to 337,034. The starting number in the answer matches the ending number in the reference, and the ending number in the answer is not present in the reference."
+      },
+      "correctness_history": [
+        {
+          "grade": "incorrect",
+          "reason": "The answer contradicts the reference by providing different numbers (328,594 to 337,034) instead of the correct numbers stated in the reference (323,578 to 328,594)."
+        }
+      ]
     },
     {
       "id": "r064",
@@ -2756,8 +3134,14 @@
       },
       "correctness": {
         "grade": "correct",
-        "reason": "The answer correctly states the operating margin of 20.3% for FY26 and also mentions the adjusted operating margin of 21.0%, which aligns with the reference answer. The additional document references do not contradict the reference and are considered extra detail, which is acceptable."
-      }
+        "reason": "The answer provides the specific FY26 operating margin figures (20.3% reported/IFRS and 21.0% adjusted) which align perfectly with the reference answer. It correctly identifies the numbers within the guided range."
+      },
+      "correctness_history": [
+        {
+          "grade": "correct",
+          "reason": "The answer correctly states the operating margin of 20.3% for FY26 and also mentions the adjusted operating margin of 21.0%, which aligns with the reference answer. The additional document references do not contradict the reference and are considered extra detail, which is acceptable."
+        }
+      ]
     },
     {
       "id": "r065",
@@ -2998,6 +3382,14 @@
       "cited": false,
       "citation_valid": null,
       "abstain_ok": true
+    }
+  ],
+  "rejudged": [
+    {
+      "judge_model": "qwen-3.8-27b",
+      "git_sha": "9fb3edb",
+      "timestamp": "2026-09-20T18:22:38+00:00",
+      "n": 64
     }
   ]
 }

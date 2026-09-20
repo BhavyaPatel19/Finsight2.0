@@ -38,9 +38,9 @@ QUESTION: {question}
 REFERENCE: {reference}
 ANSWER: {answer}
 
-Grade:
-- "correct": the answer states the same facts/numbers as the reference (extra correct detail is fine)
-- "partial": some but not all of the reference facts, or right facts with a wrong/missing number
+Grade against what the QUESTION asks. The reference may carry extra context (a year-on-year change, a comparison, a second metric) that the question did not ask for; the answer is not required to repeat it.
+- "correct": every part of the question is answered with the same facts/numbers as the reference (extra correct detail is fine; a rounded or differently formatted number that means the same is fine)
+- "partial": a part of the question is unanswered, or a number the question asks for is wrong/missing
 - "incorrect": contradicts the reference, answers a different question, or says the information was not found when the reference has it
 
 Return JSON: {{"grade": "correct|partial|incorrect", "reason": "..."}}"""
