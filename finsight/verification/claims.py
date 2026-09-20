@@ -120,6 +120,32 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s.replace("’", "'")).strip().lower()
 
 
+def _tokens(s: str) -> set[str]:
+    return {t for t in re.findall(r"[a-z0-9%.']+", _norm(s)) if len(t) > 2}
+
+
+def _match_quote(quote: str, batch: list[dict], min_overlap: float = 0.7) -> dict | None:
+    """The batch sentence the quote came from: exact, prefix/substring, or ≥70% token overlap
+    (models trim or lightly rephrase long sentences; the sentence must still exist)."""
+    nq = _norm(quote)
+    if not nq:
+        return None
+    for c in batch:
+        ns = _norm(c["sentence"])
+        if nq == ns or nq[:60] in ns or ns in nq:
+            return c
+    qt = _tokens(quote)
+    if len(qt) < 4:
+        return None
+    best, best_ov = None, 0.0
+    for c in batch:
+        st = _tokens(c["sentence"])
+        ov = len(qt & st) / len(qt)
+        if ov > best_ov:
+            best, best_ov = c, ov
+    return best if best_ov >= min_overlap else None
+
+
 def _parse_json(text: str) -> dict:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S)
     a, b = text.find("{"), text.rfind("}")
@@ -177,14 +203,11 @@ async def extract_claims(
                 return []
         items = _parse_json(resp.text).get("claims") or []
         out = []
-        by_norm = {_norm(c["sentence"]): c for c in batch}
         for n, it in enumerate(items):
             if not isinstance(it, dict):
                 continue
             quote = str(it.get("quote") or "").strip()
-            src = by_norm.get(_norm(quote)) or next(
-                (c for c in batch if _norm(quote)[:60] and _norm(quote)[:60] in _norm(c["sentence"])), None
-            )
+            src = _match_quote(quote, batch)
             if not src:
                 continue  # quote not in the batch → not a claim we can stand behind
             cat = str(it.get("category") or "other").lower()

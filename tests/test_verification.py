@@ -253,3 +253,42 @@ class TestDedupeAndQuery:
         )
         assert "1" not in q and "3" not in q.replace("FY26", ""), "target numbers removed"
         assert "guide" not in q.lower() and "revenue growth" in q and "FY26" in q and "actual" in q
+
+
+class TestQuoteMatching:
+    batch = [
+        {
+            "chunk_id": "c1",
+            "sentence": "So, Abhishek, most of our employees got the wage hikes in January and the middle level to senior level employees will get wage hike, effective 1st of April.",
+            "speaker": "J",
+            "page": 8,
+        },
+        {
+            "chunk_id": "c2",
+            "sentence": "We expect FY'26 free cash flows to be above 100% of net profit.",
+            "speaker": "J",
+            "page": 4,
+        },
+    ]
+
+    def test_exact_prefix_and_trimmed(self):
+        assert (
+            cl._match_quote("We expect FY'26 free cash flows to be above 100% of net profit.", self.batch)["chunk_id"]
+            == "c2"
+        )
+        assert (
+            cl._match_quote(
+                "the middle level to senior level employees will get wage hike, effective 1st of April", self.batch
+            )["chunk_id"]
+            == "c1"
+        )
+
+    def test_light_rephrase_is_accepted_but_invention_is_not(self):
+        assert (
+            cl._match_quote(
+                "Most of our employees got wage hikes in January and middle to senior level employees will get a wage hike effective 1st April.",
+                self.batch,
+            )["chunk_id"]
+            == "c1"
+        )
+        assert cl._match_quote("We will double revenue by 2030 through acquisitions in Europe.", self.batch) is None
