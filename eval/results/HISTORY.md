@@ -112,3 +112,20 @@ v2.1 showed the limit of prompting a 14B judge: told that a promise is never an 
 What v2.2 still gets wrong, and what would fix it: it abstains on two claims a person would compute (free cash flow ÷ net profit; tax ÷ profit before tax — the numbers are in the fact sheet) → a derived-metrics step; it grades "the endeavour is to improve margins" MET when the margin was flat → a qualitative-claim rule (direction words vs a flat outcome); four soft, conversational commitments are never extracted → the claim detector (`finsight/ml/claims`). n = 21 matched claims: the κ is a direction, not a measurement.
 
 What already works in v2.0 and did not in v1: the FY26 growth beat (3.1% vs 1–3%) is MET by the direction-aware rule; the margin actual is found in the fact sheet rather than "not mentioned"; a claim whose quote is not in the source cannot exist; a verdict whose quote is not in the evidence cannot stand.
+
+---
+
+# Redesign branch: Generation v2 (PDF corpus)
+
+`FINSIGHT_CORPUS=pdf python -m eval.generation` — retrieval v2 (sentence + chunk hybrid, table channel, period prior, `bge-reranker-v2-m3`, top-8), the quote-then-answer prompt with runtime quote verification, 76 gold questions (64 answerable + 12 unanswerable, 8 of them near-miss). Not comparable row-for-row with the 64-question HTML table above: the corpus is rendered PDFs and the unanswerable set trebled.
+
+| run | generator | judge | correct | partial | incorrect | faithfulness | number recall | abstain (unans.) | false abstain | cited | cited pages ⊆ retrieved | p50 latency |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `generation_pdf-v2-qwen3-14b.json` | qwen3:14b (local) | qwen3:14b | 82.8% | 9.4% | 7.8% | 0.894 (n=62) | 0.791 | 75% | 3.1% | 90% | 100% | 54 s |
+
+What the qwen3:14b run showed (it started before `6a93531`, so it ran the prompt without the source-hint line):
+
+- **Five of the eleven non-correct answers were the same table-reading defect.** "The excerpts provide multiple figures for Q4 FY25 gross profit (5,872 and 1,428)", net profit "3,313 and 3,158", the FY26 margin given as the quarter's 20.9% instead of the year's 20.3%. The rows reached the model as `Gross profit | 1,428 | 1,345 | 5,872 | 5,587` — no column headers — because the EDGAR press releases put the statement's header row at the foot of one page and the body at the top of the next, and the parser dropped the header-only table. Fixed in `4d956fe` (headers carry across the page break; the prompt shows `label: column = value` rows); measured in the next run.
+- The 3 unanswerable questions counted as "answered" were soft abstentions ("is not explicitly stated in the excerpts") that miss the exact `Not found…` phrase. The metric is strict on purpose; the number is 100% if those count.
+- Two errors are period slips a person could also make (headcount asked for Mar-2024→Mar-2025 answered with Mar-2025→Mar-2026; final dividend Rs 25 given where the total Rs 48 was asked).
+- Judge and generator are the same model. The gpt-oss-120b rows below use `qwen-3.8-27b` as an independent judge.
