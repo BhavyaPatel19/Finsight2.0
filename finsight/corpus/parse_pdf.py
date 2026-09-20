@@ -128,7 +128,8 @@ def parse_pdf(path: str) -> ParsedDocument:
             for b in text_blocks:
                 bx0, by0, bx1, by1 = b["bbox"]
                 if by1 <= y0 + 2 and y0 - by1 < 70 and bx1 > x0 and bx0 < x1:
-                    if any(fitz.Rect(b["bbox"]).intersects(tb) for tb in table_boxes):
+                    own = fitz.Rect(bbox)
+                    if any(tb != own and fitz.Rect(b["bbox"]).intersects(tb) for tb in table_boxes):
                         continue  # a row of the table above, not a title
                     t = _block_text(b)
                     if t and len(t) < 120 and not _MARKER.match(t):

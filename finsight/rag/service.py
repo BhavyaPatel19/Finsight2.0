@@ -329,7 +329,7 @@ EVIDENCE:
 - "<verbatim sentence or table row copied from an excerpt>" [citation]
 - (1–4 lines; leave empty if nothing relevant)
 ANSWER:
-<1–3 sentences answering the question, each fact cited>
+<1–3 sentences. Cover every part of the question (a value AND its change, a count AND its size). Each sentence ends with its citation, e.g. "Operating margin was 21.1%, up 0.5% year on year [results press release Q4 FY25, Page 1]." — the citation goes in the ANSWER too, not only in EVIDENCE.>
 
 EXCERPTS ({n} from {doc_count} document(s)):
 
@@ -343,17 +343,38 @@ _EVIDENCE_LINE = re.compile(r'^\s*[-•]\s*["“]?(.+?)["”]?\s*(\[[^\]]*\])?\s
 
 def parse_answer(raw: str) -> tuple[str, list[str]]:
     """Split the model output into (answer, [evidence quotes]). Tolerates missing sections."""
+    answer, lines = parse_evidence(raw)
+    return answer, [q for q, _ in lines]
+
+
+def parse_evidence(raw: str) -> tuple[str, list[tuple[str, str | None]]]:
+    """(answer, [(quote, citation)]) from the EVIDENCE / ANSWER sections."""
     text = raw.strip()
     m = re.search(r"EVIDENCE:\s*(.*?)\n\s*ANSWER:\s*(.*)$", text, re.S | re.I)
     if not m:
         m2 = re.search(r"ANSWER:\s*(.*)$", text, re.S | re.I)
         return (m2.group(1).strip() if m2 else text), []
-    quotes = []
+    lines = []
     for line in m.group(1).splitlines():
         lm = _EVIDENCE_LINE.match(line)
         if lm and lm.group(1).strip() and not lm.group(1).strip().startswith("("):
-            quotes.append(lm.group(1).strip().strip('"“”'))
-    return m.group(2).strip(), quotes
+            lines.append((lm.group(1).strip().strip('"“”'), lm.group(2)))
+    return m.group(2).strip(), lines
+
+
+_CITATION = re.compile(r"\[[^\]]*?Page\s+\d+[^\]]*\]", re.I)
+
+
+def attach_citations(answer: str, evidence: list[dict], citations: dict[str, str | None]) -> str:
+    """An answer without a page citation borrows the citations of its verified evidence
+    quotes. Those quotes were checked verbatim against the retrieved excerpts, so the
+    pages are grounded even when the model only cited them in the EVIDENCE section."""
+    if not answer or _CITATION.search(answer) or answer.startswith("Not found"):
+        return answer
+    cites = list(
+        dict.fromkeys(citations.get(e["quote"]) for e in evidence if e["verified"] and citations.get(e["quote"]))
+    )
+    return f"{answer} {' '.join(cites)}" if cites else answer
 
 
 def verify_quotes(quotes: list[str], context_texts: list[str]) -> list[dict]:
@@ -468,11 +489,13 @@ def answer_question(
 
     # 9. Parse thinking trace (reasoning models wrap it in <think> tags), then EVIDENCE / ANSWER
     raw, thinking = _parse_deepseek_thinking(_normalize_output(response.text))
-    answer, quotes = parse_answer(raw)
+    answer, ev_lines = parse_evidence(raw)
+    quotes = [q for q, _ in ev_lines]
     context_texts = [c.get("text", "") for c in top_chunks] + [
         c["metadata"]["display_text"] for c in top_chunks if c.get("metadata", {}).get("display_text")
     ]
     evidence = verify_quotes(quotes, context_texts)
+    answer = attach_citations(answer, evidence, dict(ev_lines))
 
     # 10. Build navigation breadcrumbs (deduplicated)
     navigations = []
