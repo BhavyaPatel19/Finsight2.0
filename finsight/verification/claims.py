@@ -215,7 +215,8 @@ async def extract_claims(
 
 def _metric_key(metric: str | None) -> str:
     words = re.findall(r"[a-z]+", (metric or "").lower())
-    return " ".join(sorted(w[:5] for w in words if w not in ("the", "of", "in", "and", "for", "a", "an", "as")))
+    stop = {"the", "of", "in", "and", "for", "a", "an", "as", "guidance", "guide", "target", "expected", "expect", "outlook", "range"}
+    return " ".join(sorted(w[:5] for w in words if w not in stop))
 
 
 def dedupe(claims: list[Claim]) -> list[Claim]:
