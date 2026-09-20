@@ -141,3 +141,51 @@ class TestPdf:
 
     def test_unsupported_and_missing(self, tmp_path):
         assert parse_document(tmp_path / "nope.pdf").elements == []
+
+
+def _draw_grid(page, x0: float, y0: float, rows: list[list[str]], col_w: float = 110, row_h: float = 18) -> None:
+    """A ruled table PyMuPDF's find_tables recognises: one rectangle per cell, text inside."""
+    for r, cells in enumerate(rows):
+        for c, txt in enumerate(cells):
+            rect = (x0 + c * col_w, y0 + r * row_h, x0 + (c + 1) * col_w, y0 + (r + 1) * row_h)
+            page.draw_rect(rect, width=0.5)
+            page.insert_text((rect[0] + 3, rect[1] + 13), txt, fontname="helv", fontsize=8)
+
+
+class TestPdfTablesAcrossPages:
+    def test_header_carries_to_the_continuation_page(self, tmp_path):
+        """EDGAR press releases put the income statement's header row at the foot of one
+        page and every data row at the top of the next; without the carry-over each row
+        read 'Gross profit | 1,428 | 1,345 | 5,872 | 5,587' with no idea which figure
+        was the quarter and which the year."""
+        import fitz
+
+        from finsight.corpus.chunker import chunk_elements, verbalize_row
+
+        path = tmp_path / "press.pdf"
+        doc = fitz.open()
+        p1 = doc.new_page()  # 842pt high: header table at the very bottom
+        p1.insert_text(
+            (40, 735), "Extracted from the Statement of Comprehensive Income for:", fontname="helv", fontsize=9
+        )
+        _draw_grid(p1, 40, 745, [["", "3 months ended March 31, 2025", "Year ended March 31, 2025"]], col_w=170)
+        p2 = doc.new_page()
+        _draw_grid(p2, 40, 30, [["Revenues", "4,730", "19,277"], ["Gross profit", "1,428", "5,872"]], col_w=170)
+        doc.save(path)
+        doc.close()
+
+        parsed = parse_document(path)
+        rows = [e for e in parsed.elements if e.kind == "table_row"]
+        assert [r.text.split(" | ")[0] for r in rows] == ["Revenues", "Gross profit"]
+        assert all(r.page == 2 for r in rows)
+        assert rows[1].table_header == ["", "3 months ended March 31, 2025", "Year ended March 31, 2025"]
+        assert rows[1].table_title and rows[1].table_title.startswith("Extracted from the Statement")
+        v = verbalize_row(rows[1])
+        assert "3 months ended March 31, 2025 = 1,428" in v and "Year ended March 31, 2025 = 5,872" in v
+
+        chunks = chunk_elements(parsed.elements)
+        row = next(c for c in chunks if c.kind == "row" and c.text.startswith("Gross profit"))
+        table = next(c for c in chunks if c.kind == "table")
+        assert row.text == "Gross profit | 1,428 | 5,872", "verbatim text is untouched (citations)"
+        assert row.display_text == v, "the answerer sees the verbalised form"
+        assert table.display_text and "Revenues: 3 months ended March 31, 2025 = 4,730" in table.display_text

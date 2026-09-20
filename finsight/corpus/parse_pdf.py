@@ -95,6 +95,7 @@ def parse_pdf(path: str) -> ParsedDocument:
         "prev_short": None,
         "table_id": 0,
         "pending_marker": None,
+        "carry": None,  # header of a table that may continue on the next page
     }
 
     def section_for(page: int) -> str | None:
@@ -120,15 +121,17 @@ def parse_pdf(path: str) -> ParsedDocument:
         table_boxes = []
         text_blocks = [b for b in page.get_text("dict")["blocks"] if b.get("type", 0) == 0]
 
-        def title_above(bbox, text_blocks=text_blocks) -> str | None:
+        def title_above(bbox, text_blocks=text_blocks, table_boxes=table_boxes) -> str | None:
             """Up to two short text lines directly above the table: a title and often a units line."""
             x0, y0, x1, _ = bbox
             cands = []
             for b in text_blocks:
                 bx0, by0, bx1, by1 = b["bbox"]
                 if by1 <= y0 + 2 and y0 - by1 < 70 and bx1 > x0 and bx0 < x1:
+                    if any(fitz.Rect(b["bbox"]).intersects(tb) for tb in table_boxes):
+                        continue  # a row of the table above, not a title
                     t = _block_text(b)
-                    if t and len(t) < 90 and not _MARKER.match(t):
+                    if t and len(t) < 120 and not _MARKER.match(t):
                         cands.append((by1, t))
             cands.sort(reverse=True)
             picked = [t for _, t in cands[:2]]
@@ -138,12 +141,36 @@ def parse_pdf(path: str) -> ParsedDocument:
             for t in page.find_tables().tables:
                 rows = [[_clean(c or "") for c in r] for r in t.extract()]
                 rows = [r for r in rows if any(c for c in r)]
-                if len(rows) < 2 or max(len([c for c in r if c]) for r in rows) < 2:
+                if not rows or max(len([c for c in r if c]) for r in rows) < 2:
+                    continue
+                width = max(len(r) for r in rows)
+                header, data_rows = _split_header_rows(rows)
+                carry = state["carry"]
+                if not data_rows:
+                    # Header-only table (the body starts on the next page): remember it, emit nothing.
+                    table_boxes.append(fitz.Rect(t.bbox))
+                    state["carry"] = {"header": header, "width": width, "title": title_above(t.bbox), "page": pg}
+                    continue
+                if len(rows) < 2:
                     continue
                 table_boxes.append(fitz.Rect(t.bbox))
                 state["table_id"] += 1
                 title = title_above(t.bbox)
-                header, data_rows = _split_header_rows(rows)
+                if (
+                    not header
+                    and carry
+                    and carry["page"] == pg - 1
+                    and carry["width"] == width
+                    and t.bbox[1] < h * 0.15
+                    and (title is None or not any(_is_numeric_cell(c) for c in rows[0] if c))
+                ):
+                    # Continuation of the previous page's table: reuse its column headers and title.
+                    header, title = carry["header"], title or carry["title"]
+                state["carry"] = (
+                    {"header": header, "width": width, "title": title, "page": pg}
+                    if header and t.bbox[3] > h * 0.8
+                    else None
+                )
                 group = None
                 for r in data_rows:
                     cells = [c for c in r if c]

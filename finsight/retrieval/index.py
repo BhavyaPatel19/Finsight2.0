@@ -133,6 +133,7 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
                     "speaker": c.speaker or "",
                     "kind": c.kind,
                     "index_text": c.index_text,
+                    "display_text": c.display_text or "",
                 }
             )
             if c.kind == "prose" and len(c.sentences) > 1:

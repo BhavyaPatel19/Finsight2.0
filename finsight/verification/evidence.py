@@ -110,7 +110,7 @@ def find_evidence(session: Session, claim: Claim, document_ids: list[int], top_k
         out.append(
             {
                 "id": h["id"],
-                "text": h["text"],
+                "text": m.get("display_text") or h["text"],  # rows as "label: column = value; …"
                 "document_id": m.get("document_id"),
                 "doc_type": m.get("doc_type"),
                 "page": m.get("page_number"),

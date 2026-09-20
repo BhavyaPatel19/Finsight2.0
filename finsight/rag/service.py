@@ -409,7 +409,9 @@ def _build_section_context(chunks: list[dict]) -> str:
         if speaker:
             header += f" | Speaker: {speaker}"
 
-        parts.append(f"{header}\n{chunk.get('text', '')}")
+        # Table rows are shown as "label: column = value; …" — the bare "1,428 | 1,345 | 5,872"
+        # form left the model guessing which figure was the quarter and which the year.
+        parts.append(f"{header}\n{meta.get('display_text') or chunk.get('text', '')}")
     return "\n\n---\n\n".join(parts) if parts else "No relevant context found."
 
 
@@ -467,7 +469,9 @@ def answer_question(
     # 9. Parse thinking trace (reasoning models wrap it in <think> tags), then EVIDENCE / ANSWER
     raw, thinking = _parse_deepseek_thinking(_normalize_output(response.text))
     answer, quotes = parse_answer(raw)
-    context_texts = [c.get("text", "") for c in top_chunks]
+    context_texts = [c.get("text", "") for c in top_chunks] + [
+        c["metadata"]["display_text"] for c in top_chunks if c.get("metadata", {}).get("display_text")
+    ]
     evidence = verify_quotes(quotes, context_texts)
 
     # 10. Build navigation breadcrumbs (deduplicated)

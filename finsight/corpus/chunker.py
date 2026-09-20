@@ -66,6 +66,7 @@ class Chunk:
     element_orders: list[int] = field(default_factory=list)
     sentences: list[str] = field(default_factory=list)
     chunk_index: int = -1
+    display_text: str | None = None  # rows/tables: the verbalised form (header = value) shown to the answerer
 
 
 def verbalize_row(el: Element) -> str:
@@ -119,6 +120,7 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
                 speaker=first.speaker,
                 element_orders=orders,
                 sentences=sentences,
+                display_text=index_body if kind in ("row", "table") else None,
             )
         )
 
@@ -141,7 +143,15 @@ def chunk_elements(elements: list[Element], header: str = "", max_chars: int = M
             for k in range(0, len(rows), TABLE_GROUP_ROWS):
                 grp = rows[k : k + TABLE_GROUP_ROWS]
                 text = "\n".join(r.text for r in grp)
-                emit(text, "table", grp[0], [r.order for r in grp], [r.text for r in grp], grp[0].context_line)
+                emit(
+                    text,
+                    "table",
+                    grp[0],
+                    [r.order for r in grp],
+                    [r.text for r in grp],
+                    grp[0].context_line,
+                    index_body="\n".join(verbalize_row(r) for r in grp),
+                )
             i = j
             continue
 
