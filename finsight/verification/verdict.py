@@ -74,20 +74,52 @@ def _parse(text: str) -> dict:
         return {}
 
 
-def numeric_verdict(target: dict | None, actual: float | None) -> str | None:
-    """Deterministic verdict for numeric targets. None when it cannot be computed."""
+_LOWER_BETTER = re.compile(
+    r"\b(tax|etr|cost|expense|attrition|debt|leverage|dso|days sales|onsite mix|churn|capex intensity)\b", re.I
+)
+_HIGHER_BETTER = re.compile(
+    r"\b(growth|revenue|margin|profit|eps|cash flow|fcf|roe|roce|hiring|freshers|headcount|deal|tcv|dividend|utili[sz]ation|payout)\b",
+    re.I,
+)
+
+
+def direction(metric: str | None) -> str:
+    """'higher' when exceeding the target is good, 'lower' when undershooting is good, else 'neutral'."""
+    m = metric or ""
+    if _LOWER_BETTER.search(m):
+        return "lower"
+    if _HIGHER_BETTER.search(m):
+        return "higher"
+    return "neutral"
+
+
+def numeric_verdict(target: dict | None, actual: float | None, metric: str | None = None) -> str | None:
+    """Deterministic verdict for numeric targets. None when it cannot be computed.
+
+    A range is MET inside it, and also when beaten in the good direction
+    (growth above the top of a growth range is a beat, not a miss). Just
+    outside on the bad side is PARTIAL (10% of the range width, ≥ 0.5 units),
+    further is MISSED. Slack floor is 0.1 units so a 1–3% range does not stretch to 0.5%.
+    """
     if not target or actual is None:
         return None
     kind = target.get("kind")
+    d = direction(metric)
     if kind == "range":
         lo, hi = target["low"], target["high"]
         if lo is None or hi is None:
             return None
         if lo <= actual <= hi:
             return "MET"
-        # just outside: PARTIAL when within 10% of the range width (or 0.5 units), else MISSED
-        slack = max(abs(hi - lo) * 0.10, 0.5)
-        return "PARTIAL" if (lo - slack) <= actual <= (hi + slack) else "MISSED"
+        if actual > hi:
+            if d == "higher":
+                return "MET"
+            slack = max(abs(hi - lo) * 0.10, 0.1)
+            return "PARTIAL" if actual <= hi + slack else "MISSED"
+        if d == "lower":
+            return "MET"
+        slack = max(abs(hi - lo) * 0.10, 0.1)
+        return "PARTIAL" if actual >= lo - slack else "MISSED"
     v = target.get("value")
     if v is None:
         return None
@@ -97,7 +129,12 @@ def numeric_verdict(target: dict | None, actual: float | None) -> str | None:
         return "MET" if actual <= v else ("PARTIAL" if actual <= v * 1.05 else "MISSED")
     if kind == "point":
         tol = max(abs(v) * 0.05, 0.25)
-        return "MET" if abs(actual - v) <= tol else ("PARTIAL" if abs(actual - v) <= tol * 3 else "MISSED")
+        if abs(actual - v) <= tol:
+            return "MET"
+        beat = (actual > v and d == "higher") or (actual < v and d == "lower")
+        if beat:
+            return "MET"
+        return "PARTIAL" if abs(actual - v) <= tol * 3 else "MISSED"
     return None
 
 
@@ -159,7 +196,7 @@ async def judge_claim(claim: Claim, evidence: list[dict], *, model: str | None =
     except (TypeError, ValueError):
         actual_number = None
     if verdict != "UNVERIFIABLE":
-        computed = numeric_verdict(claim.target, actual_number)
+        computed = numeric_verdict(claim.target, actual_number, claim.metric)
         if computed and computed != verdict:
             logger.info(
                 "numeric override for %s: llm=%s computed=%s (actual=%s target=%s)",

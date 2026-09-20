@@ -81,7 +81,7 @@ class TestNumericVerdict:
     @pytest.mark.parametrize(
         "target,actual,expected",
         [
-            ({"kind": "range", "low": 0, "high": 3, "unit": "%"}, 3.1, "PARTIAL"),  # just above the top of the range
+            ({"kind": "range", "low": 0, "high": 3, "unit": "%"}, 3.1, "PARTIAL"),  # neutral metric: just above the top
             ({"kind": "range", "low": 0, "high": 3, "unit": "%"}, 2.0, "MET"),
             ({"kind": "range", "low": 20, "high": 22, "unit": "%"}, 21.0, "MET"),
             ({"kind": "range", "low": 29, "high": 30, "unit": "%"}, 26.4, "MISSED"),
@@ -96,6 +96,37 @@ class TestNumericVerdict:
     )
     def test_cases(self, target, actual, expected):
         assert vd.numeric_verdict(target, actual) == expected
+
+    @pytest.mark.parametrize(
+        "metric,target,actual,expected",
+        [
+            (
+                "revenue growth (constant currency)",
+                {"kind": "range", "low": 1, "high": 3, "unit": "%"},
+                3.1,
+                "MET",
+            ),  # beat a growth range
+            ("revenue growth (constant currency)", {"kind": "range", "low": 1, "high": 3, "unit": "%"}, 0.5, "MISSED"),
+            ("operating margin", {"kind": "range", "low": 20, "high": 22, "unit": "%"}, 22.8, "MET"),
+            ("operating margin", {"kind": "range", "low": 20, "high": 22, "unit": "%"}, 19.9, "PARTIAL"),
+            (
+                "effective tax rate",
+                {"kind": "range", "low": 29, "high": 30, "unit": "%"},
+                26.4,
+                "MET",
+            ),  # lower tax than guided is a beat
+            ("effective tax rate", {"kind": "range", "low": 29, "high": 30, "unit": "%"}, 32.0, "MISSED"),
+            ("onsite mix", {"kind": "point", "value": 23, "unit": "%"}, 22.0, "MET"),
+            ("free cash flow as % of net profit", {"kind": "min", "value": 100, "unit": "%"}, 112, "MET"),
+        ],
+    )
+    def test_direction_aware(self, metric, target, actual, expected):
+        assert vd.numeric_verdict(target, actual, metric) == expected
+
+    def test_direction_inference(self):
+        assert vd.direction("effective tax rate") == "lower"
+        assert vd.direction("revenue growth (cc)") == "higher"
+        assert vd.direction("number of clients") == "neutral"
 
 
 def _claim(target=None, metric="operating margin"):
