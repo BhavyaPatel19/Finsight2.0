@@ -31,10 +31,12 @@ EVIDENCE from the later period's filings (each block has an id):
 {evidence}
 
 Rules:
+- Only REPORTED RESULTS count as evidence (figures that were achieved, e.g. "revenue grew 3.1%", "margin was 21%", a fact-sheet row). A sentence that itself makes a promise or gives guidance ("we expect…", "guidance for FY27 is…", "will…") is NOT an outcome — never grade a claim against another promise, and never treat a restated or later-period guidance as contradicting the claim.
+- Read periods carefully: evidence about a different period than the claim's is not evidence for the claim.
 - MET: the evidence shows the commitment was achieved (a range target is MET when the actual falls inside it; "above X" when actual ≥ X).
 - MISSED: the evidence shows it was not achieved.
 - PARTIAL: achieved in part or in direction but not in full (e.g. margin improved but less than promised; a qualitative promise only partly delivered).
-- UNVERIFIABLE: the evidence does not contain the information needed. Do NOT guess. Use this whenever the number or fact is simply not there.
+- UNVERIFIABLE: the evidence does not contain the reported result needed (including when it only contains promises or guidance). Do NOT guess. Use this whenever the number or fact is simply not there.
 - "actual_value": the actual figure or outcome as stated in the evidence, with unit; null if UNVERIFIABLE.
 - "actual_number": the actual as a plain number in the target's unit if the target is numeric, else null.
 - "evidence_id" and "evidence_quote": the block id and the exact sentence you relied on (copied verbatim — it will be checked); null if UNVERIFIABLE.

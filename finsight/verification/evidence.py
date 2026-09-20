@@ -45,12 +45,41 @@ def evidence_query(claim: Claim) -> str:
     return " ".join(p for p in parts if p)
 
 
+_OUTCOME = re.compile(
+    r"\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|"
+    r"achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended)\b",
+    re.I,
+)
+_FORWARD = re.compile(
+    r"\b(expect(s|ed)?|guidance|guide|will|shall|target(s)?|aim|outlook|plan(s|ned)?|anticipate|forecast)\b", re.I
+)
+
+
+def outcome_weight(text: str, kind: str | None) -> float:
+    """Prefer evidence that reports what happened over evidence that promises again.
+    Table rows are results by nature; prose is weighed by outcome vs forward-looking verbs."""
+    if kind in ("row", "table"):
+        return 1.0
+    fwd = len(_FORWARD.findall(text))
+    out = len(_OUTCOME.findall(text))
+    if out == 0 and fwd > 0:
+        return 0.5
+    if fwd > out:
+        return 0.75
+    return 1.0
+
+
 def find_evidence(session: Session, claim: Claim, document_ids: list[int], top_k: int = 8) -> list[dict]:
     res = retrieve(
-        session, evidence_query(claim), top_k=top_k, document_ids=document_ids, candidates=16, use_period=False
+        session, evidence_query(claim), top_k=top_k + 4, document_ids=document_ids, candidates=24, use_period=False
     )
+    ranked = sorted(
+        res["chunks"],
+        key=lambda h: (h.get("reranker_score") or 0.0) * outcome_weight(h["text"], h["metadata"].get("kind")),
+        reverse=True,
+    )[:top_k]
     out = []
-    for h in res["chunks"]:
+    for h in ranked:
         m = h["metadata"]
         out.append(
             {
