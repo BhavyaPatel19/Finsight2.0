@@ -257,6 +257,24 @@ async def judge_claim(
         actual_number = float(actual_number) if actual_number is not None else None
     except (TypeError, ValueError):
         actual_number = None
+
+    # Ratios a person would compute from two reported figures (FCF / net profit, tax / PBT):
+    # if both are in the evidence, the computed value replaces whatever the model said.
+    from finsight.verification.derived import derived_actual
+
+    unit = (claim.target or {}).get("unit") or ""
+    derived = derived_actual(claim.metric, [e["text"] for e in evidence]) if claim.target and unit == "%" else None
+    if derived is not None:
+        actual_number, note = derived
+        if verdict == "UNVERIFIABLE":
+            verdict = "MET"  # provisional; the numeric rule below decides
+            cited = next((e for e in evidence if e["text"][:80] in note), evidence[0] if evidence else None)
+            if cited:
+                page, doc_type = cited.get("page"), cited.get("doc_type")
+        out["explanation"] = f"{note}. {out.get('explanation') or ''}".strip()
+        out["actual_value"] = f"{actual_number}%"
+        method = "derived"
+
     if verdict != "UNVERIFIABLE":
         computed = numeric_verdict(claim.target, actual_number, claim.metric)
         if computed and computed != verdict:
@@ -268,8 +286,8 @@ async def judge_claim(
                 actual_number,
                 claim.target,
             )
-            verdict, method = computed, "numeric"
-        elif computed:
+            verdict, method = computed, ("derived" if method == "derived" else "numeric")
+        elif computed and method != "derived":
             method = "numeric"
 
     return Verdict(

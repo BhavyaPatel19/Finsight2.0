@@ -356,3 +356,69 @@ class TestPeriodGuard:
         )
         assert v.verdict == "UNVERIFIABLE" and v.method == "downgraded:evidence-is-a-promise"
         assert vd.is_forward_looking("Adjusted operating margin was stable at 21%.") is False
+
+
+class TestDerived:
+    FACTS = [
+        "Strong Large Deal wins of $14.9 Billion and healthy Free Cash Flow of $3.7 Billion",
+        "Net Profit (after non-controlling interests) | 3,313 | 3,158 | 4.9%",
+        "Profit before income taxes | 4,506 | 4,447 | 1.3%",
+        "Income tax expense (1) | 1,190 | 1,285 | -7.4%",
+    ]
+
+    def test_fcf_over_net_profit(self):
+        from finsight.verification.derived import derived_actual
+
+        pct, note = derived_actual("free cash flow as % of net profit", self.FACTS)
+        assert pct == 111.7 and "3700" in note and "3313" in note
+
+    def test_effective_tax_rate(self):
+        from finsight.verification.derived import derived_actual
+
+        pct, _ = derived_actual("effective tax rate", self.FACTS)
+        assert pct == 26.4
+
+    def test_needs_both_figures_and_a_known_metric(self):
+        from finsight.verification.derived import derived_actual
+
+        assert derived_actual("effective tax rate", self.FACTS[:2]) is None
+        assert derived_actual("operating margin", self.FACTS) is None
+        assert derived_actual(None, self.FACTS) is None
+
+    def test_judge_uses_derived_value(self, monkeypatch):
+        async def abstain(prompt, **kw):
+            return LLMResponse(
+                text='{"verdict": "UNVERIFIABLE", "actual_value": null, "actual_number": null, "evidence_id": null, "evidence_quote": null, "explanation": "not stated"}',
+                model="m",
+                provider="t",
+            )
+
+        monkeypatch.setattr(vd, "agenerate", abstain)
+        ev = [
+            {"id": f"e{i}", "text": t, "doc_type": "fact_sheet", "page": 3, "kind": "row"}
+            for i, t in enumerate(self.FACTS)
+        ]
+        c = cl.Claim(
+            id="c",
+            claim="FCF above 100% of net profit",
+            quote="q",
+            category="cash_flow",
+            metric="free cash flow as % of net profit",
+            period="FY26",
+            target={"kind": "min", "low": None, "high": None, "value": 100.0, "unit": "%"},
+            source_chunk="s",
+        )
+        v = asyncio.run(vd.judge_claim(c, ev, latest_reported=(26, 4)))
+        assert v.verdict == "MET" and v.method == "derived" and v.actual_number == 111.7
+        c2 = cl.Claim(
+            id="c2",
+            claim="ETR 29-30%",
+            quote="q",
+            category="tax",
+            metric="effective tax rate",
+            period="FY26",
+            target={"kind": "range", "low": 29.0, "high": 30.0, "value": None, "unit": "%"},
+            source_chunk="s",
+        )
+        v2 = asyncio.run(vd.judge_claim(c2, ev, latest_reported=(26, 4)))
+        assert v2.verdict == "MET" and v2.actual_number == 26.4, "lower tax than guided is a beat"
