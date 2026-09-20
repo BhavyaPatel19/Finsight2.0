@@ -213,13 +213,24 @@ async def extract_claims(
     return dedupe(claims)
 
 
+def _metric_key(metric: str | None) -> str:
+    words = re.findall(r"[a-z]+", (metric or "").lower())
+    return " ".join(sorted(w[:5] for w in words if w not in ("the", "of", "in", "and", "for", "a", "an", "as")))
+
+
 def dedupe(claims: list[Claim]) -> list[Claim]:
+    """Drop restatements: same quote prefix, or the same metric + period + numeric target."""
     seen: set[str] = set()
     out = []
     for c in claims:
-        key = _norm(c.quote)[:80]
-        if key in seen:
+        keys = [_norm(c.quote)[:80]]
+        if c.target:
+            t = c.target
+            keys.append(
+                f"{_metric_key(c.metric)}|{(c.period or '').lower()}|{t['kind']}|{t.get('low')}|{t.get('high')}|{t.get('value')}|{t.get('unit')}"
+            )
+        if any(k in seen for k in keys):
             continue
-        seen.add(key)
+        seen.update(keys)
         out.append(c)
     return out

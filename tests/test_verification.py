@@ -209,3 +209,47 @@ def test_overall_score_excludes_unverifiable():
 
     assert overall_score(["MET", "PARTIAL", "MISSED", "UNVERIFIABLE"]) == 50.0
     assert overall_score(["UNVERIFIABLE"]) is None
+
+
+class TestDedupeAndQuery:
+    def _c(self, cid, quote, metric, period, target):
+        return cl.Claim(
+            id=cid,
+            claim=quote,
+            quote=quote,
+            category="margin",
+            metric=metric,
+            period=period,
+            target=target,
+            source_chunk="s",
+        )
+
+    def test_restated_commitments_collapse(self):
+        rng = {"kind": "range", "low": 20.0, "high": 22.0, "value": None, "unit": "%"}
+        a = self._c("a", "Our margin guidance for financial year 2026 is 20% to 22%.", "operating margin", "FY26", rng)
+        b = self._c(
+            "b", "Our operating margin guidance for the year is 20% to 22%.", "operating margin guidance", "FY26", rng
+        )
+        c = self._c(
+            "c",
+            "We expect FY'26 free cash flows to be above 100% of net profit.",
+            "free cash flow",
+            "FY26",
+            {"kind": "min", "low": None, "high": None, "value": 100.0, "unit": "%"},
+        )
+        assert [x.id for x in cl.dedupe([a, b, c])] == ["a", "c"]
+
+    def test_evidence_query_asks_for_the_outcome(self):
+        from finsight.verification.evidence import evidence_query
+
+        q = evidence_query(
+            self._c(
+                "a",
+                "The company guides FY26 revenue growth of 1% to 3% in constant currency.",
+                "revenue growth (constant currency)",
+                "FY26",
+                {"kind": "range", "low": 1.0, "high": 3.0, "value": None, "unit": "%"},
+            )
+        )
+        assert "1" not in q and "3" not in q.replace("FY26", ""), "target numbers removed"
+        assert "guide" not in q.lower() and "revenue growth" in q and "FY26" in q and "actual" in q
