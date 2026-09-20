@@ -37,7 +37,6 @@ from finsight.models import (
     PageMetadata,
     WalkTheTalkResult,
 )
-from finsight.rag.service import process_for_rag
 
 # ---------------------------------------------------------------------------
 # Feature 1 — Division-level FinBERT Sentiment
@@ -154,60 +153,30 @@ def _run_finbert_on_text(text: str) -> dict:
 
 
 def analyze_division_sentiment(session: Session, document_id: int) -> list[DivisionSentiment]:
-    """
-    Run FinBERT division-level sentiment on a document.
-    Auto-indexes for RAG if not already done to get section structure.
-    """
+    """FinBERT sentiment per division (section, else speaker) over every sentence of the v2 index."""
+    from finsight.retrieval import index_document
+    from finsight.verification.sentiment import score_divisions
+
     doc = session.get(Document, document_id)
     if not doc:
         return []
-
-    # Ensure document is RAG-indexed (populates PageMetadata / DocumentSection)
     if doc.status != "indexed":
-        result = process_for_rag(session, document_id)
-        if result.get("status") == "error":
+        if index_document(session, document_id).get("status") == "error":
             return []
-        # Refresh doc
         session.refresh(doc)
 
-    # Get text grouped by division
-    division_texts = _get_division_texts(session, document_id)
-    if not division_texts:
-        # Fallback: whole document as single division
-        if doc.text_path:
-            try:
-                full = open(doc.text_path, encoding="utf-8").read()
-                division_texts = {"Full Document": full[:15000]}
-            except Exception:
-                return []
-
-    # Delete old results for this document
-    old = session.exec(select(DivisionSentiment).where(DivisionSentiment.document_id == document_id)).all()
-    for o in old:
+    scored = score_divisions(document_id)
+    for o in session.exec(select(DivisionSentiment).where(DivisionSentiment.document_id == document_id)).all():
         session.delete(o)
     session.commit()
-
-    # Run FinBERT on each division
     results = []
-    for div_name, text in division_texts.items():
-        scores = _run_finbert_on_text(text)
-        row = DivisionSentiment(
-            document_id=document_id,
-            symbol=doc.symbol,
-            division_name=div_name,
-            positive_score=scores["positive"],
-            negative_score=scores["negative"],
-            neutral_score=scores["neutral"],
-            overall_score=scores["overall"],
-            sentence_count=scores["count"],
-        )
-        session.add(row)
-        results.append(row)
-
+    for row in scored:
+        r = DivisionSentiment(document_id=document_id, symbol=doc.symbol, **row)
+        session.add(r)
+        results.append(r)
     session.commit()
     for r in results:
         session.refresh(r)
-
     return results
 
 
