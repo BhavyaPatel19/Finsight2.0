@@ -90,3 +90,18 @@ What moved the numbers, in order of size:
 6. The period prior from the question is small on this corpus (hit@5 0.984 → 1.000, hit@1 −0.03); kept at ×1.25.
 
 Not done / next: embedding-model ablation (bge-base → bge-large / bge-m3), latency work on the reranker (batching, candidate pruning), and the same measurement on a bookmarked 200-page annual report, which this corpus does not contain.
+
+---
+
+# Redesign branch: Walk the Talk v2 (PDF corpus, `qwen3:14b` local)
+
+Gold grew from 15 to 25 labelled claims (16 MET, 3 PARTIAL, 1 MISSED, **5 UNVERIFIABLE** — FY27 commitments from the April 2026 call graded after one reported quarter). Numbers below are therefore not directly comparable with the 15-claim v1 row; the confusion matrices are.
+
+| run | claim recall | verdict acc. (4-way) | acc. on answered | abstain recall / precision | κ | confusion (human → system) |
+|---|---|---|---|---|---|---|
+| v1 (old pipeline, 15 claims) | 0.80 | 0.58 | 0.58 | – | 0.10 | MET→{MET 7, PARTIAL 1, MISSED 1} · PARTIAL→{MISSED 2} · MISSED→{MET 1} |
+| v2.0 — typed claims, per-claim evidence over all filings of the period, quote-checked verdicts, direction-aware numeric rule, outcome-oriented evidence query, dedupe (`wtt_pdf-v2.0-qwen3-14b.json`) | 0.84 (21/25) | 0.48 (10/21) | 0.67 (10/15) | **0.0** / 0.0 | −0.03 | MET→{MET 10, MISSED 3} · PARTIAL→{MISSED 1, UNVERIFIABLE 1} · MISSED→{MET 1} · UNVERIFIABLE→{MET 5} |
+
+Reading v2.0's own explanations, one failure explains 8 of the 11 disagreements: **a promise restated in the actuals period was taken as an outcome.** The July 2026 call restates FY27 guidance, so all five FY27 claims were graded MET ("the company reiterated…"); "we expect FY27 third-party cost to remain at similar levels" was read as contradicting "FY26 third-party cost will be lower than FY25"; and "we expect H1 to be stronger than H2" was graded as contradicting the *equivalent* claim "H2 weaker than H1". The three fixes measured next as v2.1: evidence re-ranked by an outcome weight (reported-result verbs and table rows over forward-looking sentences), the verdict prompt stating that a promise is never an outcome and different-period evidence does not count, and a token-overlap fallback for quote matching (two claims were dropped because the model lightly rephrased its quote).
+
+What already works in v2.0 and did not in v1: the FY26 growth beat (3.1% vs 1–3%) is MET by the direction-aware rule; the margin actual is found in the fact sheet rather than "not mentioned"; a claim whose quote is not in the source cannot exist; a verdict whose quote is not in the evidence cannot stand.
