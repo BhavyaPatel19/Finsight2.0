@@ -103,11 +103,26 @@ class TestGroq:
         p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
         p.generate("x", json_mode=True, think=False)
         p.generate("x", model="qwen/qwen3.8-27b", think=False)
+        p.generate("x", model="qwen-3.8-27b", think=False)  # Cerebras spelling
         p.generate("x", model="openai/gpt-oss-120b")  # default effort when think is unset
         p.generate("x", model="llama-3.3-70b-versatile", think=False)  # non-reasoning model
         assert seen[0]["reasoning_effort"] == "low"
-        assert seen[1]["reasoning_effort"] == "none"
-        assert "reasoning_effort" not in seen[2] and "reasoning_effort" not in seen[3]
+        assert seen[1]["reasoning_effort"] == "none" and seen[2]["reasoning_effort"] == "none"
+        assert "reasoning_effort" not in seen[3] and "reasoning_effort" not in seen[4]
+
+    def test_reasoning_without_content_is_a_clear_error(self):
+        from finsight.llm.base import LLMError
+
+        def handler(request):
+            body = {
+                "choices": [{"finish_reason": "length", "message": {"role": "assistant", "reasoning": "hmm"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 300},
+            }
+            return httpx.Response(200, json=body)
+
+        p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
+        with pytest.raises(LLMError, match="reasoning but no content"):
+            p.generate("x", max_tokens=300)
 
     def test_model_override(self):
         def handler(request):

@@ -292,6 +292,14 @@ def _count_sections(sections):
 # ---------------------------------------------------------------------------
 
 
+def _normalize_output(text: str) -> str:
+    """Undo typography some models add: CJK citation brackets (gpt-oss writes 【…】), narrow
+    no-break spaces inside numbers, non-breaking hyphens and markdown bold around figures."""
+    text = text.replace("【", "[").replace("】", "]")
+    text = text.replace("\u202f", " ").replace("\u2011", "-")
+    return re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+
+
 def _parse_deepseek_thinking(response: str) -> tuple[str, str | None]:
     """Extract <think>...</think> reasoning trace from DeepSeek-R1 output."""
     think_match = re.search(r"<think>(.*?)</think>", response, re.DOTALL)
@@ -312,7 +320,8 @@ RULES
 1. Use only the excerpts. No outside knowledge, no inference beyond what they state.
 2. Copy numbers and units exactly as written (crores, millions, %, basis points).
 3. Every fact carries a citation in this exact form: [<document type> <period>, Page <n>] — e.g. [earnings call transcript Q4 FY25, Page 3].
-4. If the excerpts do not contain the answer, the ANSWER line is exactly: Not found in the selected documents.
+4. If no excerpt states the fact, the ANSWER line is exactly: Not found in the selected documents.
+   The question may name a source (the call, the press release, the fact sheet). A missing source is NOT a reason to abstain: if another excerpt from the same period states the fact, answer from it and cite it — the citation shows where it came from.
 5. Excerpts from different periods can look alike; check the period in each excerpt header before using it.
 
 FORMAT — two sections, nothing else:
@@ -326,7 +335,7 @@ EXCERPTS ({n} from {doc_count} document(s)):
 
 {context}
 
-QUESTION: {question}"""
+QUESTION (a source named here is a hint, not a filter — any excerpt from that period may answer it): {question}"""
 
 
 _EVIDENCE_LINE = re.compile(r'^\s*[-•]\s*["“]?(.+?)["”]?\s*(\[[^\]]*\])?\s*$')
@@ -357,8 +366,12 @@ def verify_quotes(quotes: list[str], context_texts: list[str]) -> list[dict]:
             .replace("\u201d", '"')
             .replace("|", " ")
             .replace("\xa0", " ")
+            .replace("\u202f", " ")  # narrow no-break space, e.g. "$14.9\u202fbillion" from gpt-oss
+            .replace("\u2011", "-")  # non-breaking hyphen, e.g. "1.5%\u20113%"
+            .replace("\u2013", "-")
         )
-        return re.sub(r"\s+", " ", t).strip().lower()
+        t = re.sub(r"\s+", " ", t).strip().lower()
+        return re.sub(r"\s+%", "%", t)  # "55 %" == "55%"
 
     ctx = [norm(c) for c in context_texts]
     out = []
@@ -452,7 +465,7 @@ def answer_question(
     model_name = response.model
 
     # 9. Parse thinking trace (reasoning models wrap it in <think> tags), then EVIDENCE / ANSWER
-    raw, thinking = _parse_deepseek_thinking(response.text)
+    raw, thinking = _parse_deepseek_thinking(_normalize_output(response.text))
     answer, quotes = parse_answer(raw)
     context_texts = [c.get("text", "") for c in top_chunks]
     evidence = verify_quotes(quotes, context_texts)

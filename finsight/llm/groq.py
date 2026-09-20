@@ -35,8 +35,8 @@ def _min_reasoning_effort(model: str) -> str | None:
     """Lowest reasoning setting Groq accepts for `model`, or None for non-reasoning models."""
     if "gpt-oss" in model:
         return "low"  # gpt-oss accepts low | medium | high
-    if "qwen3" in model:
-        return "none"  # qwen3 accepts none | default
+    if "qwen" in model:
+        return "none"  # qwen3 ("qwen/qwen3.8-27b" on Groq, "qwen-3.8-27b" on Cerebras) accepts none | default
     return None
 
 
@@ -91,9 +91,17 @@ class GroqProvider(LLMProvider):
 
     def _parse(self, data: dict, started: float) -> LLMResponse:
         try:
-            text = data["choices"][0]["message"]["content"] or ""
+            choice = data["choices"][0]
+            message = choice["message"]
         except (KeyError, IndexError, TypeError) as e:
-            raise LLMError(f"unexpected Groq response shape: {str(data)[:200]}") from e
+            raise LLMError(f"unexpected {self.name} response shape: {str(data)[:200]}") from e
+        text = message.get("content") or ""
+        if not text and message.get("reasoning") is not None:
+            # A reasoning model ran out of max_tokens before writing its answer.
+            raise LLMError(
+                f"{self.name} returned reasoning but no content (finish_reason={choice.get('finish_reason')}); "
+                "raise max_tokens or pass think=False"
+            )
         usage = data.get("usage") or {}
         return LLMResponse(
             text=text.strip(),
