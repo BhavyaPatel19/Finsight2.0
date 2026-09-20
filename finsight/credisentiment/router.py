@@ -13,7 +13,6 @@ from finsight.credisentiment.schemas import (
 )
 from finsight.credisentiment.service import (
     analyze_division_sentiment,
-    walk_the_talk,
 )
 from finsight.database.session import get_session
 from finsight.deps import get_current_user
@@ -92,14 +91,18 @@ def process_for_credisentiment_endpoint(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Process a document for the CrediSentiment pipeline (separate from RAG)."""
+    """Index a document (one route for RAG, sentiment and Walk the Talk)."""
     doc = get_accessible_document(session, current_user, document_id)
     if not doc.pdf_path:
-        raise HTTPException(status_code=400, detail="Document has no PDF file")
+        raise HTTPException(status_code=400, detail="Document has no file")
 
-    from finsight.credisentiment.pipeline import process_for_credisentiment
+    from finsight.retrieval import index_document
 
-    result = process_for_credisentiment(session, document_id)
+    result = index_document(session, document_id, force=True)
+    session.refresh(doc)
+    doc.cs_status = doc.status  # legacy flag the UI still reads
+    session.add(doc)
+    session.commit()
 
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("message", "Processing failed"))
@@ -166,8 +169,8 @@ def get_wtt_documents(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Only CrediSentiment-processed documents this user may see, for the WTT picker."""
-    docs = [d for d in visible_documents(session, current_user) if d.cs_status == "indexed"]
+    """Indexed documents this user may see, for the Walk-the-Talk picker."""
+    docs = [d for d in visible_documents(session, current_user) if d.status == "indexed"]
     return [
         AvailableDocumentResponse(
             id=d.id,
@@ -176,8 +179,8 @@ def get_wtt_documents(
             company_name=d.company_name,
             fiscal_quarter=d.fiscal_quarter,
             fiscal_year=d.fiscal_year,
-            status=d.cs_status or "pending",
-            chunk_count=d.cs_chunk_count or 0,
+            status=d.status or "pending",
+            chunk_count=d.chunk_count or 0,
             file_size=d.file_size,
         )
         for d in docs
@@ -196,13 +199,13 @@ async def walk_the_talk_endpoint(
     """
     import json
 
-    get_accessible_document(session, current_user, payload.claims_document_id)
-    get_accessible_document(session, current_user, payload.actuals_document_id)
-    result = await walk_the_talk(
-        session,
-        payload.claims_document_id,
-        payload.actuals_document_id,
-    )
+    from finsight.verification import verify
+
+    for doc_id in (payload.claims_document_id, payload.actuals_document_id):
+        doc = get_accessible_document(session, current_user, doc_id)
+        if doc.status != "indexed":
+            raise HTTPException(status_code=400, detail=f"Document {doc_id} is not indexed yet — process it first")
+    result = await verify(session, payload.claims_document_id, payload.actuals_document_id)
     if not result:
         raise HTTPException(
             status_code=400,

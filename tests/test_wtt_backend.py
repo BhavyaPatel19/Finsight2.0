@@ -221,11 +221,11 @@ class TestRouterEndpoints:
         """Verify get_wtt_documents endpoint exists and is callable."""
         assert callable(get_wtt_documents)
 
-    def test_wtt_documents_endpoint_filters_cs_status(self):
-        """Verify the endpoint source contains cs_status filtering logic."""
+    def test_wtt_documents_endpoint_filters_indexed(self):
+        """The picker lists documents indexed by the v2 engine (Document.status), not the legacy cs_status."""
         source = inspect.getsource(get_wtt_documents)
-        assert "cs_status" in source
-        assert '"indexed"' in source
+        assert 'd.status == "indexed"' in source
+        assert "cs_status" not in source
 
 
 class TestEffectiveParallel:
