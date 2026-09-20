@@ -181,6 +181,13 @@ def main() -> None:
     ap.add_argument(
         "--engine", choices=["v1", "v2"], default="v2", help="v1 = credisentiment pipeline, v2 = finsight.verification"
     )
+    ap.add_argument("--gold", type=Path, default=GOLD, help="labelled claims (default: the Infosys set)")
+    ap.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="document manifest the gold's document keys refer to (default: eval/gold/documents.json)",
+    )
     args = ap.parse_args()
 
     os.environ.setdefault("SECRET_KEY", "eval")
@@ -190,14 +197,17 @@ def main() -> None:
     from finsight.database.session import engine
     from finsight.llm import get_provider
 
-    gold = [json.loads(line) for line in GOLD.read_text().splitlines() if line.strip()]
+    gold = [json.loads(line) for line in args.gold.read_text().splitlines() if line.strip()]
     pairs = sorted({(g["claims_doc"], g["actuals_doc"]) for g in gold})
     provider = get_provider()
     print(f"{len(gold)} labelled claims across {len(pairs)} pairs; model {provider.default_model} via {provider.name}")
 
     rows, system_counts, pair_meta = [], {}, {}
     with Session(engine) as session:
-        id_by_key = {v: k for k, v in doc_key_by_id(session).items()}
+        id_by_key = {
+            v: k
+            for k, v in (doc_key_by_id(session, args.manifest) if args.manifest else doc_key_by_id(session)).items()
+        }
         for claims_key, actuals_key in pairs:
             label = f"{claims_key} → {actuals_key}"
             print(f"  running {label} …", flush=True)
@@ -219,6 +229,7 @@ def main() -> None:
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_sha": git_sha(),
         "tag": args.tag,
+        "gold": str(args.gold.relative_to(ROOT)) if args.gold.is_relative_to(ROOT) else str(args.gold),
         "provider": provider.name,
         "model": provider.default_model,
         "engine": args.engine,

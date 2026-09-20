@@ -39,6 +39,10 @@ def load_manifest(path: Path = MANIFEST) -> list[dict]:
     return json.loads(path.read_text())["documents"]
 
 
+def _is_edgar(url: str) -> bool:
+    return "sec.gov" in url
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -48,8 +52,9 @@ def sha256(path: Path) -> str:
 
 
 def local_file(entry: dict, dest_dir: Path, fmt: str) -> Path:
-    """HTML as downloaded, or the locally rendered PDF (scripts/render_pdfs.py)."""
-    if fmt == "pdf":
+    """HTML as downloaded, or the locally rendered PDF (scripts/render_pdfs.py); a manifest entry
+    that is itself a PDF (a company's own IR download) is used as is."""
+    if fmt == "pdf" and not entry["file"].lower().endswith(".pdf"):
         return dest_dir / "pdf" / (Path(entry["file"]).stem + ".pdf")
     return dest_dir / entry["file"]
 
@@ -59,14 +64,18 @@ def download(entry: dict, dest_dir: Path, client: httpx.Client) -> Path:
     if dest.exists() and entry.get("sha256") and sha256(dest) == entry["sha256"]:
         logger.info("cached   %s", dest.name)
         return dest
-    if "@" not in config.EDGAR_USER_AGENT:
-        raise SystemExit(
-            "EDGAR_USER_AGENT must include a contact email (SEC fair-access policy). "
-            'Add e.g. EDGAR_USER_AGENT="FinSight research you@example.com" to .env'
-        )
-    r = client.get(entry["url"], headers=EDGAR_HEADERS, timeout=60.0, follow_redirects=True)
+    if _is_edgar(entry["url"]):
+        if "@" not in config.EDGAR_USER_AGENT:
+            raise SystemExit(
+                "EDGAR_USER_AGENT must include a contact email (SEC fair-access policy). "
+                'Add e.g. EDGAR_USER_AGENT="FinSight research you@example.com" to .env'
+            )
+        headers = EDGAR_HEADERS
+    else:
+        headers = {"User-Agent": "Mozilla/5.0 (FinSight research; public investor-relations documents)"}
+    r = client.get(entry["url"], headers=headers, timeout=120.0, follow_redirects=True)
     r.raise_for_status()
-    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(r.content)
     digest = sha256(dest)
     if entry.get("sha256") and digest != entry["sha256"]:
@@ -78,9 +87,12 @@ def download(entry: dict, dest_dir: Path, client: httpx.Client) -> Path:
 
 def register(session: Session, entry: dict, path: Path) -> Document:
     doc = session.exec(select(Document).where(Document.source_url == entry["url"])).first()
+    if doc is None:  # ingested by hand (`finsight ingest`) before the manifest existed
+        doc = session.exec(select(Document).where(Document.pdf_path == str(path))).first()
     if doc:
-        if doc.pdf_path != str(path):
+        if doc.pdf_path != str(path) or doc.source_url != entry["url"]:
             doc.pdf_path = str(path)
+            doc.source_url = entry["url"]
             session.add(doc)
             session.commit()
         return doc
@@ -110,10 +122,11 @@ def seed(
     dest_dir: Path | None = None,
     fmt: str = "html",
     engine: str = "v1",
+    manifest: Path = MANIFEST,
 ) -> dict[str, Document]:
     """Download + register (+ index) every manifest entry. Returns {key: Document}."""
     dest_dir = dest_dir or Path(config.DOCUMENTS_DIR)
-    entries = load_manifest()
+    entries = load_manifest(manifest)
     docs: dict[str, Document] = {}
     with httpx.Client() as client:
         for entry in entries:
@@ -173,6 +186,9 @@ def main() -> None:
         help="indexing pipeline (v2 = finsight.corpus + finsight.retrieval)",
     )
     ap.add_argument("--write-hashes", action="store_true", help="record SHA-256 of downloaded files into the manifest")
+    ap.add_argument(
+        "--manifest", type=Path, default=MANIFEST, help="document manifest (default: the Infosys EDGAR sample corpus)"
+    )
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 
@@ -181,17 +197,23 @@ def main() -> None:
     init_db()
     with Session(engine) as session:
         docs = seed(
-            session, index=not args.no_index, wtt=args.wtt, reindex=args.reindex, fmt=args.format, engine=args.engine
+            session,
+            index=not args.no_index,
+            wtt=args.wtt,
+            reindex=args.reindex,
+            fmt=args.format,
+            engine=args.engine,
+            manifest=args.manifest,
         )
         paths = {key: Path(doc.pdf_path) for key, doc in docs.items()}
 
     if args.write_hashes:
-        manifest = json.loads(MANIFEST.read_text())
+        manifest = json.loads(args.manifest.read_text())
         by_key = {d["key"]: d for d in manifest["documents"]}
         for key, path in paths.items():
             by_key[key]["sha256"] = sha256(path)
-        MANIFEST.write_text(json.dumps(manifest, indent=2) + "\n")
-        logger.info("wrote hashes to %s", MANIFEST.relative_to(ROOT))
+        args.manifest.write_text(json.dumps(manifest, indent=2) + "\n")
+        logger.info("wrote hashes to %s", args.manifest.relative_to(ROOT))
 
 
 if __name__ == "__main__":

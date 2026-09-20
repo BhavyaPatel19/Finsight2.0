@@ -1,0 +1,83 @@
+{
+  "_about": "Second evaluation corpus: Tata Steel Ltd's own investor-relations downloads (public, https://www.tatasteel.com/investors/) \u2014 five earnings-call transcripts and the FY2024-25 integrated report, used as they are published (no rendering step). Files are downloaded at seed time and are not committed; SHA-256 pins the versions the gold sets were written against. The annual report carries fiscal_quarter Q4 so that it joins the year-end period's filings.",
+  "documents": [
+    {
+      "key": "TATASTEEL_concall_Q1FY25",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q1",
+      "period_end": "2024-06-30",
+      "title": "Q1 FY25 earnings call transcript",
+      "url": "https://www.tatasteel.com/media/21718/1qfy2025-transcript.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_concall_Q1FY25.pdf",
+      "sha256": "ec83794006b453ca1a0638620c3ddb339665a6205c73b4a88bdbd6636b904641"
+    },
+    {
+      "key": "TATASTEEL_concall_Q2FY25",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q2",
+      "period_end": "2024-09-30",
+      "title": "Q2 FY25 earnings call transcript",
+      "url": "https://www.tatasteel.com/media/22471/2qfy2025-transcript-v7.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_concall_Q2FY25.pdf",
+      "sha256": "13a48ef58484ccaed8fa665bfe73aa242f9707b8d004e18090d12a91d5de58f1"
+    },
+    {
+      "key": "TATASTEEL_concall_Q3FY25",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q3",
+      "period_end": "2024-12-31",
+      "title": "Q3 FY25 earnings call transcript",
+      "url": "https://www.tatasteel.com/media/23384/3qfy25-transcript.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_concall_Q3FY25.pdf",
+      "sha256": "7d52856fd12213a65f75f1f44a95454ac7c8fd8c970dd57ebb855abf575fa8d4"
+    },
+    {
+      "key": "TATASTEEL_concall_Q4FY25",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q4",
+      "period_end": "2025-03-31",
+      "title": "Q4 FY25 and FY25 earnings call transcript",
+      "url": "https://www.tatasteel.com/media/23846/4qfy25-and-fy2025-transcript.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_concall_Q4FY25.pdf",
+      "sha256": "3afdc7648fe6cd7372ed6d2860dca65bd3eb8ff541172ef5633a1027fa7caf2d"
+    },
+    {
+      "key": "TATASTEEL_concall_Q1FY26",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q1",
+      "period_end": "2025-06-30",
+      "title": "Q1 FY26 earnings call transcript",
+      "url": "https://www.tatasteel.com/media/24475/1qfy26-transcript.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_concall_Q1FY26.pdf",
+      "sha256": "ad5eec233c17c9b152a5e7a5f91cd0d0b426cbe4ee6438806ec890c8f138313e"
+    },
+    {
+      "key": "TATASTEEL_annual_FY25",
+      "symbol": "TATASTEEL",
+      "company_name": "Tata Steel Ltd",
+      "doc_type": "annual_report",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q4",
+      "period_end": "2025-03-31",
+      "title": "Integrated Report & Annual Accounts 2024-25 (118th year)",
+      "url": "https://www.tatasteel.com/media/23973/fy25-integratedreport.pdf",
+      "file": "external/TATASTEEL/TATASTEEL_annual_FY25.pdf",
+      "sha256": "40fe520d35a1b277e3d20eaf1c10ecc5115425f3f678145efcc7c62c28a93dfa"
+    }
+  ]
+}

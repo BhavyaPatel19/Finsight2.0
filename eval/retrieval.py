@@ -50,17 +50,21 @@ def git_sha() -> str:
         return "unknown"
 
 
-def doc_key_by_id(session) -> dict[int, str]:
-    """Map Document.id -> manifest key via source_url."""
+def doc_key_by_id(session, manifest: Path = MANIFEST) -> dict[int, str]:
+    """Map Document.id -> manifest key via source_url, else via the file name."""
     from sqlmodel import select
 
     from finsight.models import Document
 
-    by_url = {d["url"]: d["key"] for d in json.loads(MANIFEST.read_text())["documents"]}
+    entries = json.loads(manifest.read_text())["documents"]
+    by_url = {d["url"]: d["key"] for d in entries}
+    by_file = {Path(d["file"]).name: d["key"] for d in entries}
     out = {}
     for doc in session.exec(select(Document)).all():
         if doc.source_url in by_url:
             out[doc.id] = by_url[doc.source_url]
+        elif doc.pdf_path and Path(doc.pdf_path).name in by_file:
+            out[doc.id] = by_file[Path(doc.pdf_path).name]
     return out
 
 
