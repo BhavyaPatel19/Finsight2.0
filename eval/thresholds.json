@@ -1,0 +1,5 @@
+{
+  "_about": "Minimums the CI retrieval gate enforces (eval/gate.py). Set ~3–5 points under the measured value so a real regression fails and noise does not.",
+  "html": {"mode": "v2", "hit@1": 0.70, "hit@5": 0.95, "mrr": 0.82, "coverage": 1.0},
+  "pdf": {"mode": "v2", "hit@1": 0.72, "hit@5": 0.95, "mrr": 0.84, "coverage": 1.0}
+}
