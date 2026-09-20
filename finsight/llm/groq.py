@@ -29,6 +29,15 @@ _FALLBACK_MODELS = [
 ]
 
 
+def _min_reasoning_effort(model: str) -> str | None:
+    """Lowest reasoning setting Groq accepts for `model`, or None for non-reasoning models."""
+    if "gpt-oss" in model:
+        return "low"  # gpt-oss accepts low | medium | high
+    if "qwen3" in model:
+        return "none"  # qwen3 accepts none | default
+    return None
+
+
 class GroqProvider(LLMProvider):
     name = "groq"
 
@@ -54,19 +63,26 @@ class GroqProvider(LLMProvider):
     def _headers(self) -> dict:
         return {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
 
-    def _payload(self, prompt, model, max_tokens, temperature, json_mode, system) -> dict:
+    def _payload(self, prompt, model, max_tokens, temperature, json_mode, system, think=None) -> dict:
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
+        model = model or self.default_model
         payload = {
-            "model": model or self.default_model,
+            "model": model,
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
         }
         if json_mode:
             payload["response_format"] = {"type": "json_object"}
+        # Reasoning models spend max_tokens on hidden reasoning first; a 600-token JSON
+        # call at the default (medium) effort returns nothing and Groq answers 400
+        # json_validate_failed. think=False (all our JSON tasks) asks for the minimum.
+        effort = _min_reasoning_effort(model) if think is False else None
+        if effort:
+            payload["reasoning_effort"] = effort
         return payload
 
     def _parse(self, data: dict, started: float) -> LLMResponse:
@@ -106,7 +122,7 @@ class GroqProvider(LLMProvider):
                 client,
                 f"{self.base_url}/chat/completions",
                 headers=self._headers(),
-                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
+                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)
 
@@ -132,7 +148,7 @@ class GroqProvider(LLMProvider):
                 client,
                 f"{self.base_url}/chat/completions",
                 headers=self._headers(),
-                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system),
+                json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
         return self._parse(r.json(), started)
 

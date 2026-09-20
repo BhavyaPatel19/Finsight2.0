@@ -91,6 +91,23 @@ class TestGroq:
         assert r.prompt_tokens == 12 and r.completion_tokens == 3 and r.total_tokens == 15
         assert r.latency_ms >= 0
 
+    def test_think_false_requests_minimum_reasoning(self):
+        seen = []
+
+        def handler(request):
+            body = json.loads(request.content)
+            seen.append(body)
+            return httpx.Response(200, json=_groq_ok(model=body["model"]))
+
+        p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
+        p.generate("x", json_mode=True, think=False)
+        p.generate("x", model="qwen/qwen3.8-27b", think=False)
+        p.generate("x", model="openai/gpt-oss-120b")  # default effort when think is unset
+        p.generate("x", model="llama-3.3-70b-versatile", think=False)  # non-reasoning model
+        assert seen[0]["reasoning_effort"] == "low"
+        assert seen[1]["reasoning_effort"] == "none"
+        assert "reasoning_effort" not in seen[2] and "reasoning_effort" not in seen[3]
+
     def test_model_override(self):
         def handler(request):
             body = json.loads(request.content)
