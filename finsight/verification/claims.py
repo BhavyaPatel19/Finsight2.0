@@ -215,7 +215,23 @@ async def extract_claims(
 
 def _metric_key(metric: str | None) -> str:
     words = re.findall(r"[a-z]+", (metric or "").lower())
-    stop = {"the", "of", "in", "and", "for", "a", "an", "as", "guidance", "guide", "target", "expected", "expect", "outlook", "range"}
+    stop = {
+        "the",
+        "of",
+        "in",
+        "and",
+        "for",
+        "a",
+        "an",
+        "as",
+        "guidance",
+        "guide",
+        "target",
+        "expected",
+        "expect",
+        "outlook",
+        "range",
+    }
     return " ".join(sorted(w[:5] for w in words if w not in stop))
 
 

@@ -1,0 +1,12 @@
+# Company commitments / expectations from the transcripts that have no outcome label yet (detector-only positives).
+# One sentence per line (matched on the first 60 characters). Hand-labelled; to be reviewed.
+We plan to give salary hikes to most of our employees effective October while the rest of the employees will be covered in January '27.
+This year, we have a plan to recruit 20,000 college graduates.
+We anticipate steady growth in capital markets and cards & payments in large global banks and U.S. regional banks.
+The 70 basis points is a reduction in onsite mix we are expecting.
+Our growth will be led by recent deal wins and opportunities in areas like cost reduction, AI and database solutions and cybersecurity.
+Near term and FY27 growth will be impacted due to low revenue from one large client.
+And of course, there will be a 50 bps impact on account of the acquisitions that we have called out.
+The working days, calendar days impact would be similar to earlier years, the furloughs will remain.
+We do not have a plan that the headcount will be less at the end of the year.
+Over a medium-term period, we expect to maybe go down from the current level, but at this point in time, not significantly changed.

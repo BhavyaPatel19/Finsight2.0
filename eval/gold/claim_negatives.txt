@@ -1,0 +1,45 @@
+# Sentences from the transcripts that contain a forward-looking cue but are NOT a company commitment.
+# One sentence per line (matched on the first 60 characters, whitespace/quote-insensitive). Hand-labelled; to be reviewed.
+# --- analysts / moderator ---
+And you will get to see him in a few months, so you can maybe keep that in mind.
+Second question is on margins for FY'26.
+But clearly, that is not kind of translating into guidance.
+And if I assume both acquisitions being closed at the end of 1Q and maybe consolidated for 9 months, is it fair to assume it will add 40 bps, 50 bps to the revenue growth?
+So Salil, my question was on basically the outlook that you provided, that we have not seen much things improving, and that is why the guidance stands
+We will now begin with the question and answer session.
+What are your guidance assumptions for the same?
+So Salil, I am asking if the implied outlook for the remaining part of the year, is this more a function of macro and client tech overall spend
+Is there any one area specifically within your portfolio or solution portfolio that you think will be impacted more by delivery?
+Does that mean that it will come back in Q1 and that will help Q1 revenue?
+The guidance, does it imply a normal seasonality for the year?
+So if you can quantify these three things how much is the impact on your guidance in this year?
+You made a remark regarding the fact that we should probably be expecting some decline in the cost of pass-through revenues in FY'26.
+So the slight lowering of the upper end of the organic guidance, is it due to taking a more conservative view of the environment
+I think I was just referring to your comment on the press conference that you said, even the full-year impact will be 40 bps and hence, the confusion.
+Just some light on that will be really great.
+And you have announced plans to add 6,000 Frontier Engineers, but it seems everyone is looking to add that base of talent.
+# --- management: explaining guidance mechanics, hedging, meta, market views (not commitments) ---
+I will start on that pricing point.
+So Jonathan, the guidance does not include the acquisition that we announced today.
+The idea of guidance is to reduce asymmetry and provide a view as to where we see, what we see today.
+These models are not built to converge on a midpoint of the guidance.
+Then companies are also looking at, okay, I will use for the simpler task, a slightly older model or less expensive.
+On the AI, and I will come to the other one after that.
+In pricing, it is actually Jayesh will talk a little bit about it, I think overall realization is better in the year than we have seen before.
+The reason that we gave a 3- point guidance band was because there is an uncertainty.
+You will see some of the filings with respect to the mega deals that we have done with SEBI also or stock exchanges also earlier.
+So, all of that will not happen on the first year, it goes through it.
+So, you will only get the benefit to the extent of the delta margin of the company versus those third-party deals
+We are definitely seeing the compression, but we also seeing the growth and that is how we are sort of dissecting it if you will.
+So I do not have a view on, will that be looking like the one in the past or how similar or different it is.
+Today, what we have baked in at the upper end of the guidance is a steady environment.
+At the lower end of the guidance, we have baked in higher uncertainty from where we are today.
+So all of that is baked in, in the revised guidance.
+At the higher end of the guidance, we had baked in steady to improving environment.
+At the upper end of the guidance, we have baked in a stable environment.
+But as I said, what we see today has been baked in in the lower end of the guidance from the uncertainty perspective.
+We did say that the upper end of the guidance does bake in a slightly improving environment.
+We have also baked in the onsite mix that will impact in the guidance.
+Mortgage sector will see an uptick in spend if interest rates reduce going forward.
+As I said, the competitive intensity in the market has gone up and the productivity will get passed back to the client largely.
+Due to recent tariff announcements, client budgets are expected to be tightened and there is increased caution.

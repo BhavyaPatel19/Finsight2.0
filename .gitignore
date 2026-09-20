@@ -53,3 +53,6 @@ npm-debug.log*
 # Misc
 *.bak
 *.tmp
+
+# fine-tuned weights (large; publish to the Hub instead)
+models/
