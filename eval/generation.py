@@ -4,7 +4,7 @@ questions and score the answers.
 
     python -m eval.generation                 # deterministic + judge
     python -m eval.generation --no-judge      # deterministic only (no extra LLM calls)
-    python -m eval.generation --model llama-3.3-70b-versatile --tag groq
+    python -m eval.generation --model openai/gpt-oss-120b --tag groq
 
 Deterministic (no judge):
     number_recall     share of the reference answer's numbers present in the answer

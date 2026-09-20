@@ -43,9 +43,10 @@ ZERODHA_REDIRECT_URI = os.getenv("ZERODHA_REDIRECT_URI", "")
 # LLM provider — "auto" picks Groq when GROQ_API_KEY is set, else Ollama.
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")
 
-# Groq — hosted inference (free tier at https://console.groq.com)
+# Groq — hosted inference (free tier at https://console.groq.com). New projects block every
+# model until an admin enables it at https://console.groq.com/settings/project/limits.
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 # Ollama — local inference
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")

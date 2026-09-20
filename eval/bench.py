@@ -20,9 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 # USD per 1M tokens (input, output). Update when Groq changes list prices.
 GROQ_PRICES = {
-    "llama-3.3-70b-versatile": (0.59, 0.79),
-    "llama-3.1-8b-instant": (0.05, 0.08),
     "openai/gpt-oss-120b": (0.15, 0.60),
+    "openai/gpt-oss-20b": (0.075, 0.30),
 }
 
 

@@ -13,9 +13,9 @@ def test_generation_cost(tmp_path):
         {"latency_ms": 3000, "usage": {"prompt_tokens": 4000, "completion_tokens": 400}},
     ]
     p = tmp_path / "g.json"
-    p.write_text(json.dumps({"model": "llama-3.3-70b-versatile", "provider": "groq", "rows": rows}))
+    p.write_text(json.dumps({"model": "openai/gpt-oss-120b", "provider": "groq", "rows": rows}))
     out = bench_generation(p)
     assert out["n"] == 2 and out["prompt_tokens"]["mean"] == 4000 and out["latency_ms"]["p50"] == 1000
-    assert abs(out["usd_per_answer"]["mean"] - ((4000 * 0.59 + 300 * 0.79) / 1e6)) < 1e-5
+    assert abs(out["usd_per_answer"]["mean"] - ((4000 * 0.15 + 300 * 0.60) / 1e6)) < 1e-5
     p.write_text(json.dumps({"model": "qwen3:14b", "provider": "ollama", "rows": rows}))
     assert bench_generation(p)["usd_per_answer"] == "n/a (local model)"

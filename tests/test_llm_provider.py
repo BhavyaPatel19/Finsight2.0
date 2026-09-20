@@ -57,7 +57,7 @@ class TestSelection:
 # ---------------------------------------------------------------------------
 
 
-def _groq_ok(content="hello", model="llama-3.3-70b-versatile"):
+def _groq_ok(content="hello", model="openai/gpt-oss-120b"):
     return {
         "model": model,
         "choices": [{"message": {"role": "assistant", "content": content}}],
@@ -81,7 +81,7 @@ class TestGroq:
         assert seen["url"].endswith("/chat/completions")
         assert seen["auth"] == "Bearer gsk_test"
         body = seen["body"]
-        assert body["model"] == "llama-3.3-70b-versatile"
+        assert body["model"] == "openai/gpt-oss-120b"
         assert body["max_tokens"] == 99 and body["temperature"] == 0.2
         assert body["response_format"] == {"type": "json_object"}
         assert body["messages"][0] == {"role": "system", "content": "be terse"}
@@ -97,7 +97,7 @@ class TestGroq:
             return httpx.Response(200, json=_groq_ok(model=body["model"]))
 
         p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
-        assert p.generate("x", model="llama-3.1-8b-instant").model == "llama-3.1-8b-instant"
+        assert p.generate("x", model="openai/gpt-oss-20b").model == "openai/gpt-oss-20b"
 
     def test_retries_on_429_then_succeeds(self, monkeypatch):
         monkeypatch.setattr("finsight.llm._retry.time.sleep", lambda s: None)
@@ -140,15 +140,17 @@ class TestGroq:
                 200,
                 json={
                     "data": [
-                        {"id": "llama-3.3-70b-versatile"},
+                        {"id": "openai/gpt-oss-120b"},
                         {"id": "whisper-large-v3"},
-                        {"id": "llama-guard-3-8b"},
+                        {"id": "openai/gpt-oss-safeguard-20b"},
+                        {"id": "canopylabs/orpheus-v1-english"},
+                        {"id": "groq/compound"},
                     ]
                 },
             )
 
         p = GroqProvider(api_key="k", transport=httpx.MockTransport(handler))
-        assert [m["id"] for m in p.available_models()] == ["llama-3.3-70b-versatile"]
+        assert [m["id"] for m in p.available_models()] == ["openai/gpt-oss-120b"]
 
 
 # ---------------------------------------------------------------------------
@@ -219,7 +221,7 @@ class TestModelsEndpoint:
         data = r.json()
         assert data["provider"] == "groq"
         assert data["configured"] is False
-        assert data["default_model"] == "llama-3.3-70b-versatile"
+        assert data["default_model"] == "openai/gpt-oss-120b"
         assert data["models"] and all({"id", "label"} <= set(m) for m in data["models"])
 
     def test_default_falls_back_to_an_installed_model(self, api_client, auth_headers, monkeypatch):

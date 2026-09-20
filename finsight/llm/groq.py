@@ -2,7 +2,9 @@
 Groq backend — hosted, OpenAI-compatible chat completions.
 
 Free tier at https://console.groq.com; no card required. Fast enough for
-interactive RAG (Llama 3.3 70B at several hundred tokens/s).
+interactive RAG (GPT-OSS 120B at several hundred tokens/s). A new Groq project
+blocks every model (HTTP 403 "blocked at the project level") until an admin
+enables it under Settings → Project → Limits.
 """
 
 from __future__ import annotations
@@ -21,8 +23,9 @@ GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 # Shown in the UI when the models endpoint is unreachable. Kept short and current.
 _FALLBACK_MODELS = [
-    {"id": "llama-3.3-70b-versatile", "label": "Llama 3.3 70B (Groq)"},
-    {"id": "llama-3.1-8b-instant", "label": "Llama 3.1 8B (Groq, fast)"},
+    {"id": "openai/gpt-oss-120b", "label": "GPT-OSS 120B (Groq)"},
+    {"id": "openai/gpt-oss-20b", "label": "GPT-OSS 20B (Groq, fast)"},
+    {"id": "qwen/qwen3.8-27b", "label": "Qwen 3.8 27B (Groq)"},
 ]
 
 
@@ -32,7 +35,7 @@ class GroqProvider(LLMProvider):
     def __init__(
         self,
         api_key: str,
-        default_model: str = "llama-3.3-70b-versatile",
+        default_model: str = "openai/gpt-oss-120b",
         base_url: str = GROQ_BASE_URL,
         transport: httpx.BaseTransport | None = None,
         async_transport: httpx.AsyncBaseTransport | None = None,
@@ -141,8 +144,10 @@ class GroqProvider(LLMProvider):
                 r = client.get(f"{self.base_url}/models", headers=self._headers())
                 r.raise_for_status()
             ids = sorted(m["id"] for m in r.json().get("data", []) if m.get("active", True))
-            # Chat-capable text models only; Groq also lists whisper/tts/guard models.
-            ids = [i for i in ids if not any(k in i for k in ("whisper", "tts", "guard", "prompt-guard"))]
+            # Chat-capable text models only; Groq also lists speech, guard and agentic
+            # "compound" systems (web search + tools — not grounded, so excluded).
+            skip = ("whisper", "tts", "orpheus", "guard", "compound")
+            ids = [i for i in ids if not any(k in i for k in skip)]
             return [{"id": i, "label": i} for i in ids] or _FALLBACK_MODELS
         except Exception as e:  # network / auth — UI still needs a list
             logger.warning("could not list Groq models: %s", e)
