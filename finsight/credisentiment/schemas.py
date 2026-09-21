@@ -43,6 +43,21 @@ class ClaimComparison(BaseModel):
     actual_value: str | None = None
     met: bool | None = None  # True = met, False = missed, None = unclear
     explanation: str | None = None
+    # v2 pipeline fields (finsight.verification): the four-way verdict, the verbatim quote from the
+    # claims document and the evidence sentence from the later filing with where it was found, and a
+    # confidence level derived from the pipeline's own checks with the reasons behind it.
+    verdict: str | None = None  # MET | MISSED | PARTIAL | UNVERIFIABLE
+    quote: str | None = None
+    speaker: str | None = None
+    page: int | None = None
+    period: str | None = None
+    metric: str | None = None
+    evidence_quote: str | None = None
+    evidence_doc_type: str | None = None
+    evidence_page: int | None = None
+    confidence: str | None = None  # high | medium | low
+    confidence_reasons: list[str] = []
+    method: str | None = None
 
 
 class WalkTheTalkResponse(BaseModel):

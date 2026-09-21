@@ -808,3 +808,29 @@ class TestOutcomeSearch:
             "the reported result outranks the restated promise"
         )
         assert len(out) == 2
+
+
+class TestConfidence:
+    def _v(self, verdict, method, quote="q", number=21.0, actual="21.0%", eid="e1"):
+        return vd.Verdict("c", verdict, actual, number, eid, quote, 3, "fact_sheet", "x", method)
+
+    def test_levels(self):
+        row = [{"id": "e1", "kind": "row"}]
+        prose = [{"id": "e1", "kind": "prose"}]
+        c_num = _claim({"kind": "range", "low": 20, "high": 22, "unit": "%"})
+        c_qual = _claim(None)
+        assert vd.confidence(self._v("MET", "numeric"), c_num, row)[0] == "high"
+        assert vd.confidence(self._v("MET", "llm"), c_qual, prose)[0] == "medium"
+        assert vd.confidence(self._v("MET", "llm", number=None, actual=None), c_num, prose)[0] == "low"
+        assert vd.confidence(self._v("MET", "llm", quote=None), c_qual, prose)[0] == "low"
+        assert vd.confidence(self._v("UNVERIFIABLE", "period-not-ended", quote=None), c_num, [])[0] == "high"
+        assert vd.confidence(self._v("UNVERIFIABLE", "llm", quote=None), c_num, [])[0] == "medium"
+        assert vd.confidence(self._v("UNVERIFIABLE", "llm-error", quote=None), c_num, [])[0] == "low"
+
+    def test_reasons_are_readable(self):
+        level, reasons = vd.confidence(
+            self._v("MET", "numeric"),
+            _claim({"kind": "range", "low": 20, "high": 22, "unit": "%"}),
+            [{"id": "e1", "kind": "row"}],
+        )
+        assert level == "high" and any("table row" in r for r in reasons) and any("p. 3" in r for r in reasons)

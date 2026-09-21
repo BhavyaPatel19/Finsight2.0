@@ -30,7 +30,7 @@ from finsight.verification.evidence import (
     is_directional,
     period_documents,
 )
-from finsight.verification.verdict import judge_claim
+from finsight.verification.verdict import confidence, judge_claim
 
 logger = logging.getLogger(__name__)
 
@@ -128,11 +128,14 @@ async def verify(
     results = await asyncio.gather(*(one(c) for c in claims))
 
     rows = []
-    for claim, v, _ in results:
+    for claim, v, evidence in results:
+        level, reasons = confidence(v, claim, evidence)
         rows.append(
             {
                 **claim.to_dict(),
                 "verdict": v.verdict,
+                "confidence": level,
+                "confidence_reasons": reasons,
                 "actual_value": v.actual_value,
                 "actual_number": v.actual_number,
                 "evidence_quote": v.evidence_quote,

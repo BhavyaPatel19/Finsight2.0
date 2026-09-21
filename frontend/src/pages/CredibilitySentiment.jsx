@@ -42,6 +42,20 @@ const metBadge = (met) => {
     return { label: 'Unclear', color: '#94a3b8' }
 }
 
+// v2 rows carry a four-way verdict and a confidence level derived from the pipeline's own checks
+// (numeric rule / verified quote / units / period). Older rows only have `met`.
+const verdictBadge = (c) => {
+    switch (c.verdict) {
+        case 'MET': return { label: 'Met', color: '#22d3a5' }
+        case 'MISSED': return { label: 'Missed', color: '#f43f5e' }
+        case 'PARTIAL': return { label: 'Partial', color: '#f59e0b' }
+        case 'UNVERIFIABLE': return { label: 'Unverifiable', color: '#94a3b8' }
+        default: return metBadge(c.met)
+    }
+}
+
+const CONFIDENCE_COLOR = { high: '#22d3a5', medium: '#f59e0b', low: '#f43f5e' }
+
 const CATEGORY_LABELS = {
     revenue_growth: 'Revenue Growth',
     margin_expansion: 'Margin Expansion',
@@ -122,25 +136,31 @@ function StatusBadge({ status, chunks }) {
 
 function SummaryStrip({ claims }) {
     const total = claims.length
-    const met = claims.filter(c => c.met === true).length
-    const missed = claims.filter(c => c.met === false).length
-    const unclear = claims.filter(c => c.met == null).length
+    const v = (name) => claims.filter(c => c.verdict === name).length
+    const hasVerdicts = claims.some(c => c.verdict)
+    const met = hasVerdicts ? v('MET') : claims.filter(c => c.met === true).length
+    const missed = hasVerdicts ? v('MISSED') : claims.filter(c => c.met === false).length
+    const partial = hasVerdicts ? v('PARTIAL') : 0
+    const unverifiable = hasVerdicts ? v('UNVERIFIABLE') : claims.filter(c => c.met == null).length
+    const lowConfidence = claims.filter(c => c.confidence === 'low' && c.verdict !== 'UNVERIFIABLE').length
 
     const items = [
         { label: 'Total Claims', value: total, color: '#8b5cf6' },
         { label: 'Met', value: met, color: '#22d3a5' },
+        { label: 'Partial', value: partial, color: '#f59e0b' },
         { label: 'Missed', value: missed, color: '#f43f5e' },
-        { label: 'Unclear', value: unclear, color: '#94a3b8' },
+        { label: 'Unverifiable', value: unverifiable, color: '#94a3b8', hint: 'no reported result in the later filings, or the period had not ended' },
     ]
+    if (hasVerdicts) items.push({ label: 'Low confidence', value: lowConfidence, color: '#f43f5e', hint: 'graded, but the evidence is weak — read the quote before relying on it' })
 
     return (
         <div id="wtt-summary-strip" style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24,
+            display: 'grid', gridTemplateColumns: `repeat(${items.length}, 1fr)`, gap: 12, marginBottom: 24,
         }}>
-            {items.map(({ label, value, color }) => (
-                <div key={label} style={{
+            {items.map(({ label, value, color, hint }) => (
+                <div key={label} title={hint} style={{
                     textAlign: 'center', padding: '14px 12px', borderRadius: 10,
-                    background: `${color}10`, border: `1px solid ${color}25`,
+                    background: `${color}10`, border: `1px solid ${color}25`, cursor: hint ? 'help' : 'default',
                 }}>
                     <div style={{ fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontWeight: 500 }}>{label}</div>
@@ -713,19 +733,31 @@ export default function CredibilitySentiment() {
                                                                 <table>
                                                                     <thead>
                                                                         <tr>
-                                                                            <th style={{ width: '30%' }}>Claim</th>
-                                                                            <th style={{ width: '15%' }}>Claimed Value</th>
-                                                                            <th style={{ width: '15%' }}>Actual Value</th>
+                                                                            <th style={{ width: '28%' }}>Claim</th>
+                                                                            <th style={{ width: '12%' }}>Claimed Value</th>
+                                                                            <th style={{ width: '12%' }}>Actual Value</th>
                                                                             <th style={{ width: '10%' }}>Verdict</th>
+                                                                            <th style={{ width: '8%' }}>Confidence</th>
                                                                             <th style={{ width: '30%' }}>Evidence</th>
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody>
                                                                         {catClaims.map((c, i) => {
-                                                                            const { label: metLabel, color: metColor } = metBadge(c.met)
+                                                                            const { label: metLabel, color: metColor } = verdictBadge(c)
+                                                                            const confColor = CONFIDENCE_COLOR[c.confidence] || '#94a3b8'
+                                                                            const where = c.evidence_page
+                                                                                ? `${(c.evidence_doc_type || 'source').replace(/_/g, ' ')}, p. ${c.evidence_page}`
+                                                                                : null
                                                                             return (
                                                                                 <tr key={i}>
-                                                                                    <td style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.4 }}>{c.claim}</td>
+                                                                                    <td style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.4 }}>
+                                                                                        {c.claim}
+                                                                                        {c.quote && c.quote !== c.claim && (
+                                                                                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontStyle: 'italic' }}>
+                                                                                                “{c.quote}”{c.speaker ? ` — ${c.speaker}` : ''}{c.page ? `, p. ${c.page}` : ''}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </td>
                                                                                     <td style={{ color: '#818cf8', fontSize: 13 }}>{c.claimed_value || '\u2014'}</td>
                                                                                     <td style={{ color: '#22d3a5', fontSize: 13 }}>{c.actual_value || '\u2014'}</td>
                                                                                     <td>
@@ -737,8 +769,28 @@ export default function CredibilitySentiment() {
                                                                                             {metLabel}
                                                                                         </span>
                                                                                     </td>
+                                                                                    <td>
+                                                                                        {c.confidence ? (
+                                                                                            <span
+                                                                                                title={(c.confidence_reasons || []).join(' · ')}
+                                                                                                style={{
+                                                                                                    display: 'inline-block', padding: '2px 8px', borderRadius: 6,
+                                                                                                    fontSize: 11, fontWeight: 600, color: confColor,
+                                                                                                    background: `${confColor}15`, cursor: 'help',
+                                                                                                }}
+                                                                                            >
+                                                                                                {c.confidence}
+                                                                                            </span>
+                                                                                        ) : '\u2014'}
+                                                                                    </td>
                                                                                     <td style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                                                                                        {c.explanation || '\u2014'}
+                                                                                        {c.evidence_quote ? (
+                                                                                            <>
+                                                                                                <div style={{ color: 'var(--text-secondary)' }}>“{c.evidence_quote}”</div>
+                                                                                                {where && <div style={{ fontSize: 11, marginTop: 2 }}>{where}</div>}
+                                                                                                {c.explanation && <div style={{ marginTop: 4 }}>{c.explanation}</div>}
+                                                                                            </>
+                                                                                        ) : (c.explanation || '\u2014')}
                                                                                     </td>
                                                                                 </tr>
                                                                             )

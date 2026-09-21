@@ -248,6 +248,18 @@ async def walk_the_talk_endpoint(
                 actual_value=c.get("actual_value"),
                 met=_verdict_to_met(c),
                 explanation=c.get("explanation"),
+                verdict=(str(c["verdict"]).upper() if c.get("verdict") else None),
+                quote=c.get("quote"),
+                speaker=c.get("speaker"),
+                page=c.get("page"),
+                period=c.get("period"),
+                metric=c.get("metric"),
+                evidence_quote=c.get("evidence_quote"),
+                evidence_doc_type=c.get("evidence_doc_type"),
+                evidence_page=c.get("evidence_page"),
+                confidence=c.get("confidence"),
+                confidence_reasons=list(c.get("confidence_reasons") or []),
+                method=c.get("method"),
             )
             for c in claims_data
         ],

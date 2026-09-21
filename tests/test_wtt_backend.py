@@ -242,3 +242,27 @@ class TestEffectiveParallel:
         monkeypatch.setattr(config, "GROQ_API_KEY", "k")
         assert service._effective_parallel() == service.WTT_PARALLEL
         reset_provider()
+
+
+def test_claim_comparison_carries_v2_fields():
+    """The API must not strip what the v2 pipeline produces: verdict, quotes, page, confidence."""
+    from finsight.credisentiment.schemas import ClaimComparison
+
+    c = ClaimComparison(
+        claim="The company will cease operations of BF#4 before the end of September.",
+        category="capex",
+        met=True,
+        verdict="MET",
+        quote="The BF#4 will cease operations before the end of September.",
+        speaker="Koushik Chatterjee",
+        page=3,
+        evidence_quote="shutting down Blast Furnace 5 in July 2024, and Blast Furnace 4 in September 2024",
+        evidence_doc_type="annual_report",
+        evidence_page=138,
+        confidence="medium",
+        confidence_reasons=["model judgement", "quote verified in the source (annual_report, p. 138)"],
+        method="llm",
+    )
+    d = c.model_dump()
+    assert d["verdict"] == "MET" and d["confidence"] == "medium" and d["evidence_page"] == 138
+    assert ClaimComparison(claim="x", category="other").confidence is None, "legacy rows still validate"

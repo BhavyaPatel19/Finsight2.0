@@ -219,6 +219,59 @@ def units_compatible(target_unit: str | None, actual_value: str | None) -> bool 
     return a == b
 
 
+def confidence(v: Verdict, claim: Claim, evidence: list[dict]) -> tuple[str, list[str]]:
+    """How much to trust this row, from facts the pipeline already established — not from the
+    model's own opinion of itself. ("high" | "medium" | "low", reasons a reader can check).
+
+    Graded verdicts: high when a numeric rule decided on a verified quote from a table row or
+    a reported figure; medium when the model judged on a verified quote; low when the quote
+    is prose without a figure for a numeric target, or units could not be checked.
+    Abstentions: high when a rule abstained (period not ended, unit mismatch, quote not
+    found); medium when the model found nothing; low when the provider failed.
+    """
+    reasons: list[str] = []
+    cited = next((e for e in evidence if e.get("id") == v.evidence_id), None)
+    if v.verdict == "UNVERIFIABLE":
+        if v.method == "llm-error":
+            return "low", ["provider error — not a judgement"]
+        if v.method == "period-not-ended":
+            return "high", ["the claim's period had not ended in the filings compared"]
+        if v.method == "unit-mismatch":
+            return "high", ["the reported figure is not in the claim's unit"]
+        if v.method.startswith("downgraded"):
+            return "medium", ["the model's evidence did not hold up: " + v.method.split(":", 1)[1].replace("-", " ")]
+        return "medium", ["no reported result found in the filings of the period"]
+
+    level = "medium"
+    if v.method in ("numeric", "derived"):
+        level = "high"
+        reasons.append(
+            "numeric rule on the reported figure"
+            if v.method == "numeric"
+            else "ratio computed from two reported figures"
+        )
+    else:
+        reasons.append("model judgement")
+    if v.evidence_quote:
+        reasons.append(
+            "quote verified in the source"
+            + (f" ({v.evidence_doc_type}, p. {v.evidence_page})" if v.evidence_page else "")
+        )
+    else:
+        level = "low"
+        reasons.append("no evidence quote")
+    if cited and cited.get("kind") in ("row", "table"):
+        reasons.append("evidence is a table row")
+    if claim.target:
+        if v.actual_number is None:
+            level = "low"
+            reasons.append("numeric target but no figure in the evidence")
+        elif units_compatible(claim.target.get("unit"), v.actual_value) is None:
+            level = "medium" if level == "high" else level
+            reasons.append("units could not be checked")
+    return level, reasons
+
+
 def _target_text(t: dict | None) -> str:
     if not t:
         return "qualitative"
