@@ -63,6 +63,10 @@ def similarity(a: str, b: str) -> float:
     wa, na = tokens(a)
     wb, nb = tokens(b)
     words = _overlap(wa, wb)
+    if words < 0.2:
+        return (
+            0.0  # a shared year or figure is not a match ("EBITDA neutral by June 2025" vs "groundwork by July 2025")
+        )
     if na and nb:
         return 0.5 * words + 0.5 * _overlap(na, nb)
     if na or nb:  # one side has numbers the other lacks: penalise
@@ -130,9 +134,13 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
     for r in matched:
         confusion.setdefault(r["human"], {}).setdefault(r["system"], 0)
         confusion[r["human"]][r["system"]] += 1
+    llm_errors = [r for r in matched if str(r.get("system_explanation") or "").startswith("LLM error")]
     return {
         "labelled": len(rows),
         "matched": len(matched),
+        "llm_errors": len(
+            llm_errors
+        ),  # verdicts lost to provider errors (rate limits, quota) — a run with these is contaminated
         "claim_recall": round(len(matched) / len(rows), 4) if rows else None,
         "verdict_accuracy": round(len(agree) / len(matched), 4) if matched else None,
         "abstained": len(abstained),

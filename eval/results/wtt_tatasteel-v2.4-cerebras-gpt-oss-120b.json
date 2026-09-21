@@ -1,0 +1,304 @@
+{
+  "timestamp": "2026-09-21T03:04:56+00:00",
+  "git_sha": "fda9545",
+  "tag": "tatasteel-v2.4-cerebras-gpt-oss-120b",
+  "gold": "eval/gold/wtt_claims_tatasteel.jsonl",
+  "provider": "cerebras",
+  "model": "gpt-oss-120b",
+  "engine": "v2",
+  "summary": {
+    "labelled": 23,
+    "matched": 17,
+    "claim_recall": 0.7391,
+    "verdict_accuracy": 0.7059,
+    "abstained": 12,
+    "verdict_accuracy_on_answered": 0.8,
+    "abstain_recall": 1.0,
+    "abstain_precision": 0.6667,
+    "kappa": 0.5087,
+    "confusion": {
+      "MET": {
+        "UNVERIFIABLE": 2,
+        "MET": 2
+      },
+      "UNVERIFIABLE": {
+        "UNVERIFIABLE": 8
+      },
+      "PARTIAL": {
+        "PARTIAL": 2,
+        "UNVERIFIABLE": 2
+      },
+      "MISSED": {
+        "MET": 1
+      }
+    },
+    "system_claims": {
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": 35,
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": 35,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": 43,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": 43,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": 30,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": 40,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": 41
+    },
+    "mean_match_similarity": 0.828,
+    "unmatched_ids": [
+      "t02",
+      "t03",
+      "t11",
+      "t12",
+      "t21",
+      "t18"
+    ]
+  },
+  "pairs": {
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": {
+      "overall_score": 100.0,
+      "narrative": "The management’s credibility score is a perfect 100 out of 100 because all three verifiable commitments were met (MET 3, PARTIAL 0, MISSED 0). However, 32 of the 35 statements could not be verified against the filings, so while the tracked claims were fully delivered, the vast majority of the announced initiatives remain unsubstantiated."
+    },
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 77.3,
+      "narrative": "The management’s credibility scores 77.3 / 100, reflecting 7 fully‑met commitments, 3 partially‑met, 1 missed, and 24 that could not be verified. They delivered on key growth and cost‑reduction promises (e.g., a 6.3 % YoY steel increase in India, closure of BF#4, and a €300 m working‑capital release) and partially delivered on the blast‑furnace start‑up and annealed‑product rollout, but missed the full‑year India production target of 1.4 Mt. Because 24 of the 38 statements lacked any verifiable evidence in the filings, a large portion of the roadmap remains unsubstantiated."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": {
+      "overall_score": 60.0,
+      "narrative": "The management’s credibility scores 60 out of 100, having met 5 of the 10 verifiable commitments, partially delivered on 2, and missed 3 (the missed claims include the 4 million‑ton production target and the “not significant” spend forecast). The remaining 33 commitments could not be verified from the filings, meaning a large portion of the promised actions lack documentary evidence."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": {
+      "overall_score": 62.5,
+      "narrative": "The management’s credibility scores 62.5 / 100, reflecting 2 of the 4 verifiable commitments being fully met, 1 only partially achieved (the £100‑per‑ton cost‑reduction target was actually £146) and 1 missed entirely (the promised £100‑per‑ton reduction was not delivered). Of the 39 remaining claims, none could be substantiated from the filings, leaving a large unverified portion. In short, the firm delivered on half of the measurable promises, fell short on the other half, and left the vast majority of its statements unverified."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 87.5,
+      "narrative": "The management’s credibility scores 87.5 / 100, reflecting 3 of the 4 verifiable commitments being fully met and 1 only partially met; none were outright missed. However, 26 of the 30 statements could not be verified against the filings, leaving a large portion of the promised actions unsubstantiated."
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": {
+      "overall_score": 100.0,
+      "narrative": "The management’s credibility scores a perfect 100 out of 100 because all five verifiable commitments were met (cost‑position improvement to £58 t, £60 t net UK impact, £2,900 crore cost transformation, and price improvements toward the €225‑250 t target). However, 35 of the 40 listed commitments could not be verified from the filings, leaving a large portion of the roadmap unsubstantiated."
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 50.0,
+      "narrative": "The management’s credibility scores a modest 50.0 / 100, having met only 2 of the 6 verifiable commitments, partially delivered on another 2, and missed 2 outright; the remaining 35 commitments could not be verified from the filings. While the company did deliver on the expected cost‑improvement from the Kalinganagar ramp‑up and on the product‑mix upgrade from the new continuous annealing line, it failed to substantiate most of its cost‑takeout, breakeven, and timeline promises, leaving a large proportion of its statements uncorroborated. Consequently, investors should treat the forward‑looking guidance with caution given the high number of unverified claims."
+    }
+  },
+  "rows": [
+    {
+      "id": "t02",
+      "matched": false,
+      "similarity": 0.175,
+      "human": "UNVERIFIABLE",
+      "system": null,
+      "category": "cost"
+    },
+    {
+      "id": "t06",
+      "matched": true,
+      "similarity": 0.667,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to receive a £500 million grant from the UK government.",
+      "system_explanation": "The evidence only mentions signing a grant funding agreement for £500 million, but does not report that the grant has been received.",
+      "category": "other"
+    },
+    {
+      "id": "t01",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company will cease operations of BF#4 before the end of September.",
+      "system_explanation": "The company reported that BF#4 was shut down in September 2024, satisfying the commitment to cease operations before the end of September.",
+      "category": "capex"
+    },
+    {
+      "id": "t03",
+      "matched": false,
+      "similarity": 0.262,
+      "human": "MISSED",
+      "system": null,
+      "category": "margin"
+    },
+    {
+      "id": "t04",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company will get internal approvals for the Neelachal expansion later this year, taking capacity to 5 million tons.",
+      "system_explanation": "The later filings contain only statements about seeking approvals and planned capacity increases, but no reported result confirming that internal approvals were obtained or that capacity reached 5 million tons.",
+      "category": "capex"
+    },
+    {
+      "id": "t05",
+      "matched": true,
+      "similarity": 0.893,
+      "human": "PARTIAL",
+      "system": "PARTIAL",
+      "system_claim": "The company expects to start the blast furnace by the end of September 2024 and produce about 1.7 million tonnes from the new facility thereafter.",
+      "system_explanation": "The furnace was commissioned by September 2024, but the reported ramp‑up capacity is 1.43 MTPA, which is below the promised ~1.7 million tonnes.",
+      "category": "growth"
+    },
+    {
+      "id": "t07",
+      "matched": true,
+      "similarity": 0.9,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company is committed to achieve a 35‑40% reduction in CO2 by 2030.",
+      "system_explanation": "The provided excerpts contain only future targets and plans for CO₂ reduction, but no reported actual reduction figures for the 35‑40% goal by 2030.",
+      "category": "other"
+    },
+    {
+      "id": "t10",
+      "matched": true,
+      "similarity": 0.5,
+      "human": "MISSED",
+      "system": "MET",
+      "system_claim": "The company expects to commence groundwork at the site by around July 2025.",
+      "system_explanation": "The evidence shows the groundwork was commenced with a groundbreaking ceremony on 14 July 2025, satisfying the claim to start by around July 2025.",
+      "category": "margin"
+    },
+    {
+      "id": "t15",
+      "matched": true,
+      "similarity": 0.778,
+      "human": "PARTIAL",
+      "system": "PARTIAL",
+      "system_claim": "The company will add one 13‑ton galvanising line in March and another by June.",
+      "system_explanation": "Evidence shows one galvanising line was operational by June, but no evidence of a line added by March, so the claim is only partially fulfilled.",
+      "category": "product"
+    },
+    {
+      "id": "t13",
+      "matched": true,
+      "similarity": 0.833,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company guides that the cost in India will be Rs. 2,000 per ton lower on a QoQ basis.",
+      "system_explanation": "The reported drop of Rs. 2,400 per ton exceeds the guided reduction of Rs. 2,000 per ton, satisfying the claim.",
+      "category": "revenue"
+    },
+    {
+      "id": "t08",
+      "matched": true,
+      "similarity": 0.95,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects a reduction in fixed cost of about £100 per ton in the coming quarters.",
+      "system_explanation": "The reported reduction was £69 per ton, which is below the claimed target of about £100 per ton.",
+      "category": "cost"
+    },
+    {
+      "id": "t09",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to commence groundwork at the site by around July 2025.",
+      "system_explanation": "LLM error: 429 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Tokens per day limit exceeded - too many tokens processed.\",\"type\":\"too_many_tokens_error\",\"param\":\"quota\",\"code\":\"token_quota_exceeded\"}",
+      "category": "capex"
+    },
+    {
+      "id": "t11",
+      "matched": false,
+      "similarity": 0.14,
+      "human": "UNVERIFIABLE",
+      "system": null,
+      "category": "product"
+    },
+    {
+      "id": "t12",
+      "matched": false,
+      "similarity": 0.188,
+      "human": "MET",
+      "system": null,
+      "category": "growth"
+    },
+    {
+      "id": "t14",
+      "matched": true,
+      "similarity": 0.667,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects a turnaround to occur in 4Q.",
+      "system_explanation": "LLM error: 429 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Tokens per day limit exceeded - too many tokens processed.\",\"type\":\"too_many_tokens_error\",\"param\":\"quota\",\"code\":\"token_quota_exceeded\"}",
+      "category": "cash_flow"
+    },
+    {
+      "id": "t16",
+      "matched": true,
+      "similarity": 0.958,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company will commission associated facilities in Kalinganagar expansion amounting to about Rs. 19,000 crores in the current financial year.",
+      "system_explanation": "The provided evidence describes commissioning of Kalinganagar facilities but does not report the monetary amount of about Rs 19,000 crore, so the claim cannot be verified.",
+      "category": "capex"
+    },
+    {
+      "id": "t17",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company will bring the Ludhiana plant online by March 2026.",
+      "system_explanation": "FY26 has not ended: the latest reported period is Q4 FY25, the claim needs Q4 FY26.",
+      "category": "product"
+    },
+    {
+      "id": "t19",
+      "matched": true,
+      "similarity": 0.917,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company targets breakeven in the first two quarters of FY2026.",
+      "system_explanation": "LLM error: 429 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Tokens per day limit exceeded - too many tokens processed.\",\"type\":\"too_many_tokens_error\",\"param\":\"quota\",\"code\":\"token_quota_exceeded\"}",
+      "category": "margin"
+    },
+    {
+      "id": "t21",
+      "matched": false,
+      "similarity": 0.14,
+      "human": "PARTIAL",
+      "system": null,
+      "category": "capex"
+    },
+    {
+      "id": "t23",
+      "matched": true,
+      "similarity": 0.5,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects iron ore consumption cost in the Netherlands to be $3 to $4 per ton lower in the fourth quarter compared with the third quarter.",
+      "system_explanation": "LLM error: 429 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Tokens per day limit exceeded - too many tokens processed.\",\"type\":\"too_many_tokens_error\",\"param\":\"quota\",\"code\":\"token_quota_exceeded\"}",
+      "category": "capex"
+    },
+    {
+      "id": "t18",
+      "matched": false,
+      "similarity": 0.25,
+      "human": "MET",
+      "system": null,
+      "category": "cost"
+    },
+    {
+      "id": "t20",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects coking coal costs in India to be about $10 per ton lower in the fourth quarter compared with the third quarter.",
+      "system_explanation": "The provided evidence contains only guidance and qualitative statements about coking coal cost expectations, but no reported numerical result for Q4 versus Q3 in India.",
+      "category": "cost"
+    },
+    {
+      "id": "t22",
+      "matched": true,
+      "similarity": 0.889,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company plans capex of about Rs. 3,000 crores for the Kalinganagar expansion next year.",
+      "system_explanation": "The provided evidence reports total capex and mentions Kalinganagar expansion activities, but does not disclose the specific amount spent on the Kalinganagar expansion for FY2025, so the claim cannot be verified.",
+      "category": "capex"
+    }
+  ]
+}

@@ -151,8 +151,7 @@ _FORWARD_ONLY = re.compile(
     r"\b(expect(s|ed)?|guidance|guide|will|shall|target(s)?|aim|outlook|plan(s|ned)?|anticipate|forecast)\b", re.I
 )
 _REPORTED = re.compile(
-    r"\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|"
-    r"achieved|improved|expanded|generated|returned|paid|crossed|remained|ended|recruited)\b",
+    r"\\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended|recruited|dropped|fell|rose|halved|doubled|widened|narrowed|commissioned|decommissioned|started|completed|launched|produced|shut|received|placed|spent|invested|reached|recorded|posted|ramped|operated|commenced|secured|awarded)\\b",
     re.I,
 )
 
