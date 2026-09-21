@@ -37,6 +37,9 @@ Rules:
 - MISSED: the evidence shows it was not achieved.
 - PARTIAL: achieved in part or in direction but not in full (e.g. margin improved but less than promised; a qualitative promise only partly delivered).
 - A directional claim ("improve from current levels", "lower than last year", "maintain") is judged against the BASELINE figure from when the claim was made: better in the promised direction is MET, unchanged is PARTIAL for an improvement promise (MET for "maintain"), worse is MISSED. Without a baseline figure such a claim is UNVERIFIABLE.
+- A promise of breakeven, neutrality or "no loss" is settled by the reported result even when the word is absent: a reported loss for that period is MISSED (a loss that halved is still MISSED), a reported profit or zero is MET. Do not answer UNVERIFIABLE because no sentence says "breakeven".
+- A commitment to secure, obtain, sign or get approval for something is delivered when the filing reports the agreement signed, the approval received or the order placed — the money need not have arrived.
+- A commitment about a project (commission, start, complete, close, ramp up) is judged on whether that happened by the promised time; a figure describing the project's size or cost is not a target to hit.
 - UNVERIFIABLE: the evidence does not contain the reported result needed (including when it only contains promises or guidance). Do NOT guess. Use this whenever the number or fact is simply not there.
 - "actual_value": the actual figure or outcome as stated in the evidence, with unit; null if UNVERIFIABLE.
 - "actual_number": the actual as a plain number in the target's unit if the target is numeric, else null.
@@ -186,6 +189,36 @@ def is_forward_looking(text: str) -> bool:
     return bool(_FORWARD_ONLY.search(text)) and not _REPORTED.search(text)
 
 
+_UNIT_FAMILIES = [
+    ("per_day", re.compile(r"per day|/ ?day|\btpd\b|tons? a day|tonnes? a day", re.I)),
+    ("per_ton", re.compile(r"per ton|per tonne|/ ?ton", re.I)),
+    ("per_share", re.compile(r"per share|/ ?share", re.I)),
+    ("tonnes", re.compile(r"mtpa|million ton|million tonne|\bmt\b|\bkt\b|tonnes?\b|\btons?\b", re.I)),
+    ("bps", re.compile(r"\bbps\b|basis point", re.I)),
+    ("pct", re.compile(r"%|percent", re.I)),
+    ("crore", re.compile(r"crore|\bcr\b|lakh", re.I)),
+    ("billion", re.compile(r"\bbn\b|billion", re.I)),
+    ("million", re.compile(r"\bmn\b|million", re.I)),
+    ("multiple", re.compile(r"\bx\b|times", re.I)),
+]
+
+
+def unit_family(text: str | None) -> str | None:
+    for name, rx in _UNIT_FAMILIES:
+        if text and rx.search(text):
+            return name
+    return None
+
+
+def units_compatible(target_unit: str | None, actual_value: str | None) -> bool | None:
+    """False when the target and the reported figure are plainly in different families
+    (15,000 tons *per day* against 20.34 Mt *a year*); None when either unit is unknown."""
+    a, b = unit_family(target_unit), unit_family(actual_value)
+    if a is None or b is None:
+        return None
+    return a == b
+
+
 def _target_text(t: dict | None) -> str:
     if not t:
         return "qualitative"
@@ -303,6 +336,15 @@ async def judge_claim(
         out["explanation"] = f"{note}. {out.get('explanation') or ''}".strip()
         out["actual_value"] = f"{actual_number}%"
         method = "derived"
+
+    if verdict != "UNVERIFIABLE" and claim.target and method != "derived":
+        if units_compatible(claim.target.get("unit"), str(out.get("actual_value") or "")) is False:
+            # 15,000 tons per day graded against 20.34 Mt a year: not the same quantity
+            verdict, method = "UNVERIFIABLE", "unit-mismatch"
+            out["explanation"] = (
+                f"The reported figure ({out.get('actual_value')}) is not in the claim's unit "
+                f"({claim.target.get('unit')}); not comparable. {out.get('explanation') or ''}"
+            ).strip()
 
     if verdict != "UNVERIFIABLE":
         computed = numeric_verdict(claim.target, actual_number, claim.metric)

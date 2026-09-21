@@ -99,7 +99,10 @@ _GUIDANCE_WORDS = re.compile(
     r"intend(s|ed)?|endeavou?r|commit(s|ted)?|will|shall|should|the company|we|our)\b",
     re.I,
 )
-_NUMBERS = re.compile(r"[-–]?\$?\d[\d,]*(\.\d+)?\s*(%|bps|bn|mn|crore|x)?", re.I)
+# A target figure standing on its own ("0% to 3%", "$15 per ton", "1.7 million"); identifiers that
+# mix letters and digits (BF#4, 4Q, FY26, 2H, EAF) are kept — they are what the outcome sentence
+# will be found by.
+_NUMBERS = re.compile(r"(?<![A-Za-z#\d])[-–]?[\$£€₹]?\d[\d,]*(\.\d+)?\s*(%|bps|bn|mn|crore|x)?(?![A-Za-z])", re.I)
 
 
 def evidence_query(claim: Claim) -> str:
@@ -110,6 +113,16 @@ def evidence_query(claim: Claim) -> str:
     core = re.sub(r"\s+", " ", core).strip(" .,:;")
     parts = [claim.metric or "", claim.period or "", core, "actual reported was stood at"]
     return " ".join(p for p in parts if p)
+
+
+def candidate_pool(document_ids: list[int]) -> int:
+    """How many fused candidates to rerank: 24 for a period of short filings, more when the
+    period includes a long report (6,800 chunks for a 550-page annual report), where the
+    outcome sentence sits deeper in the fused list."""
+    from finsight.retrieval import index as ix
+
+    n = sum(1 for c in ix.all_chunks() if c["metadata"].get("document_id") in set(document_ids))
+    return int(min(96, max(24, 24 + n / 100)))
 
 
 _OUTCOME = re.compile(
@@ -136,9 +149,23 @@ def outcome_weight(text: str, kind: str | None) -> float:
 
 
 def find_evidence(session: Session, claim: Claim, document_ids: list[int], top_k: int = 8) -> list[dict]:
-    res = _retrieve(session, evidence_query(claim), document_ids, top_k=top_k + 4, candidates=24, use_period=False)
+    """Two searches, merged: the claim rewritten as an outcome query (what the words of the result
+    would be) and, when the extractor supplied one, the hypothetical result sentence itself —
+    "Blast Furnace 4 was shut down in September 2024" finds what "BF#4 will cease operations"
+    cannot. Merged on chunk id, best reranker score kept, then weighted towards reported results."""
+    pool = candidate_pool(document_ids)
+    hits: dict[str, dict] = {}
+    queries = [(evidence_query(claim), pool)]
+    if claim.outcome:
+        queries.append((claim.outcome, min(pool, 48)))
+    for query, cands in queries:
+        res = _retrieve(session, query, document_ids, top_k=top_k + 4, candidates=cands, use_period=False)
+        for h in res["chunks"]:
+            prev = hits.get(h["id"])
+            if prev is None or (h.get("reranker_score") or 0.0) > (prev.get("reranker_score") or 0.0):
+                hits[h["id"]] = h
     ranked = sorted(
-        res["chunks"],
+        hits.values(),
         key=lambda h: (h.get("reranker_score") or 0.0) * outcome_weight(h["text"], h["metadata"].get("kind")),
         reverse=True,
     )[:top_k]

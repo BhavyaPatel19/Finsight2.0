@@ -48,12 +48,18 @@ _HISTORICAL = re.compile(
 
 EXTRACT_PROMPT = """You are reading sentences from a company's earnings call. Extract every FORWARD-LOOKING commitment, target, guidance or expectation about a future period. Ignore statements about what already happened.
 
+What counts as a claim:
+- It names an outcome a later filing could confirm or refute: a figure, a date, a start/close/commissioning, a level to reach. An intention with no checkable outcome is NOT a claim ("we will continue to provide updates", "we remain committed to growth", "we will engage with the government").
+- A commitment restated from an earlier call ("what we had said is that we expect…") or one the company relays about a partner or government ("the government is committed to delivering the £500m grant") IS a claim.
+- A sentence with two measurable parts (a start date AND a volume; a revenue range AND a margin range) yields two claims, one per part.
+
 For each claim return:
 - "quote": the exact sentence from the text (copy it verbatim — it will be checked)
 - "claim": one clear sentence restating the commitment, starting with "The company"
 - "category": one of {categories}
 - "metric": the measured quantity in a few words (e.g. "revenue growth (constant currency)", "operating margin", "effective tax rate", "free cash flow as % of net profit", "freshers hired")
 - "period": the period the claim is about, in the company's terms (e.g. "FY26", "Q1 FY26", "FY26 and beyond") or null
+- "outcome": one sentence, in the past tense, as a later filing would report the result if the commitment was kept — full names instead of abbreviations, the figure or event, the period (e.g. "Blast Furnace 4 at Port Talbot was shut down in September 2024"; "Revenue grew 3.1% in constant currency in FY26"; "The board approved the Neelachal Ispat Nigam expansion to 5 million tonnes")
 - "target": an object describing the numeric target if there is one, else null:
     {{"kind": "range"|"point"|"min"|"max", "low": number|null, "high": number|null, "value": number|null, "unit": "%"|"bps"|"$ bn"|"$ mn"|"Rs cr"|"Rs per share"|"count"|"x"|""}}
     The unit is the one written in the quote — never convert currencies.
@@ -84,6 +90,7 @@ class Claim:
     source_chunk: str
     speaker: str | None = None
     page: int | None = None
+    outcome: str | None = None  # how a later filing would report it if it happened — the evidence search key
     extra: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -164,6 +171,23 @@ def _parse_json(text: str) -> dict:
         return {}
 
 
+# Nouns that make a qualitative claim checkable against a later filing. A claim with no metric,
+# no target and none of these is an intention ("continue to provide updates") and is dropped.
+_OUTCOME_NOUNS = re.compile(
+    r"\b(volume|production|deliver|cost|margin|ebitda|profit|revenue|realisation|price|debt|capex|spend|invest|"
+    r"commission\w*|start\w*|clos\w+|cease\w*|shut\w*|complet\w+|launch\w*|hire|hiring|headcount|dividend|cash|tax|"
+    r"grant|approv\w+|order\w*|contract\w*|operations?|"
+    r"ramp|capacity|plant|furnace|mill|line|expansion|acquisition|guidance|breakeven|neutral|reduction|saving|"
+    r"utili[sz]ation|attrition|deal|tcv|payout|buyback|leverage|rating|emission|tonne|ton|mtpa|mt|crore|million|"
+    r"billion|bps|percent|%)\b",
+    re.I,
+)
+
+
+def is_checkable(claim: str, metric: str | None, target: dict | None) -> bool:
+    return bool(metric or target or _OUTCOME_NOUNS.search(claim))
+
+
 def _clean_target(t) -> dict | None:
     if not isinstance(t, dict) or t.get("kind") not in ("range", "point", "min", "max"):
         return None
@@ -228,15 +252,20 @@ async def extract_claims(
             claims_text = str(it.get("claim") or "").strip()
             if len(claims_text) < 15:
                 continue
+            metric = str(it["metric"]).strip() if it.get("metric") else None
+            target = _clean_target(it.get("target"))
+            if not is_checkable(claims_text, metric, target):
+                continue  # an intention, not a commitment a filing could settle
             out.append(
                 Claim(
                     id=f"c{bi}_{n}",
                     claim=claims_text,
                     quote=src["sentence"],
                     category=cat if cat in CATEGORIES else "other",
-                    metric=(str(it["metric"]).strip() if it.get("metric") else None),
+                    metric=metric,
                     period=(str(it["period"]).strip() if it.get("period") else None),
-                    target=_clean_target(it.get("target")),
+                    target=target,
+                    outcome=(str(it["outcome"]).strip() if it.get("outcome") else None),
                     source_chunk=src["chunk_id"],
                     speaker=src.get("speaker"),
                     page=src.get("page"),

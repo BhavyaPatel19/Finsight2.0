@@ -273,3 +273,30 @@ class TestIndianIrTranscripts:
                 els.append(Element(kind="speaker_turn", text=f"text {i}", order=len(els), page=1, speaker=name))
         out = finalize_speakers(els, labels)
         assert not any(e.speaker for e in out) and sum(1 for e in out if e.kind == "heading") == 80
+
+
+def test_page_number_folded_into_a_paragraph_block_is_dropped(tmp_path):
+    """The footer number sits in the same PyMuPDF block as a paragraph that runs to the page
+    bottom; it must not end up inside the sentence."""
+    import fitz
+
+    path = tmp_path / "num.pdf"
+    doc = fitz.open()
+    for pno, site in enumerate(("Port Talbot", "IJmuiden", "Kalinganagar")):
+        page = doc.new_page()  # 842 pt high
+        page.insert_text((40, 60), f"Remarks on {site}", fontname="hebo", fontsize=10)
+        page.insert_text((40, 790), f"The BF#5 at {site} produced its last", fontname="helv", fontsize=10)
+        page.insert_text(
+            (40, 803),
+            "liquid steel on 04th July and one of the two furnaces is now closed.",
+            fontname="helv",
+            fontsize=10,
+        )
+        page.insert_text((540, 803), str(pno + 1), fontname="helv", fontsize=10)  # footer number, same band
+    doc.save(path)
+    doc.close()
+
+    parsed = parse_document(path)
+    text = " ".join(e.text for e in parsed.elements)
+    assert "produced its last liquid steel" in text
+    assert not re.search(r"last \d liquid|\b[123] The BF", text)

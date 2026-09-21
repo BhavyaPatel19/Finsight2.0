@@ -46,16 +46,24 @@ _SPEAKER_COLON = re.compile(
 )
 _PAGE_NO = re.compile(r"^(page\s*)?\d+(\s*(of|/)\s*\d+)?$", re.I)
 _EDGE = 0.08  # top/bottom band (fraction of page height) where running headers/footers live
+_PAGE_NO_BAND = 0.15  # a bare number this close to the top or bottom edge is a page number, not content
 
 
 def _is_bold(span: dict) -> bool:
     return bool(span.get("flags", 0) & 16) or "bold" in span.get("font", "").lower()
 
 
-def _block_text(block: dict) -> str:
+def _block_text(block: dict, page_height: float | None = None) -> str:
+    """The block's lines joined, minus a page number PyMuPDF folded into the block: a paragraph
+    that continues across the page break often shares its block with the footer number, which
+    would otherwise land inside the sentence ("produced its last 4 liquid steel")."""
     lines = []
     for line in block.get("lines", []):
         t = "".join(s["text"] for s in line["spans"])
+        if page_height and _PAGE_NO.match(t.strip()) and not re.fullmatch(r"\d{4}", t.strip()):  # a year is content
+            y0, y1 = line["bbox"][1], line["bbox"][3]
+            if y0 < page_height * _PAGE_NO_BAND or y1 > page_height * (1 - _PAGE_NO_BAND):
+                continue
         lines.append(t)
     text = "\n".join(lines)
     text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)  # hyphenated line break
@@ -72,7 +80,7 @@ def _running_lines(doc, page_count: int) -> set[str]:
         for block in page.get_text("dict")["blocks"]:
             y0, y1 = block["bbox"][1], block["bbox"][3]
             if y0 < h * _EDGE or y1 > h * (1 - _EDGE):
-                t = _clean(_block_text(block))
+                t = _clean(_block_text(block, h))
                 if t and len(t) < 120:
                     counts[re.sub(r"\d+", "#", t)] += 1
     return {t for t, n in counts.items() if n >= max(2, page_count * 0.4)}
@@ -139,7 +147,7 @@ def parse_pdf(path: str) -> ParsedDocument:
         table_boxes = []
         text_blocks = [b for b in page.get_text("dict")["blocks"] if b.get("type", 0) == 0]
 
-        def title_above(bbox, text_blocks=text_blocks, table_boxes=table_boxes) -> str | None:
+        def title_above(bbox, text_blocks=text_blocks, table_boxes=table_boxes, h=h) -> str | None:
             """Up to two short text lines directly above the table: a title and often a units line."""
             x0, y0, x1, _ = bbox
             cands = []
@@ -149,7 +157,7 @@ def parse_pdf(path: str) -> ParsedDocument:
                     own = fitz.Rect(bbox)
                     if any(tb != own and fitz.Rect(b["bbox"]).intersects(tb) for tb in table_boxes):
                         continue  # a row of the table above, not a title
-                    t = _block_text(b)
+                    t = _block_text(b, h)
                     if t and len(t) < 120 and not _MARKER.match(t):
                         cands.append((by1, t))
             cands.sort(reverse=True)
@@ -218,7 +226,7 @@ def parse_pdf(path: str) -> ParsedDocument:
             x0, y0, x1, y1 = block["bbox"]
             if any(fitz.Rect(x0, y0, x1, y1).intersects(tb) for tb in table_boxes):
                 continue
-            text = _block_text(block)
+            text = _block_text(block, h)
             if not text:
                 continue
             if (y0 < h * _EDGE or y1 > h * (1 - _EDGE)) and (

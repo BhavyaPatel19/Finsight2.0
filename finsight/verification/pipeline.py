@@ -58,7 +58,7 @@ def _parallel() -> int:
     if name == "ollama":
         return 1  # one model slot
     if name == "cerebras":
-        return 2  # free tier is 5 requests/min; four in flight just trades 429s for waits
+        return 1  # ~4k-token verdict prompts against 150k tokens/min: two in flight trade 429s for minute-long waits
     return 4
 
 

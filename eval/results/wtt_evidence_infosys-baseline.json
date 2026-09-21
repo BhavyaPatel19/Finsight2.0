@@ -1,0 +1,172 @@
+{
+  "timestamp": "2026-09-21T06:35:22+00:00",
+  "git_sha": "0ed18bf",
+  "tag": "infosys-baseline",
+  "gold": "eval/gold/wtt_claims.jsonl",
+  "labelled": 25,
+  "candidate_coverage": 0.96,
+  "not_candidates": [
+    "w019"
+  ],
+  "evidence_hit@8": 0.7917,
+  "evidence_n": 24,
+  "evidence_missed": [
+    "w009",
+    "w011",
+    "w014",
+    "w019",
+    "w020"
+  ],
+  "rows": [
+    {
+      "id": "w001",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w002",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w003",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w004",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "PARTIAL"
+    },
+    {
+      "id": "w005",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w006",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MISSED"
+    },
+    {
+      "id": "w007",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "PARTIAL"
+    },
+    {
+      "id": "w008",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w009",
+      "candidate": true,
+      "evidence_found": false,
+      "human": "MET"
+    },
+    {
+      "id": "w010",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w011",
+      "candidate": true,
+      "evidence_found": false,
+      "human": "MET"
+    },
+    {
+      "id": "w012",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w013",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w014",
+      "candidate": true,
+      "evidence_found": false,
+      "human": "PARTIAL"
+    },
+    {
+      "id": "w015",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w016",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w017",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w018",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "MET"
+    },
+    {
+      "id": "w019",
+      "candidate": false,
+      "evidence_found": false,
+      "human": "MET"
+    },
+    {
+      "id": "w020",
+      "candidate": true,
+      "evidence_found": false,
+      "human": "MET"
+    },
+    {
+      "id": "w021",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "UNVERIFIABLE"
+    },
+    {
+      "id": "w022",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "UNVERIFIABLE"
+    },
+    {
+      "id": "w023",
+      "candidate": true,
+      "evidence_found": null,
+      "human": "UNVERIFIABLE"
+    },
+    {
+      "id": "w024",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "UNVERIFIABLE"
+    },
+    {
+      "id": "w025",
+      "candidate": true,
+      "evidence_found": true,
+      "human": "UNVERIFIABLE"
+    }
+  ]
+}

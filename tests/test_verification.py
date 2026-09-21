@@ -636,3 +636,175 @@ class TestCaches:
         ev.clear_cache()
         ev._retrieve(None, "q", [1, 2], top_k=8)
         assert calls["n"] == 3
+
+
+class TestV27Rules:
+    def test_intentions_without_a_checkable_outcome_are_dropped(self):
+        from finsight.verification.claims import is_checkable
+
+        assert not is_checkable("The company will continue to provide updates on its progress.", None, None)
+        assert not is_checkable("The company will engage with the Dutch government.", None, None)
+        assert is_checkable("The company will cease operations of BF#4 before the end of September.", None, None)
+        assert is_checkable("The company expects the turnaround to happen in 4Q.", "Netherlands EBITDA", None)
+        assert is_checkable("Guidance is 0% to 3%.", None, {"kind": "range", "low": 0, "high": 3, "unit": "%"})
+
+    @pytest.mark.parametrize(
+        "unit,actual,expected",
+        [
+            ("tons per day", "20.34 MT for FY2024-25", False),
+            ("million tonnes", "1 million tons", True),
+            ("%", "26.4%", True),
+            ("Rs cr", "₹15,671 crore", True),
+            ("$ mn", "$3.7 billion", False),
+            ("count", "about 1,900 people", None),
+        ],
+    )
+    def test_units_compatible(self, unit, actual, expected):
+        assert vd.units_compatible(unit, actual) is expected
+
+    def test_unit_mismatch_makes_the_verdict_unverifiable(self, monkeypatch):
+        import asyncio
+
+        async def fake(prompt, **kw):
+            class R:
+                text = (
+                    '{"verdict": "MISSED", "actual_value": "20.34 MT in FY2024-25", "actual_number": 20.34, '
+                    '"evidence_id": "e1", "evidence_quote": "saleable steel production of FY 2024-25 stood at 20.34 MT", '
+                    '"explanation": "far below 15,000"}'
+                )
+
+            return R()
+
+        monkeypatch.setattr(vd, "agenerate", fake)
+        ev = [
+            {
+                "id": "e1",
+                "text": "The combined saleable steel production of FY 2024-25 stood at 20.34 MT.",
+                "doc_type": "annual_report",
+                "page": 165,
+                "kind": "paragraph",
+            }
+        ]
+        c = _claim({"kind": "point", "value": 15000, "unit": "tons per day"})
+        v = asyncio.run(vd.judge_claim(c, ev))
+        assert v.verdict == "UNVERIFIABLE" and v.method == "unit-mismatch"
+
+
+def test_evidence_query_keeps_identifiers_but_not_targets():
+    from finsight.verification.claims import Claim
+    from finsight.verification.evidence import evidence_query
+
+    q = evidence_query(
+        Claim("c", "The BF#4 will cease operations before the end of September.", "q", "capex", None, None, None, "")
+    )
+    assert "BF#4" in q
+    q = evidence_query(
+        Claim(
+            "c",
+            "By 4Q of this year, we will be running at 15,000 tons per day.",
+            "q",
+            "product",
+            None,
+            "4Q FY25",
+            {"kind": "point", "value": 15000, "unit": "tons per day"},
+            "",
+        )
+    )
+    assert "4Q" in q and "15,000" not in q and "15" not in q.replace("4Q FY25", "")
+
+
+class TestOutcomeSearch:
+    def test_outcome_sentence_is_kept_and_intentions_are_dropped(self, monkeypatch):
+        import asyncio
+
+        from finsight.llm.base import LLMResponse
+        from finsight.verification import claims as cl
+
+        cands = [
+            {
+                "sentence": "The BF#4 will cease operations before the end of September.",
+                "chunk_id": "d1:c1",
+                "speaker": "K",
+                "page": 3,
+            },
+            {
+                "sentence": "We will continue to provide updates on our progress.",
+                "chunk_id": "d1:c1",
+                "speaker": "K",
+                "page": 3,
+            },
+        ]
+
+        async def fake(prompt, **kw):
+            return LLMResponse(
+                text=(
+                    '{"claims": ['
+                    '{"quote": "The BF#4 will cease operations before the end of September.", "claim": "The company will cease operations of BF#4 before the end of September.", '
+                    '"category": "capex", "metric": null, "period": "Q2 FY25", "target": null, "outcome": "Blast Furnace 4 at Port Talbot was shut down in September 2024"},'
+                    '{"quote": "We will continue to provide updates on our progress.", "claim": "The company will continue to provide updates on its progress.", '
+                    '"category": "other", "metric": null, "period": null, "target": null, "outcome": "The company provided updates"}'
+                    "]}"
+                ),
+                model="m",
+                provider="t",
+            )
+
+        monkeypatch.setattr(cl, "agenerate", fake)
+        out = asyncio.run(cl.extract_claims(cands, batch_size=12))
+        assert len(out) == 1 and out[0].outcome == "Blast Furnace 4 at Port Talbot was shut down in September 2024"
+
+    def test_find_evidence_merges_both_searches(self, monkeypatch):
+        from finsight.verification import evidence as ev
+        from finsight.verification.claims import Claim
+
+        ev.clear_cache()
+        seen = []
+
+        def fake_retrieve(session, query, document_ids=None, **kw):
+            seen.append(query)
+            if "shut down" in query:
+                return {
+                    "chunks": [
+                        {
+                            "id": "d6:c9",
+                            "text": "Blast Furnace 4 was shut down in September 2024.",
+                            "metadata": {"kind": "prose"},
+                            "reranker_score": 0.9,
+                        }
+                    ]
+                }
+            return {
+                "chunks": [
+                    {
+                        "id": "d4:c1",
+                        "text": "We expect BF#4 to cease operations.",
+                        "metadata": {"kind": "prose"},
+                        "reranker_score": 0.8,
+                    },
+                    {
+                        "id": "d6:c9",
+                        "text": "Blast Furnace 4 was shut down in September 2024.",
+                        "metadata": {"kind": "prose"},
+                        "reranker_score": 0.3,
+                    },
+                ]
+            }
+
+        monkeypatch.setattr(ev, "retrieve", fake_retrieve)
+        monkeypatch.setattr(ev, "candidate_pool", lambda ids: 24)
+        c = Claim(
+            "c",
+            "The company will cease operations of BF#4.",
+            "q",
+            "capex",
+            None,
+            None,
+            None,
+            "",
+            outcome="Blast Furnace 4 at Port Talbot was shut down in September 2024",
+        )
+        out = ev.find_evidence(None, c, [4, 6])
+        assert len(seen) == 2 and [e["id"] for e in out][0] == "d6:c9", (
+            "the reported result outranks the restated promise"
+        )
+        assert len(out) == 2
