@@ -1,0 +1,332 @@
+{
+  "timestamp": "2026-09-21T07:14:37+00:00",
+  "git_sha": "18f602b",
+  "tag": "tatasteel-v2.7-cerebras-qwen-3.8-27b",
+  "gold": "eval/gold/wtt_claims_tatasteel.jsonl",
+  "provider": "cerebras",
+  "model": "gpt-oss-120b",
+  "engine": "v2",
+  "summary": {
+    "labelled": 23,
+    "matched": 17,
+    "llm_errors": 10,
+    "claim_recall": 0.7391,
+    "verdict_accuracy": 0.5294,
+    "abstained": 13,
+    "verdict_accuracy_on_answered": 0.75,
+    "abstain_recall": 1.0,
+    "abstain_precision": 0.4615,
+    "kappa": 0.299,
+    "confusion": {
+      "UNVERIFIABLE": {
+        "UNVERIFIABLE": 6
+      },
+      "MET": {
+        "MET": 2,
+        "UNVERIFIABLE": 3
+      },
+      "MISSED": {
+        "MISSED": 1,
+        "UNVERIFIABLE": 1
+      },
+      "PARTIAL": {
+        "MET": 1,
+        "UNVERIFIABLE": 3
+      }
+    },
+    "system_claims": {
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": 35,
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": 35,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": 54,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": 54,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": 54,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": 0,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": 0
+    },
+    "mean_match_similarity": 0.813,
+    "unmatched_ids": [
+      "t19",
+      "t21",
+      "t23",
+      "t18",
+      "t20",
+      "t22"
+    ],
+    "extraction_failed_batches": 26,
+    "system_claims_total": 232
+  },
+  "pairs": {
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": {
+      "overall_score": 60.0,
+      "narrative": "Management credibility is assessed at 60.0/100, reflecting a mixed record where 8 commitments were met and 2 were partially delivered, but 5 were missed and 20 could not be verified. While operational milestones like the Kalinganagar blast furnace startup and the £500 million UK grant were successfully executed, the company failed to achieve positive cash flow or EBITDA in the UK and missed targets for iron ore cost reductions and galvanising line commissioning.",
+      "extraction_batches": 13,
+      "extraction_failed": 0,
+      "verdict_errors": 0,
+      "claims_from_cache": false
+    },
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 78.9,
+      "narrative": "Management demonstrated strong credibility on operational milestones, successfully delivering 14 of 19 verifiable commitments, including the Kalinganagar blast furnace startup and the £500 million UK grant. However, this record is marred by three missed targets—specifically regarding Q2 net realizations, UK EBITDA breakeven, and the galvanising line commissioning—while 16 additional claims remained unverifiable due to a lack of supporting evidence in the filings.",
+      "extraction_batches": 0,
+      "extraction_failed": 0,
+      "verdict_errors": 0,
+      "claims_from_cache": true
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": {
+      "overall_score": 0.0,
+      "narrative": "Credibility score n/a/100: 0 met, 0 partial, 0 missed, 54 not verifiable from the filings.",
+      "extraction_batches": 16,
+      "extraction_failed": 0,
+      "verdict_errors": 53,
+      "claims_from_cache": false
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": {
+      "overall_score": 0.0,
+      "narrative": "Credibility score n/a/100: 0 met, 0 partial, 0 missed, 54 not verifiable from the filings.",
+      "extraction_batches": 0,
+      "extraction_failed": 0,
+      "verdict_errors": 51,
+      "claims_from_cache": true
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 0.0,
+      "narrative": "Credibility score n/a/100: 0 met, 0 partial, 0 missed, 54 not verifiable from the filings.",
+      "extraction_batches": 0,
+      "extraction_failed": 0,
+      "verdict_errors": 53,
+      "claims_from_cache": true
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": {
+      "extraction_batches": 13,
+      "extraction_failed": 13,
+      "verdict_errors": 0,
+      "claims_from_cache": false
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": {
+      "extraction_batches": 13,
+      "extraction_failed": 13,
+      "verdict_errors": 0,
+      "claims_from_cache": false
+    }
+  },
+  "rows": [
+    {
+      "id": "t02",
+      "matched": true,
+      "similarity": 0.944,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects coal costs in India to be $15 per ton lower on a consumption basis in Q2 compared to Q1.",
+      "system_explanation": "The provided evidence contains guidance for Q3 (expecting $20 per ton lower than Q2) and reported results for Q1 (showing $11 per ton lower than Q4), but does not contain the reported actual coal cost reduction for Q2 compared to Q1.",
+      "category": "cost"
+    },
+    {
+      "id": "t06",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The Labour Party is committed to delivering the £500 million grant for Port Talbot.",
+      "system_explanation": "The evidence confirms that the £500 million grant agreement was signed, fulfilling the commitment to deliver the grant.",
+      "category": "other"
+    },
+    {
+      "id": "t01",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company will cease operations of Blast Furnace 4 before the end of September.",
+      "system_explanation": "The annual report confirms that operations at Blast Furnace 4 ceased in September 2024, fulfilling the commitment to close it before the end of the month.",
+      "category": "capex"
+    },
+    {
+      "id": "t03",
+      "matched": true,
+      "similarity": 0.538,
+      "human": "MISSED",
+      "system": "MISSED",
+      "system_claim": "The company expects to achieve breakeven or slightly positive EBITDA in the UK after closing the second blast furnace in the second half.",
+      "system_explanation": "The claim expected breakeven or positive EBITDA in the UK for the second half, but the reported full-year EBITDA was a loss of £385 million, and the evidence indicates the second half EBITDA was still negative (improving by only £90 million from a first-half loss of £91 million, implying a second-half loss of £1 million).",
+      "category": "margin"
+    },
+    {
+      "id": "t04",
+      "matched": true,
+      "similarity": 0.467,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to receive internal approvals for the Neelachal expansion later this year.",
+      "system_explanation": "The evidence contains only forward-looking statements and guidance regarding the Neelachal expansion (e.g., 'will go to the Board', 'most ready'), but does not report that the internal approvals were actually received during the period.",
+      "category": "capex"
+    },
+    {
+      "id": "t05",
+      "matched": true,
+      "similarity": 0.889,
+      "human": "PARTIAL",
+      "system": "MET",
+      "system_claim": "The company expects the blast furnace at Kalinganagar to start up towards the end of September 2024.",
+      "system_explanation": "The evidence confirms that the blast furnace at Kalinganagar was successfully commissioned on September 20, 2024, which aligns with the commitment to start up towards the end of September 2024.",
+      "category": "growth"
+    },
+    {
+      "id": "t07",
+      "matched": true,
+      "similarity": 0.733,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company is committed to achieving a 35% to 40% reduction in CO2 by 2030.",
+      "system_explanation": "The evidence contains only forward-looking commitments and roadmaps for a 35-40% reduction by 2030, but no reported actual results for that period.",
+      "category": "other"
+    },
+    {
+      "id": "t10",
+      "matched": true,
+      "similarity": 0.9,
+      "human": "MISSED",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company targets EBITDA neutrality by June 2025.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "margin"
+    },
+    {
+      "id": "t15",
+      "matched": true,
+      "similarity": 0.5,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects one galvanising line to come online in March.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "product"
+    },
+    {
+      "id": "t13",
+      "matched": true,
+      "similarity": 0.773,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company provides guidance that Indian steel prices will be Rs. 2,000 per ton lower on a quarter-over-quarter basis.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "revenue"
+    },
+    {
+      "id": "t08",
+      "matched": true,
+      "similarity": 0.9,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects a reduction in fixed costs of about £100 per ton in the coming quarters.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "cost"
+    },
+    {
+      "id": "t09",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to commence groundwork at the site by around July 2025.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "capex"
+    },
+    {
+      "id": "t11",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to be running at 15,000 tons per day by the fourth quarter of this year.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "product"
+    },
+    {
+      "id": "t12",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to have about 1.1 million tons of additional volume coming out of Kalinganagar this year.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "growth"
+    },
+    {
+      "id": "t14",
+      "matched": true,
+      "similarity": 0.667,
+      "human": "MET",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects a turnaround to occur in 4Q.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "cash_flow"
+    },
+    {
+      "id": "t16",
+      "matched": true,
+      "similarity": 0.636,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company will commission associated facilities in the Kalinganagar expansion in the later part of the current financial year.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "capex"
+    },
+    {
+      "id": "t17",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects the Ludhiana plant to be operational by March 2026.",
+      "system_explanation": "LLM error: 402 from https://api.cerebras.ai/v1/chat/completions: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"}",
+      "category": "product"
+    },
+    {
+      "id": "t19",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "UNVERIFIABLE",
+      "system": null,
+      "category": "margin"
+    },
+    {
+      "id": "t21",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "PARTIAL",
+      "system": null,
+      "category": "capex"
+    },
+    {
+      "id": "t23",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "MET",
+      "system": null,
+      "category": "capex"
+    },
+    {
+      "id": "t18",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "MET",
+      "system": null,
+      "category": "cost"
+    },
+    {
+      "id": "t20",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "UNVERIFIABLE",
+      "system": null,
+      "category": "cost"
+    },
+    {
+      "id": "t22",
+      "matched": false,
+      "similarity": 0.0,
+      "human": "UNVERIFIABLE",
+      "system": null,
+      "category": "capex"
+    }
+  ]
+}
