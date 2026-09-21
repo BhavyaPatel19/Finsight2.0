@@ -40,7 +40,7 @@ def is_directional(claim: Claim) -> bool:
     if not t:
         return True
     unit = (t.get("unit") or "").lower()
-    if "change" in unit:
+    if any(w in unit for w in ("change", "reduction", "increase", "improvement", "lower", "higher", "vs")):
         return True
     return t.get("kind") in ("min", "max") and (t.get("value") or 0) == 0
 
@@ -98,7 +98,7 @@ def evidence_query(claim: Claim) -> str:
 
 
 _OUTCOME = re.compile(
-    r"\\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended|recruited|dropped|fell|rose|halved|doubled|widened|narrowed|commissioned|decommissioned|started|completed|launched|produced|shut|received|placed|spent|invested|reached|recorded|posted|ramped|operated|commenced|secured|awarded)\\b",
+    r"\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended|recruited|dropped|fell|rose|halved|doubled|widened|narrowed|commissioned|decommissioned|started|completed|launched|produced|shut|received|placed|spent|invested|reached|recorded|posted|ramped|operated|commenced|secured|awarded)\b",
     re.I,
 )
 _FORWARD = re.compile(

@@ -108,7 +108,8 @@ def numeric_verdict(target: dict | None, actual: float | None, metric: str | Non
         return None
     kind = target.get("kind")
     unit = (target.get("unit") or "").lower()
-    if "change" in unit or (kind in ("min", "max") and (target.get("value") or 0) == 0):
+    is_change = any(w in unit for w in ("change", "reduction", "increase", "improvement", "lower", "higher", "vs"))
+    if is_change or (kind in ("min", "max") and (target.get("value") or 0) == 0):
         # "lower than last year" / "at least no worse": a direction, not a level — the sign of the
         # model's actual_number is ambiguous here, so the verdict is left to the judge.
         return None
@@ -151,7 +152,7 @@ _FORWARD_ONLY = re.compile(
     r"\b(expect(s|ed)?|guidance|guide|will|shall|target(s)?|aim|outlook|plan(s|ned)?|anticipate|forecast)\b", re.I
 )
 _REPORTED = re.compile(
-    r"\\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended|recruited|dropped|fell|rose|halved|doubled|widened|narrowed|commissioned|decommissioned|started|completed|launched|produced|shut|received|placed|spent|invested|reached|recorded|posted|ramped|operated|commenced|secured|awarded)\\b",
+    r"\b(was|were|stood at|came in|reported|delivered|grew|declined|increased|decreased|reduced|closed|signed|onboarded|hired|achieved|improved|expanded|contracted|generated|returned|paid|crossed|remained|ended|recruited|dropped|fell|rose|halved|doubled|widened|narrowed|commissioned|decommissioned|started|completed|launched|produced|shut|received|placed|spent|invested|reached|recorded|posted|ramped|operated|commenced|secured|awarded)\b",
     re.I,
 )
 

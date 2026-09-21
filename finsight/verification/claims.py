@@ -60,6 +60,11 @@ For each claim return:
     Examples: "0% to 3%" → {{"kind":"range","low":0,"high":3,"unit":"%"}}; "above 100% of net profit" → {{"kind":"min","value":100,"unit":"%"}};
     "over 20,000 freshers" → {{"kind":"min","value":20000,"unit":"count"}}; "total payout for FY'25 will be Rs. 43" → {{"kind":"point","value":43,"unit":"Rs per share"}};
     "lower than FY25" → null (qualitative)
+    A target is a figure the outcome will be measured against. A change is a target with the change in its unit:
+    "$15 per ton lower in 2Q vs. 1Q" → {{"kind":"min","value":15,"unit":"$ per ton reduction"}}. The size of a project or
+    a spend that describes what is being built is NOT a target: "commissioning facilities amounting to Rs. 19,000 crores"
+    → null, the commitment is the commissioning; "a relining that will run about 160 days and come back in July" → null,
+    the commitment is coming back in July.
 
 Text:
 {text}

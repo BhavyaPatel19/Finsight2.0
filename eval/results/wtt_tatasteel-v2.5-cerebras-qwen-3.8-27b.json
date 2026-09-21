@@ -1,0 +1,310 @@
+{
+  "timestamp": "2026-09-21T05:51:29+00:00",
+  "git_sha": "ecc0a2a",
+  "tag": "tatasteel-v2.5-cerebras-qwen-3.8-27b",
+  "gold": "eval/gold/wtt_claims_tatasteel.jsonl",
+  "provider": "cerebras",
+  "model": "gpt-oss-120b",
+  "engine": "v2",
+  "summary": {
+    "labelled": 23,
+    "matched": 21,
+    "llm_errors": 0,
+    "claim_recall": 0.913,
+    "verdict_accuracy": 0.5714,
+    "abstained": 12,
+    "verdict_accuracy_on_answered": 0.8333,
+    "abstain_recall": 0.7,
+    "abstain_precision": 0.5833,
+    "kappa": 0.3368,
+    "confusion": {
+      "UNVERIFIABLE": {
+        "MISSED": 2,
+        "UNVERIFIABLE": 7,
+        "MET": 1
+      },
+      "MET": {
+        "MET": 5
+      },
+      "MISSED": {
+        "UNVERIFIABLE": 2
+      },
+      "PARTIAL": {
+        "UNVERIFIABLE": 3,
+        "MISSED": 1
+      }
+    },
+    "system_claims": {
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": 53,
+      "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": 53,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": 91,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": 91,
+      "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": 91,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": 78,
+      "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": 78
+    },
+    "mean_match_similarity": 0.872,
+    "unmatched_ids": [
+      "t06",
+      "t15"
+    ]
+  },
+  "pairs": {
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q2FY25": {
+      "overall_score": 50.0,
+      "narrative": "Management credibility is assessed at a low 50.0/100, reflecting a mixed record where only 6 of 15 verifiable claims were fully met, while 6 were missed and 3 were only partially delivered. Notably, 38 commitments could not be verified from the available filings, leaving a significant portion of the company's strategic guidance unconfirmed."
+    },
+    "TATASTEEL_concall_Q1FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 67.5,
+      "narrative": "Management credibility is moderate at a score of 67.5/100, as they successfully delivered on 11 specific operational commitments, such as the closure of Blast Furnace #4 and the voluntary redundancy process, but failed to meet 4 key targets, including India volume guidance and price recovery expectations. While 5 commitments were only partially met, 33 claims could not be verified from the available filings, leaving a significant portion of their strategic and financial outlooks unconfirmed."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q1FY26": {
+      "overall_score": 71.4,
+      "narrative": "Management credibility scores 71.4/100, with 17 commitments met and 6 partially delivered, though 5 specific targets regarding UK breakeven timing, working capital trends, and debt levels were missed. A significant portion of the assessment is limited by the fact that 63 claims could not be verified from the available filings."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q3FY25": {
+      "overall_score": 77.3,
+      "narrative": "Management credibility scores 77.3/100, with 14 commitments fully met and 6 partially delivered, though 2 were missed. However, the assessment is significantly limited by the fact that 69 claims could not be verified from the available filings."
+    },
+    "TATASTEEL_concall_Q2FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 68.2,
+      "narrative": "Management credibility is moderate, reflected in a score of 68.2/100, as 19 commitments were fully met and 7 partially delivered, though 7 were missed. However, a significant portion of the assessment is obscured by the fact that 58 claims could not be verified from the available filings."
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q1FY26": {
+      "overall_score": 77.8,
+      "narrative": "Management demonstrated strong execution credibility with a score of 77.8/100, successfully delivering on 19 of 27 verifiable claims regarding cost reductions and project milestones, though they missed four specific targets related to breakeven timing and regional realizations. However, the assessment is significantly limited by the fact that 51 commitments could not be verified from available filings, leaving a substantial portion of their forward-looking guidance unproven."
+    },
+    "TATASTEEL_concall_Q3FY25 → TATASTEEL_concall_Q4FY25": {
+      "overall_score": 75.0,
+      "narrative": "Management demonstrated strong credibility with a score of 75.0/100, successfully delivering on 23 of 34 verifiable claims, including significant fixed cost reductions and improved cost positions from scrap switching. However, 44 commitments could not be verified from the filings, and 6 specific targets were missed, such as the projected £60 per ton net impact in the UK which only materialized at £53."
+    }
+  },
+  "rows": [
+    {
+      "id": "t02",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "MISSED",
+      "system_claim": "The company expects coal costs in India to be $15 per ton lower in 2Q compared to 1Q.",
+      "system_explanation": "The reported results for 2Q indicate that coking coal consumption costs were $27 per ton lower compared to 1Q, which exceeds the target of $15 per ton lower.",
+      "category": "cost"
+    },
+    {
+      "id": "t06",
+      "matched": false,
+      "similarity": 0.175,
+      "human": "MET",
+      "system": null,
+      "category": "other"
+    },
+    {
+      "id": "t01",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company will cease operations of BF#4 before the end of September.",
+      "system_explanation": "The annual report confirms that the closure of operations at Blast Furnace #4 occurred during September 2024, which aligns with the commitment to cease operations before the end of September.",
+      "category": "capex"
+    },
+    {
+      "id": "t03",
+      "matched": true,
+      "similarity": 0.692,
+      "human": "MISSED",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to be close to breakeven or slightly positive on an EBITDA basis in the UK after closing the second blast furnace in 2H.",
+      "system_explanation": "The claim expected the UK to be close to breakeven or slightly positive on an EBITDA basis in the second half, but the reported full-year EBITDA was a loss of £385 million, and the second half only improved by £90 million compared to the first half, indicating it did not reach breakeven.",
+      "category": "margin"
+    },
+    {
+      "id": "t04",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to get internal approvals for the Neelachal expansion later this year, increasing capacity to 5 million tons.",
+      "system_explanation": "The evidence contains only forward-looking statements and guidance regarding the Neelachal expansion (e.g., plans to go to the Board, target capacity of 9.5 MTPA, or expansion to 4.95 MTPA by 2030-31), but no reported results confirming that internal approvals were obtained or that the capacity was increased to 5 million tons during the specified period.",
+      "category": "capex"
+    },
+    {
+      "id": "t05",
+      "matched": true,
+      "similarity": 0.923,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to produce about 1.7 million tonnes from the new Kalinganagar facility after the blast furnace startup.",
+      "system_explanation": "The company reported finishing the fiscal year with 6.8 million tons of steel production at Kalinganagar, which significantly exceeds the target of about 1.7 million tonnes.",
+      "category": "growth"
+    },
+    {
+      "id": "t07",
+      "matched": true,
+      "similarity": 0.733,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company is committed to achieve a 35% to 40% reduction in CO2 by 2030.",
+      "system_explanation": "The evidence contains only forward-looking targets and commitments (e.g., 'aims to reduce', 'established ambitious targets') for 2030, but does not report the actual achieved CO2 reduction percentage for the period ending in 2030.",
+      "category": "other"
+    },
+    {
+      "id": "t10",
+      "matched": true,
+      "similarity": 0.75,
+      "human": "MISSED",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company targets to achieve EBITDA neutrality and cash flow neutrality by June 2025.",
+      "system_explanation": "The provided evidence contains reported results for Q1 FY26 (ending June 2025) showing EBITDA improvements and cost savings, but it does not explicitly state that the company achieved 'EBITDA neutrality' or 'cash flow neutrality' as defined in the claim, nor does it provide the specific net figures required to verify the 'about 0.0' target for the entire period up to June 2025.",
+      "category": "margin"
+    },
+    {
+      "id": "t15",
+      "matched": false,
+      "similarity": 0.42,
+      "human": "PARTIAL",
+      "system": null,
+      "category": "product"
+    },
+    {
+      "id": "t13",
+      "matched": true,
+      "similarity": 0.727,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company guides that India steel prices will be Rs. 2,000 per ton lower on a quarter-over-quarter basis.",
+      "system_explanation": "The reported result shows a drop of Rs. 2,400 per ton, which exceeds the guided target of Rs. 2,000 per ton, indicating the commitment was not met.",
+      "category": "revenue"
+    },
+    {
+      "id": "t08",
+      "matched": true,
+      "similarity": 0.95,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects a reduction in fixed cost of about £100 per ton in the coming quarters.",
+      "system_explanation": "The evidence reports a fixed cost improvement of £69 per ton in the UK for the quarter, which is in the correct direction and magnitude (approx £100) relative to the claim, although the specific period 'coming quarters' is represented by this single quarter's reported result.",
+      "category": "cost"
+    },
+    {
+      "id": "t09",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects to commence groundwork at the site by around July 2025.",
+      "system_explanation": "The evidence provided consists of forward-looking statements and guidance regarding the expected commencement of construction in July 2025, rather than a reported result confirming that the groundwork actually commenced.",
+      "category": "capex"
+    },
+    {
+      "id": "t11",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "UNVERIFIABLE",
+      "system": "MISSED",
+      "system_claim": "The company expects to be running at 15,000 tons per day by 4Q of this year.",
+      "system_explanation": "The company's total production for FY25 was 20.34 MT, which significantly exceeds the target of 15,000 tons per day (approx. 5.5 MT annually).",
+      "category": "product"
+    },
+    {
+      "id": "t12",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects to have about 1.1 million tons additional volume coming out of Kalinganagar this year.",
+      "system_explanation": "The reported result of a 1 million ton increase in production from Kalinganagar for the full year aligns with the target of 'about 1.1 million tons'.",
+      "category": "growth"
+    },
+    {
+      "id": "t14",
+      "matched": true,
+      "similarity": 1.0,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects a turnaround to happen in 4Q.",
+      "system_explanation": "The company reported a significant improvement in profitability, moving from a loss to a profit, which constitutes a turnaround as claimed.",
+      "category": "cash_flow"
+    },
+    {
+      "id": "t16",
+      "matched": true,
+      "similarity": 0.962,
+      "human": "PARTIAL",
+      "system": "MISSED",
+      "system_claim": "The company will commission associated facilities in the Kalinganagar expansion amounting to almost about Rs. 19,000 crores in the current financial year.",
+      "system_explanation": "The evidence reports a total investment of Rs. 27,000 crore for the Kalinganagar expansion, which exceeds the target of about Rs. 19,000 crores.",
+      "category": "capex"
+    },
+    {
+      "id": "t17",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects the Ludhiana plant to be operational by March 2026.",
+      "system_explanation": "The evidence indicates that the Ludhiana EAF project is in progress and that significant progress has been made, but it does not report that the plant became operational by March 2026; therefore, the specific commitment regarding its operational status by that date cannot be verified as achieved or missed based on the provided text.",
+      "category": "product"
+    },
+    {
+      "id": "t19",
+      "matched": true,
+      "similarity": 0.857,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company targets to reach breakeven in the first two quarters of FY2026.",
+      "system_explanation": "first two quarters of FY2026 has not ended: the latest reported period is Q1 FY26, the claim needs Q4 FY26.",
+      "category": "margin"
+    },
+    {
+      "id": "t21",
+      "matched": true,
+      "similarity": 0.917,
+      "human": "PARTIAL",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects the G-blast furnace relining campaign to run for about 160 days and the furnace to come back in July.",
+      "system_explanation": "The evidence confirms the furnace was down for relining and is expected to come back in the next few days, but it does not report the specific duration of the relining campaign (e.g., 160 days) as a reported result.",
+      "category": "capex"
+    },
+    {
+      "id": "t23",
+      "matched": true,
+      "similarity": 0.583,
+      "human": "UNVERIFIABLE",
+      "system": "MET",
+      "system_claim": "The company is targeting to commence civil construction in the UK in July.",
+      "system_explanation": "The evidence confirms that the groundbreaking ceremony, marking the official start of construction, took place on July 14th, which aligns with the commitment to commence civil construction in July.",
+      "category": "capex"
+    },
+    {
+      "id": "t18",
+      "matched": true,
+      "similarity": 0.875,
+      "human": "MET",
+      "system": "MET",
+      "system_claim": "The company expects its cost position to improve by approximately £100 to £150 per ton.",
+      "system_explanation": "The evidence confirms that the structural cost improvement in the UK, resulting from the shift to an EAF, is at least £150 per ton, which meets the upper bound of the claimed £100 to £150 per ton range.",
+      "category": "cost"
+    },
+    {
+      "id": "t20",
+      "matched": true,
+      "similarity": 0.833,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects coking coal costs in India to be approximately $10 per ton lower in the fourth quarter compared to the third quarter.",
+      "system_explanation": "The provided evidence contains only guidance and qualitative statements about lower costs, but does not report the specific quantitative result for coking coal costs in India for the fourth quarter compared to the third quarter.",
+      "category": "cost"
+    },
+    {
+      "id": "t22",
+      "matched": true,
+      "similarity": 0.889,
+      "human": "UNVERIFIABLE",
+      "system": "UNVERIFIABLE",
+      "system_claim": "The company expects capex for the Kalinganagar expansion next year to be about Rs. 3,000 crores.",
+      "system_explanation": "The evidence contains only forward-looking guidance and plans for capex in the next financial year (FY2025-26), not reported actual results for the period in question.",
+      "category": "capex"
+    }
+  ]
+}

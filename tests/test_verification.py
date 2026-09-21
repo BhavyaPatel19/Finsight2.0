@@ -538,3 +538,44 @@ class TestDerivedFromVerbalisedRows:
         ]
         v = asyncio.run(vd.judge_claim(_claim({"kind": "range", "low": 20, "high": 22, "unit": "%"}), ev))
         assert v.verdict == "MET" and v.method != "downgraded:quote-not-found"
+
+
+class TestReportedVerbs:
+    @pytest.mark.parametrize(
+        "sentence,forward",
+        [
+            ("it dropped by about Rs. 2,400 per ton compared to the Rs. 2,000 per ton guidance", False),
+            ("we have increased our production from Tata Steel Kalinganagar by 1 million tons", False),
+            ("the Company commissioned India's largest blast furnace in FY2024-25", False),
+            ("the full year EBITDA was -ve £385 million", False),
+            ("Our operating margin guidance for the year is 20% to 22%.", True),
+            ("we will finish Kalinganagar at close to 7 million tons", True),
+        ],
+    )
+    def test_results_are_not_promises(self, sentence, forward):
+        assert vd.is_forward_looking(sentence) is forward
+
+    def test_outcome_weight_prefers_results(self):
+        from finsight.verification.evidence import outcome_weight
+
+        assert outcome_weight("it dropped by about Rs. 2,400 per ton compared to the guidance", "prose") == 1.0
+        assert outcome_weight("we expect the turnaround to happen in 4Q", "prose") == 0.5
+
+
+def test_change_targets_are_directional_and_left_to_the_judge():
+    from finsight.verification.claims import Claim
+    from finsight.verification.evidence import is_directional
+
+    c = Claim(
+        "c",
+        "coal costs $15 per ton lower in 2Q",
+        "q",
+        "cost",
+        "coal cost",
+        "Q2 FY25",
+        {"kind": "min", "value": 15, "unit": "$ per ton reduction"},
+        "d1:c1",
+    )
+    assert is_directional(c)
+    # a $27 reduction against a promised $15 reduction must not be read as a cost of 27 vs a cap of 15
+    assert vd.numeric_verdict(c.target, 27.0, "coal cost") is None
