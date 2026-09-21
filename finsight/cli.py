@@ -61,18 +61,38 @@ def cmd_ingest(args) -> int:
     if not path.exists():
         print(f"no such file: {path}", file=sys.stderr)
         return 2
+    doc_type, fy, quarter = args.type, args.fy, args.quarter
+    if not (doc_type and fy and quarter) and path.suffix.lower() == ".pdf":
+        from finsight.corpus.detect import detect_metadata
+
+        d = detect_metadata(path)
+        doc_type = doc_type or d["doc_type"] or "quarterly"
+        fy = fy or d["fiscal_year"]
+        quarter = quarter or d["fiscal_quarter"]
+        print(f"detected: {d['doc_type']} {d['fiscal_quarter']} {d['fiscal_year']} ({d['evidence']})", file=sys.stderr)
     with _session() as s:
         doc = register_document(
             s,
             symbol=args.symbol.upper(),
-            doc_type=args.type,
-            fiscal_year=args.fy,
-            fiscal_quarter=args.quarter,
+            doc_type=doc_type or "quarterly",
+            fiscal_year=fy,
+            fiscal_quarter=quarter,
             pdf_path=str(path),
         )
         result = index_document(s, doc.id, force=True)
     print(json.dumps(result, indent=1))
     return 0 if result.get("status") == "indexed" else 1
+
+
+def cmd_detect(args) -> int:
+    from finsight.corpus.detect import detect_metadata
+
+    for f in args.files:
+        d = detect_metadata(f)
+        print(
+            f"{Path(f).name:40s} {str(d['doc_type']):14s} {str(d['fiscal_quarter']):3s} {str(d['fiscal_year']):5s} {d['company_name'] or ''}"
+        )
+    return 0
 
 
 def cmd_ask(args) -> int:
@@ -177,10 +197,16 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("ingest", help="register and index a filing")
     p.add_argument("file")
     p.add_argument("--symbol", required=True)
-    p.add_argument("--type", default="concall", help="concall | press_release | fact_sheet | annual_report | quarterly")
-    p.add_argument("--fy", default=None, help="e.g. FY26")
-    p.add_argument("--quarter", default=None, help="e.g. Q4")
+    p.add_argument(
+        "--type", default=None, help="concall | press_release | fact_sheet | annual_report (detected if omitted)"
+    )
+    p.add_argument("--fy", default=None, help="e.g. FY26 (detected if omitted)")
+    p.add_argument("--quarter", default=None, help="e.g. Q4 (detected if omitted)")
     p.set_defaults(fn=cmd_ingest)
+
+    p = sub.add_parser("detect", help="guess document type, period and company from the first pages")
+    p.add_argument("files", nargs="+")
+    p.set_defaults(fn=cmd_detect)
 
     p = sub.add_parser("ask", help="answer a question with citations")
     p.add_argument("question")

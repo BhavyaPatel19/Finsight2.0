@@ -111,15 +111,41 @@ async def upload_and_index(
     session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Upload a PDF/HTML/text filing; save to documents dir and register it (pending)."""
+    """Upload a PDF/HTML/text filing; save to documents dir and register it (pending).
+
+    Whatever the caller leaves blank — document type, quarter, year — is read from the file's
+    first pages (finsight.corpus.detect); the response says what was detected and from what."""
     path = await save_upload(file, symbol=symbol, fiscal_year=fiscal_year, fiscal_quarter=fiscal_quarter)
+    detected: dict = {}
+    if str(path).lower().endswith(".pdf") and (
+        not doc_type.strip() or doc_type == "quarterly" or not fiscal_quarter.strip() or not fiscal_year.strip()
+    ):
+        from finsight.corpus.detect import detect_metadata
+
+        try:
+            detected = detect_metadata(path)
+        except Exception:  # noqa: BLE001 — detection is a convenience, never a reason to fail an upload
+            detected = {}
     doc = register_document(
         session,
         user_id=current_user.id,
         symbol=symbol.strip().upper(),
-        doc_type=doc_type.strip() or "quarterly",
-        fiscal_quarter=fiscal_quarter.strip() or None,
-        fiscal_year=fiscal_year.strip() or None,
+        doc_type=(doc_type.strip() if doc_type.strip() and doc_type != "quarterly" else None)
+        or detected.get("doc_type")
+        or "quarterly",
+        fiscal_quarter=fiscal_quarter.strip() or detected.get("fiscal_quarter"),
+        fiscal_year=fiscal_year.strip() or detected.get("fiscal_year"),
         pdf_path=str(path),
     )
-    return {"document_id": doc.id, "status": "pending"}
+    return {
+        "document_id": doc.id,
+        "status": "pending",
+        "doc_type": doc.doc_type,
+        "fiscal_quarter": doc.fiscal_quarter,
+        "fiscal_year": doc.fiscal_year,
+        "detected": {
+            k: detected.get(k) for k in ("doc_type", "fiscal_quarter", "fiscal_year", "company_name", "evidence")
+        }
+        if detected
+        else None,
+    }
