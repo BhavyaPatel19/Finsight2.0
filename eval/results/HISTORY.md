@@ -166,3 +166,45 @@ What the two gpt-oss-120b runs showed:
 | ModernBERT, 8 epochs, 63 silver positives (direct LLM labelling) | **0.941** | 0.571 | 0.711 |
 
 The gate needs recall, so the regex stays; the encoder is a precision instrument (ranking candidates, flagging disagreements) and is not wired into the pipeline. Every gain between the two runs came from 22 more positives — the next step is more companies, not more epochs.
+
+---
+
+# Second corpus: Tata Steel (own IR downloads, FY25)
+
+`eval/gold/documents_tatasteel.json` — five transcripts (Q1 FY25 – Q1 FY26) and the 550-page Integrated Report 2024-25, used as published. Gold: `eval/gold/wtt_claims_tatasteel.jsonl`, 23 claims (7 MET, 5 PARTIAL, 2 MISSED, 9 UNVERIFIABLE), evidence quotes checked verbatim against the indexed text. Two gold corrections came from the pipeline being right: t23 (the July 2025 groundbreaking my search had missed) and t11 (evidence outside the actuals period).
+
+## What broke on unseen documents, in order of discovery
+
+| defect | symptom | fix | commit |
+|---|---|---|---|
+| speaker labels `Name: role` / `Name, firm`, glued to the previous block | transcripts = paragraphs, 0 speakers | label matcher + split blocks at label lines | `69636d1` |
+| dialogue gate satisfied by report captions | annual report = 11,576 turns of "NOTES" | two-word Title-Case names, cast ≤ 60, half must recur | `69636d1` |
+| footer page number inside a paragraph's text block | "produced its last **4** liquid steel"; one gold claim not even a candidate | drop 1–3-digit lines in the top/bottom 15% | `18f602b` |
+| `evidence_query` stripped every digit | "BF#4" → "BF#", "4Q" → "Q" | keep letter+digit identifiers | `18f602b` |
+| result-verb list from IT calls | "dropped by Rs 2,400 vs the guidance" = a promise | steel/manufacturing verbs | `ecc0a2a` (regex broken), fixed `15cb31d` |
+| eval matcher paired claims on a shared year | a wrong verdict scored for an unextracted claim | word overlap required | `ecc0a2a` |
+| Cerebras daily / credit limits mid-run | 26 extraction batches lost, silently | `llm_errors`, `extraction_failed_batches` in every summary | `ecc0a2a`, `0ed18bf` |
+
+## Offline instruments (no LLM)
+
+| | candidate coverage | evidence hit@8 (claim text only) |
+|---|---|---|
+| Infosys gold (25) | 24/25 | 0.79 |
+| Tata gold, first parse | 22/23 | 0.59 |
+| Tata gold, after page-number fix + identifier-preserving query + scaled candidate pool | **23/23** | **0.68** |
+
+The outcome search (each claim carries "how a later filing would report it", searched alongside the claim) cannot be scored without the LLM and is measured by the runs below.
+
+## Runs
+
+| run | model | claim recall | 4-way acc. | acc. on graded | abstain R / P | κ | caveat |
+|---|---|---|---|---|---|---|---|
+| v2.4 (`wtt_tatasteel-v2.4-cerebras-gpt-oss-120b.json`) | gpt-oss-120b | 0.74 | 0.71 | 0.80 (4/5) | 1.0 / 0.67 | 0.51 | **contaminated**: daily token cap hit mid-run, 13 extraction batches + 1 verdict lost |
+| v2.5 (`…-v2.5-cerebras-qwen-3.8-27b.json`) | qwen-3.8-27b | 0.91 | 0.57 | 0.83 (5/6) | 0.7 / 0.58 | 0.34 | **contaminated**: result-verb regex was broken (every result read as a promise) |
+| v2.7 (`…-v2.7-cerebras-qwen-3.8-27b.json`) | qwen-3.8-27b | – | – | – | – | – | **cut off**: Cerebras credit exhausted after pair 2; on the 7 claims that completed, 6 agree — BF#4 shutdown found via the outcome search, £500m grant MET (signed agreement), UK breakeven MISSED (reported loss); the one disagreement is a two-part claim the extractor now splits |
+
+Next: one full run on gpt-oss-120b when budget allows; it is recorded whatever it lands.
+
+## Product changes this corpus forced
+
+Parse-health check at ingestion (`478d60c`), per-verdict confidence in the API and UI (`d85c3a4`), document type / period / company detection from the first pages (`e0a040b`), extraction and retrieval caches, `MODEL_DEVICE=cpu` (`0ed18bf`).

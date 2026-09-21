@@ -56,6 +56,27 @@ Reading every process end to end, on the PDFs the product actually ingests ([ful
 
 ---
 
+## The second company
+
+Every number above is Infosys — the corpus the pipeline was built against. To find out what breaks on documents it had never seen, Tata Steel's own investor-relations downloads went in as they are published: five earnings-call transcripts (Q1 FY25 – Q1 FY26) and the 550-page Integrated Report & Annual Accounts 2024-25 (manifest: `eval/gold/documents_tatasteel.json`, SHA-256 pinned). Out of the box:
+
+- the transcripts parsed as **plain paragraphs with no speakers** — Tata Steel's labels are `Koushik Chatterjee: ED & CFO – Tata Steel Limited` / `Amit Dixit, ICICI Securities` in bold, glued by PyMuPDF to the end of the previous speaker's block;
+- the annual report parsed as an **11,576-turn conversation between "NOTES", "Amount" and "Total"**;
+- **page numbers landed inside sentences** ("produced its last 4 liquid steel"), because the footer number shares a text block with a paragraph that runs to the page bottom;
+- the evidence query **deleted every digit**, turning "BF#4" into "BF#" and "4Q" into "Q" before the search began;
+- steel-industry result verbs (*dropped, commissioned, shut, halved*) were not on the list that separates a reported result from a promise, so correct verdicts were discarded as "the evidence is a promise".
+
+Each fix is generic and tested, and the Infosys corpus parses byte-identically after all of them. A 23-claim gold set (`eval/gold/wtt_claims_tatasteel.jsonl`: 7 MET, 5 PARTIAL, 2 MISSED, 9 UNVERIFIABLE — steel guidance is long-dated) measures the result. The clean part of the first run on the fixed pipeline (two document pairs, 7 labelled claims, before the hosted-model budget ran out) agrees with the human label on 6; the two failure modes that dominated earlier runs — a signed grant agreement graded "not received", a reported loss where breakeven was promised graded "unverifiable" — are gone. A full clean measurement is the next run; the contaminated ones (κ 0.51 with a third of the transcript unread, κ 0.34 with a broken regex) are recorded in [HISTORY](eval/results/HISTORY.md) as what they are.
+
+What the exercise changed about the product, because a real user's company gets no gold set and no day of tuning:
+
+- **Parse health at upload** (`finsight/corpus/health.py`): speakers, header-less table rows, page-number artefacts, chunk coverage — computed in milliseconds and stored on the document, with named warnings (`transcript_no_speakers`, `tables_without_headers`, …). Yesterday's Tata transcripts would have been flagged in the first second.
+- **Per-verdict confidence** (`high / medium / low` with reasons), derived only from what the pipeline established — a numeric rule on a verified table row, a model judgement on a verified quote, a numeric target with no figure in the evidence — and shown next to every verdict with its evidence sentence and page.
+- **Auto-detection of document type and period** from the first pages (`finsight/corpus/detect.py`; 14/14 on both corpora), so a folder can be dropped without a form.
+- **Offline instruments** (`python -m eval.wtt --evidence-only`): does each labelled claim reach the extractor, does retrieval find its evidence — seconds, no model — so a change is judged before a run is paid for.
+
+---
+
 ## Architecture (v2)
 
 ```mermaid
@@ -174,7 +195,8 @@ tests/                  225 tests; models and LLMs stubbed, runs in ~11 s
 
 ## Limitations
 
-- The corpus is one company, four quarters, filings rendered from HTML. Real scanned or multi-column annual reports will stress the PDF parser in ways this corpus does not; the eval is built so that adding them is a manifest entry plus questions.
+- The measured corpus is one company; the second (Tata Steel) exposed five parser and retrieval defects on its first pass and does not yet have a clean full measurement. Industries whose commitments are long-dated and qualitative (steel: "by 2030", "by March 2026", "we will engage with the government") yield more UNVERIFIABLE verdicts and fewer graded ones — by design, but it means less coverage than on an IT-services company. Scanned PDFs (no text layer) are flagged, not read.
+- The annual report's tables: 1,519 of its 2,934 rows carry no column headers after parsing; questions over the report are not yet measured.
 - Walk-the-Talk labels: 25 claims, one labeller. κ 0.76 on 23 matched claims is a direction, not a measurement, until the set is larger and a second labeller has graded it; two of the three remaining disagreements are a labelling judgement (a tax rate that came in below its guided range because of a one-off reversal).
 - Correctness and faithfulness are LLM-judged (a different model family from the generator) against references written from the filings, not audited by a second person.
 - Reranking with v2-m3 costs ~1 s/query; latency work (candidate pruning, batching) is not done.
