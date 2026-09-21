@@ -48,6 +48,8 @@ def cmd_docs(args) -> int:
             print(
                 f"{d.id:>4}  {d.symbol:8} {d.doc_type:14} {period:9} {d.status:10} {d.chunk_count or 0:>6}  {Path(d.pdf_path or '').name}"
             )
+            for w in json.loads(d.parse_health)["warnings"] if d.parse_health else []:
+                print(f"      ! {w}")
     return 0
 
 

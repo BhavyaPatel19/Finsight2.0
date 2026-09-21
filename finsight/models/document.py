@@ -22,6 +22,7 @@ class Document(SQLModel, table=True):
     status: str = Field(default="pending", index=True)  # pending|downloading|processing|indexed|error
     error_message: str | None = None
     chunk_count: int = Field(default=0)
+    parse_health: str | None = None  # JSON from finsight.corpus.health.parse_health, set at indexing
     file_size: int | None = None  # bytes
     company_name: str | None = None
 

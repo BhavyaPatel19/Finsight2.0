@@ -97,7 +97,7 @@ def document_process(
         "status": doc.status,
         "chunk_count": doc.chunk_count,
         "error": doc.error_message,
-        **{k: v for k, v in result.items() if k in ("chunks", "sentences", "total_pages", "seconds")},
+        **{k: v for k, v in result.items() if k in ("chunks", "sentences", "total_pages", "seconds", "health")},
     }
 
 

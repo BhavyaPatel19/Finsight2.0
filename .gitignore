@@ -55,4 +55,4 @@ npm-debug.log*
 *.tmp
 
 # fine-tuned weights (large; publish to the Hub instead)
-models/
+/models/

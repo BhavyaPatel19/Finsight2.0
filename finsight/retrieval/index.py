@@ -9,14 +9,17 @@ Retrieval v2 index: chunks and sentences from finsight.corpus, in ChromaDB
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
+from pathlib import Path
 
 from sqlmodel import Session
 
 from finsight import config
 from finsight.corpus import chunk_elements, parse_document
+from finsight.corpus.health import parse_health
 from finsight.models import Document
 from finsight.retrieval.text import tokenize
 
@@ -109,6 +112,9 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
             raise ValueError("No text extracted")
         header = context_header(doc)
         chunks = chunk_elements(parsed.elements, header=header)
+        health = parse_health(doc.doc_type, parsed.elements, chunks)
+        for w in health["warnings"]:
+            logger.warning("parse health, document %d (%s): %s", document_id, Path(doc.pdf_path).name, w)
         delete_document(document_id)
         _write_text_and_pages(session, doc, parsed)
 
@@ -173,6 +179,7 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
         doc.status = "indexed"
         doc.chunk_count = len(chunks)
         doc.error_message = None
+        doc.parse_health = json.dumps(health)
         session.add(doc)
         session.commit()
         return {
@@ -182,6 +189,7 @@ def index_document(session: Session, document_id: int, *, force: bool = False) -
             "sentences": len(s_ids),
             "total_pages": parsed.total_pages,
             "seconds": round(time.time() - t0, 1),
+            "health": health,
         }
     except Exception as e:
         logger.exception("index_document failed for %s", document_id)
