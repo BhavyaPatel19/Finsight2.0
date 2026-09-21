@@ -188,12 +188,18 @@ def _clean_target(t) -> dict | None:
     return out
 
 
+# Batches the provider failed on in the last extract_claims() call (rate limits, quota). A run
+# with failures has unread transcript and must not be cached or quoted as a measurement.
+last_extraction = {"batches": 0, "failed": 0}
+
+
 async def extract_claims(
     candidates: list[dict], *, model: str | None = None, batch_size: int = 12, parallel: int = 1
 ) -> list[Claim]:
     import asyncio
 
     batches = [candidates[i : i + batch_size] for i in range(0, len(candidates), batch_size)]
+    last_extraction.update(batches=len(batches), failed=0)
     sem = asyncio.Semaphore(max(1, parallel))
     claims: list[Claim] = []
 
@@ -207,6 +213,7 @@ async def extract_claims(
                 )
             except LLMError as e:
                 logger.warning("claim extraction batch %d failed: %s", bi, e)
+                last_extraction["failed"] += 1
                 return []
         items = _parse_json(resp.text).get("claims") or []
         out = []

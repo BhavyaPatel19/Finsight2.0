@@ -86,6 +86,10 @@ def delete_document(document_id: int) -> None:
 def invalidate() -> None:
     _bm25["dirty"] = True
     _chunk_cache.clear()
+    from finsight.verification import evidence, pipeline
+
+    evidence.clear_cache()
+    pipeline.clear_cache()
 
 
 def index_document(session: Session, document_id: int, *, force: bool = False) -> dict:

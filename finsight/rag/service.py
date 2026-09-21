@@ -31,7 +31,9 @@ def get_embedding_model():
     if _embedding_model is None:
         from sentence_transformers import SentenceTransformer
 
-        _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+        from finsight.config import MODEL_DEVICE
+
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL, device=None if MODEL_DEVICE == "auto" else MODEL_DEVICE)
     return _embedding_model
 
 

@@ -579,3 +579,60 @@ def test_change_targets_are_directional_and_left_to_the_judge():
     assert is_directional(c)
     # a $27 reduction against a promised $15 reduction must not be read as a cost of 27 vs a cap of 15
     assert vd.numeric_verdict(c.target, 27.0, "coal cost") is None
+
+
+class TestCaches:
+    def test_extraction_is_cached_per_document_and_prompt(self, monkeypatch):
+        import asyncio
+
+        from finsight.verification import pipeline
+
+        pipeline.clear_cache()
+        calls = {"n": 0}
+
+        async def fake_extract(cands, **kw):
+            calls["n"] += 1
+            from finsight.verification.claims import last_extraction
+
+            last_extraction.update(batches=1, failed=0)
+            return [_claim(None)]
+
+        monkeypatch.setattr(pipeline, "extract_claims", fake_extract)
+        key = (1, None, hash(pipeline.EXTRACT_PROMPT), 10, "t")
+        assert key not in pipeline._claims_cache
+        pipeline._claims_cache[key] = asyncio.run(fake_extract([]))
+        assert calls["n"] == 1 and pipeline._claims_cache[key]
+        pipeline.clear_cache()
+        assert not pipeline._claims_cache
+
+    def test_failed_batches_are_counted_and_not_cached(self, monkeypatch):
+        import asyncio
+
+        from finsight.llm import LLMError
+        from finsight.verification import claims as cl
+
+        async def boom(prompt, **kw):
+            raise LLMError("429")
+
+        monkeypatch.setattr(cl, "agenerate", boom)
+        out = asyncio.run(cl.extract_claims([{"sentence": "We expect margins to improve.", "chunk_id": "d1:c1"}] * 13))
+        assert out == [] and cl.last_extraction == {"batches": 2, "failed": 2}
+
+    def test_retrieval_cache_keyed_on_query_and_documents(self, monkeypatch):
+        from finsight.verification import evidence as ev
+
+        ev.clear_cache()
+        calls = {"n": 0}
+
+        def fake_retrieve(session, query, document_ids=None, **kw):
+            calls["n"] += 1
+            return {"chunks": []}
+
+        monkeypatch.setattr(ev, "retrieve", fake_retrieve)
+        ev._retrieve(None, "q", [2, 1], top_k=8)
+        ev._retrieve(None, "q", [1, 2], top_k=8)  # same documents, different order
+        ev._retrieve(None, "q", [1, 3], top_k=8)
+        assert calls["n"] == 2
+        ev.clear_cache()
+        ev._retrieve(None, "q", [1, 2], top_k=8)
+        assert calls["n"] == 3

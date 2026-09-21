@@ -69,6 +69,9 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 # v2-m3 (568M) discriminates within a document far better than -base, which mostly matched the
 # chunk header; measured in eval/results/HISTORY.md. ~1 s for 20 candidates on Apple silicon.
 RERANKER_MODEL = os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-m3")
+# Where the embedder and reranker run: "auto" (MPS/CUDA when present) or "cpu" — set cpu to keep a
+# background eval off the GPU while the machine is in use.
+MODEL_DEVICE = os.getenv("MODEL_DEVICE", "auto")
 
 # ChromaDB
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", str(PROJECT_ROOT / f"chroma_db{_SUFFIX}"))

@@ -11,9 +11,11 @@ def get_reranker():
     if _reranker is None:
         from sentence_transformers import CrossEncoder
 
-        from finsight.config import RERANKER_MODEL
+        from finsight.config import MODEL_DEVICE, RERANKER_MODEL
 
-        _reranker = CrossEncoder(RERANKER_MODEL, max_length=512)
+        _reranker = CrossEncoder(
+            RERANKER_MODEL, max_length=512, device=None if MODEL_DEVICE == "auto" else MODEL_DEVICE
+        )
     return _reranker
 
 

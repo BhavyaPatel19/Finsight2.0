@@ -161,13 +161,64 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
     }
 
 
+def evidence_only(session, gold: list[dict], id_by_key: dict[str, int]) -> dict:
+    """Two offline instruments, no LLM, seconds:
+
+    candidate coverage — is each labelled claim's sentence among the cue-gated candidates the
+                         extractor is shown? (a claim the gate drops can never be graded)
+    evidence hit@8     — does per-claim evidence retrieval over the actuals period return a block
+                         containing one of the labelled evidence quotes? (a verdict cannot be right
+                         without it)  Claims labelled without evidence quotes are skipped.
+    """
+    from eval.retrieval import _norm
+    from finsight.models import Document
+    from finsight.retrieval import index as ix
+    from finsight.verification.claims import Claim, candidate_sentences
+    from finsight.verification.evidence import actuals_documents, find_components, find_evidence
+
+    chunks = ix.all_chunks()
+    cands_by_doc: dict[int, list[str]] = {}
+    rows = []
+    for g in gold:
+        cid, aid = id_by_key[g["claims_doc"]], id_by_key[g["actuals_doc"]]
+        if cid not in cands_by_doc:
+            doc_chunks = [c for c in chunks if c["metadata"].get("document_id") == cid]
+            cands_by_doc[cid] = [_norm(c["sentence"]) for c in candidate_sentences(doc_chunks)]
+        nq = _norm(re.sub(r"\[.*?\]\s*", "", g["claim"]))
+        candidate = any(nq in s or s in nq for s in cands_by_doc[cid] if len(s) > 20)
+
+        quotes = [_norm(e["quote"]) for e in g.get("evidence") or [] if e.get("quote")]
+        found = None
+        if quotes:
+            claim = Claim("g", g["claim"], g["claim"], g.get("category") or "other", None, None, None, "")
+            doc_ids = actuals_documents(session, session.get(Document, aid))
+            evidence = find_evidence(session, claim, doc_ids) + find_components(session, claim, doc_ids)
+            texts = [_norm(e["text"]) for e in evidence]
+            found = any(q in t for q in quotes for t in texts)
+        rows.append({"id": g["id"], "candidate": candidate, "evidence_found": found, "human": g["human_verdict"]})
+        flag = ("✓" if candidate else "✗") + ("  " if found is None else ("✓" if found else "✗"))
+        print(f"    {flag} {g['id']} candidate={candidate!s:5} evidence={'n/a' if found is None else found}")
+
+    with_ev = [r for r in rows if r["evidence_found"] is not None]
+    return {
+        "labelled": len(rows),
+        "candidate_coverage": round(sum(r["candidate"] for r in rows) / len(rows), 4) if rows else None,
+        "not_candidates": [r["id"] for r in rows if not r["candidate"]],
+        "evidence_hit@8": round(sum(r["evidence_found"] for r in with_ev) / len(with_ev), 4) if with_ev else None,
+        "evidence_n": len(with_ev),
+        "evidence_missed": [r["id"] for r in with_ev if not r["evidence_found"]],
+        "rows": rows,
+    }
+
+
 async def run_pair(session, claims_id: int, actuals_id: int, engine: str = "v1") -> tuple[list[dict], dict]:
     from finsight.models import Document
 
     if engine == "v2":
-        from finsight.verification import verify
+        from finsight.verification import pipeline, verify
 
         result = await verify(session, claims_id, actuals_id)
+        stats = dict(pipeline.last_run)
     else:
         from finsight.credisentiment.pipeline import process_for_credisentiment
         from finsight.credisentiment.service import walk_the_talk
@@ -177,10 +228,11 @@ async def run_pair(session, claims_id: int, actuals_id: int, engine: str = "v1")
             if doc.cs_status != "indexed":
                 process_for_credisentiment(session, doc_id)
         result = await walk_the_talk(session, claims_id, actuals_id)
+        stats = {}
     if result is None:
-        return [], {}
+        return [], stats
     claims = json.loads(result.claims_json or "[]")
-    return claims, {"overall_score": result.overall_score, "narrative": result.narrative_summary}
+    return claims, {"overall_score": result.overall_score, "narrative": result.narrative_summary, **stats}
 
 
 def main() -> None:
@@ -196,6 +248,11 @@ def main() -> None:
         default=None,
         help="document manifest the gold's document keys refer to (default: eval/gold/documents.json)",
     )
+    ap.add_argument(
+        "--evidence-only",
+        action="store_true",
+        help="no LLM: candidate coverage and evidence hit@8 for the labelled claims (seconds)",
+    )
     args = ap.parse_args()
 
     os.environ.setdefault("SECRET_KEY", "eval")
@@ -207,6 +264,29 @@ def main() -> None:
 
     gold = [json.loads(line) for line in args.gold.read_text().splitlines() if line.strip()]
     pairs = sorted({(g["claims_doc"], g["actuals_doc"]) for g in gold})
+
+    if args.evidence_only:
+        with Session(engine) as session:
+            id_by_key = {
+                v: k
+                for k, v in (doc_key_by_id(session, args.manifest) if args.manifest else doc_key_by_id(session)).items()
+            }
+            print(f"{len(gold)} labelled claims; candidate coverage + evidence hit@8, no LLM")
+            out = evidence_only(session, gold, id_by_key)
+        report = {
+            "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
+            "git_sha": git_sha(),
+            "tag": args.tag,
+            "gold": str(args.gold.relative_to(ROOT)) if args.gold.is_relative_to(ROOT) else str(args.gold),
+            **out,
+        }
+        RESULTS.mkdir(parents=True, exist_ok=True)
+        name = args.tag or datetime.now().strftime("%Y-%m-%d")
+        (RESULTS / f"wtt_evidence_{name}.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
+        print(json.dumps({k: v for k, v in out.items() if k != "rows"}, indent=1))
+        print(f"wrote eval/results/wtt_evidence_{name}.json")
+        return
+
     provider = get_provider()
     print(f"{len(gold)} labelled claims across {len(pairs)} pairs; model {provider.default_model} via {provider.name}")
 
@@ -233,6 +313,9 @@ def main() -> None:
                     f"    {flag} {r['id']} human={r['human']:8s} system={r['system'] or 'not found':10s} sim={r['similarity']}"
                 )
 
+    summary = summarise(rows, system_counts)
+    summary["extraction_failed_batches"] = sum(m.get("extraction_failed", 0) for m in pair_meta.values())
+    summary["system_claims_total"] = sum(system_counts.values())
     report = {
         "timestamp": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_sha": git_sha(),
@@ -241,7 +324,7 @@ def main() -> None:
         "provider": provider.name,
         "model": provider.default_model,
         "engine": args.engine,
-        "summary": summarise(rows, system_counts),
+        "summary": summary,
         "pairs": pair_meta,
         "rows": rows,
     }

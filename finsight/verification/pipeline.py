@@ -21,7 +21,7 @@ from finsight.config import WTT_MODEL
 from finsight.llm import LLMError, agenerate, get_provider
 from finsight.models import Document, WalkTheTalkResult
 from finsight.retrieval import index as ix
-from finsight.verification.claims import candidate_sentences, extract_claims
+from finsight.verification.claims import EXTRACT_PROMPT, Claim, candidate_sentences, extract_claims, last_extraction
 from finsight.verification.evidence import (
     actuals_documents,
     find_baseline,
@@ -62,6 +62,18 @@ def _parallel() -> int:
     return 4
 
 
+# Claims extracted from a document do not depend on the actuals document, so the eval's three
+# pairs that start from the same call and a user comparing one call with several later periods
+# pay for extraction once. Keyed on the prompt too, so a prompt change is never served stale.
+_claims_cache: dict[tuple, list[Claim]] = {}
+# What the last verify() cost and lost — read by the eval so a contaminated run is visible.
+last_run = {"extraction_batches": 0, "extraction_failed": 0, "verdict_errors": 0, "claims_from_cache": False}
+
+
+def clear_cache() -> None:
+    _claims_cache.clear()
+
+
 def overall_score(verdicts: list[str]) -> float | None:
     graded = [SCORE[v] for v in verdicts if v in SCORE]
     return round(sum(graded) / len(graded) * 100, 1) if graded else None
@@ -83,7 +95,16 @@ async def verify(
         return None
     cands = candidate_sentences(chunks)
     logger.info("WTT v2: %d candidate sentences from %d chunks", len(cands), len(chunks))
-    claims = await extract_claims(cands, model=model, parallel=parallel)
+    key = (claims_document_id, model, hash(EXTRACT_PROMPT), claims_doc.chunk_count, str(claims_doc.ingested_at))
+    claims = _claims_cache.get(key)
+    last_run.update(extraction_batches=0, extraction_failed=0, verdict_errors=0, claims_from_cache=claims is not None)
+    if claims is None:
+        claims = await extract_claims(cands, model=model, parallel=parallel)
+        last_run.update(extraction_batches=last_extraction["batches"], extraction_failed=last_extraction["failed"])
+        if claims and not last_extraction["failed"]:
+            _claims_cache[key] = claims
+    else:
+        logger.info("WTT v2: claims for document %d served from cache", claims_document_id)
     logger.info("WTT v2: %d claims extracted", len(claims))
     if not claims:
         return None
@@ -125,6 +146,7 @@ async def verify(
                 "met": {"MET": True, "MISSED": False}.get(v.verdict),
             }
         )
+    last_run["verdict_errors"] = sum(1 for r in rows if str(r.get("explanation") or "").startswith("LLM error"))
     verdicts = [r["verdict"] for r in rows]
     score = overall_score(verdicts)
     counts = {k: verdicts.count(k) for k in ("MET", "PARTIAL", "MISSED", "UNVERIFIABLE")}

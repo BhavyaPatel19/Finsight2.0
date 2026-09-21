@@ -14,6 +14,26 @@ from finsight.models import Document
 from finsight.retrieval.search import retrieve
 from finsight.verification.claims import Claim
 
+# Evidence for the same claim against the same period is retrieved once per process: the eval
+# runs several pairs that share an actuals period, and the app re-runs a document pair when a
+# user reopens it. Cleared by finsight.retrieval.index.invalidate() when the index changes.
+_retrieval_cache: dict[tuple, dict] = {}
+_CACHE_MAX = 2048
+
+
+def clear_cache() -> None:
+    _retrieval_cache.clear()
+
+
+def _retrieve(session: Session, query: str, document_ids: list[int], **kw) -> dict:
+    key = (query, tuple(sorted(document_ids)), tuple(sorted(kw.items())))
+    hit = _retrieval_cache.get(key)
+    if hit is None:
+        if len(_retrieval_cache) >= _CACHE_MAX:
+            _retrieval_cache.clear()
+        hit = _retrieval_cache[key] = retrieve(session, query, document_ids=document_ids, **kw)
+    return hit
+
 
 def period_documents(session: Session, doc: Document) -> list[int]:
     """All indexed documents for the same symbol and period as `doc`."""
@@ -55,13 +75,8 @@ def find_components(session: Session, claim: Claim, document_ids: list[int], top
         return []
     out: list[dict] = []
     for q in ratio.queries:
-        res = retrieve(
-            session,
-            f"{q} {claim.period or ''}",
-            top_k=top_k + 2,
-            document_ids=document_ids,
-            candidates=16,
-            use_period=False,
+        res = _retrieve(
+            session, f"{q} {claim.period or ''}", document_ids, top_k=top_k + 2, candidates=16, use_period=False
         )
         hits = sorted(
             res["chunks"],
@@ -121,9 +136,7 @@ def outcome_weight(text: str, kind: str | None) -> float:
 
 
 def find_evidence(session: Session, claim: Claim, document_ids: list[int], top_k: int = 8) -> list[dict]:
-    res = retrieve(
-        session, evidence_query(claim), top_k=top_k + 4, document_ids=document_ids, candidates=24, use_period=False
-    )
+    res = _retrieve(session, evidence_query(claim), document_ids, top_k=top_k + 4, candidates=24, use_period=False)
     ranked = sorted(
         res["chunks"],
         key=lambda h: (h.get("reranker_score") or 0.0) * outcome_weight(h["text"], h["metadata"].get("kind")),
