@@ -169,7 +169,7 @@ def rejudge(path: Path, judge_model: str | None) -> None:
 
 
 def summarise(rows: list[dict]) -> dict:
-    from eval.metrics import mean
+    from eval.metrics import mean, wilson_ci
 
     ok = [r for r in rows if "error" not in r]
     ans = [r for r in ok if r["answerable"]]
@@ -198,6 +198,7 @@ def summarise(rows: list[dict]) -> dict:
         if grades
         else None,
         "correctness_n": len(grades),
+        "correct_ci95": wilson_ci(grades.count("correct"), len(grades)) if grades else None,
         "latency_ms_mean": round(mean([r["latency_ms"] for r in ok])) if ok else None,
         "by_type": {
             t: {

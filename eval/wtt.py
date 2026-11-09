@@ -116,7 +116,7 @@ def match_claims(gold: list[dict], system: list[dict]) -> list[dict]:
 
 
 def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
-    from eval.metrics import cohen_kappa, mean
+    from eval.metrics import bootstrap_ci, cohen_kappa, mean, wilson_ci
 
     matched = [r for r in rows if r["matched"]]
     abstained = [r for r in matched if r["system"] == "UNVERIFIABLE"]
@@ -154,6 +154,17 @@ def summarise(rows: list[dict], system_counts: dict[str, int]) -> dict:
         if abstained
         else None,
         "kappa": kappa,
+        # 95 % intervals: with a few dozen labelled claims these are wide, and that is the point.
+        "ci95": {
+            "claim_recall": wilson_ci(len(matched), len(rows)),
+            "verdict_accuracy": wilson_ci(len(agree), len(matched)),
+            "kappa": bootstrap_ci(
+                [(r["human"], r["system"]) for r in matched],
+                lambda s: cohen_kappa([h for h, _ in s], [y for _, y in s]),
+            )
+            if len(matched) >= 5
+            else None,
+        },
         "confusion": confusion,
         "system_claims": system_counts,
         "mean_match_similarity": round(mean([r["similarity"] for r in matched]), 3) if matched else None,
@@ -333,6 +344,10 @@ def main() -> None:
     (RESULTS / f"wtt_{name}.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     s = report["summary"]
     print(json.dumps({k: v for k, v in s.items() if k != "confusion"}, indent=1))
+    ci = s.get("ci95") or {}
+    if ci.get("verdict_accuracy"):
+        lo, hi = ci["verdict_accuracy"]
+        print(f"verdict accuracy {s['verdict_accuracy']:.2f} (95 % CI {lo:.2f}–{hi:.2f}, n={s['matched']})")
     print("confusion (human → system):", json.dumps(s["confusion"]))
     print(f"wrote eval/results/wtt_{name}.json")
 

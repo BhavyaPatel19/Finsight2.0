@@ -166,6 +166,9 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
         return round(mean([q[field] for q in rows]), 4)
 
     types = sorted({q["type"] for q in per_q})
+    from eval.metrics import bootstrap_ci, wilson_ci
+
+    hits5 = sum(int(q["hit@5"]) for q in per_q)
     return {
         "mode": mode,
         "k": k,
@@ -177,6 +180,10 @@ def evaluate_mode(session, gold: list[dict], mode: str, k: int, candidates: int,
         f"hit@{k}": agg(f"hit@{k}"),
         "mrr": agg("rr"),
         "ndcg": agg("ndcg"),
+        "ci95": {
+            "hit@5": wilson_ci(hits5, len(per_q)),
+            "mrr": bootstrap_ci([q["rr"] for q in per_q], mean),
+        },
         "p@5": agg("p@5"),
         "page_hit@5": agg("page_hit@5"),
         "hit@6k": agg("hit@6k"),
