@@ -4,11 +4,13 @@
 
 FinSight ingests earnings-call transcripts, press releases, fact sheets and annual reports (PDF or HTML), answers questions with page-level citations, and checks whether management *walked the talk*: it extracts forward-looking commitments from one quarter's call and grades them **MET / MISSED / PARTIAL / UNVERIFIABLE** against the next period's filings, with the evidence quote for every verdict. A React dashboard wraps it with market data, watchlists and FinBERT sentiment by division.
 
-[![CI](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml/badge.svg?branch=experiment%2Faccuracy-redesign)](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml)
+[![CI](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BhavyaPatel19/Finsight2.0/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 
-> **Branches.** `main` is the original project as built. This branch, `experiment/accuracy-redesign`, is a from-scratch rebuild of the accuracy-critical core — ingestion, retrieval, verification — driven by an audit of every process ([docs/PIPELINE_AUDIT.md](docs/PIPELINE_AUDIT.md)) and measured at every step ([eval/results/HISTORY.md](eval/results/HISTORY.md)).
+**[Live demo →](https://bhavyapatel19.github.io/Finsight2.0/)** — the app with answers, citations and Walk the Talk verdicts recorded from a full local run and replayed in the browser ([how](#recorded-demo)).
+
+> **History.** This is a from-scratch rebuild of the original project's accuracy-critical core — ingestion, retrieval, verification — driven by an audit of every process ([docs/PIPELINE_AUDIT.md](docs/PIPELINE_AUDIT.md)) and measured at every step ([eval/results/HISTORY.md](eval/results/HISTORY.md)). The original pipeline's numbers are the "original pipeline" rows below.
 
 ---
 
@@ -110,7 +112,7 @@ Two texts per chunk: the **verbatim** source (what citations quote, what the use
 Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+. Optional: Ollama (local models), Chrome (to render the sample PDFs).
 
 ```bash
-git clone -b experiment/accuracy-redesign https://github.com/BhavyaPatel19/Finsight2.0.git && cd Finsight2.0
+git clone https://github.com/BhavyaPatel19/Finsight2.0.git && cd Finsight2.0
 make install                              # uv sync + npm ci
 
 cp .env.example .env
@@ -126,6 +128,20 @@ cd frontend && npm run dev                        # UI on http://localhost:5173
 Register a user, open **Chat**, select the seeded documents and ask *"What FY26 guidance did Infosys give in April 2025, and what did it deliver?"*. Open **CrediSentiment → Walk the Talk**, pick the Q4 FY25 call as claims and the Q4 FY26 call as actuals.
 
 **Fully local:** install [Ollama](https://ollama.ai), `ollama pull qwen3:14b` (or any chat model), leave `GROQ_API_KEY` unset. The first run downloads `bge-base-en-v1.5` (embeddings) and `bge-reranker-v2-m3` (~2 GB); reranking costs ~1 s per query on Apple silicon.
+
+
+### Recorded demo
+
+The hosted demo is this frontend built with `VITE_DEMO=1`: the API client answers from `frontend/public/demo/recordings.json` instead of a server ([`frontend/src/api/demo.js`](frontend/src/api/demo.js)). To refresh it, with the full stack running as above:
+
+```bash
+cd frontend && VITE_RECORD=1 npm run dev     # a "Download recordings" button appears bottom-right
+# Chat: ask the questions you want shown · CrediSentiment: run Walk the Talk and Analyze
+# then download, and:
+mv ~/Downloads/finsight-recordings.json public/demo/recordings.json
+```
+
+Auth, Zerodha, portfolio and watchlist calls are never recorded, so the file holds no account data. Pushing it to `main` redeploys the site (`.github/workflows/pages.yml`).
 
 ---
 

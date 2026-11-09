@@ -28,4 +28,6 @@ export default [
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
+  // Build config runs in Node.
+  { files: ['vite.config.js'], languageOptions: { globals: globals.node } },
 ]
