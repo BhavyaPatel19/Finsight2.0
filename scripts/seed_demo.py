@@ -213,7 +213,7 @@ def main() -> None:
         for key, path in paths.items():
             by_key[key]["sha256"] = sha256(path)
         args.manifest.write_text(json.dumps(manifest, indent=2) + "\n")
-        logger.info("wrote hashes to %s", args.manifest.relative_to(ROOT))
+        logger.info("wrote hashes to %s", args.manifest.resolve().relative_to(ROOT))
 
 
 if __name__ == "__main__":

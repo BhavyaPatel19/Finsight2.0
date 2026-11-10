@@ -309,3 +309,15 @@ class TestCerebras:
         assert resolve_provider_name() == "cerebras"
         monkeypatch.setattr(config, "CEREBRAS_API_KEY", "")
         assert resolve_provider_name() == "ollama"
+
+
+def test_token_meter_counts_and_refuses_past_cap() -> None:
+    from finsight.llm.base import LLMError, LLMResponse, TokenMeter
+
+    m = TokenMeter(cap=100)
+    m.check("cerebras")  # under cap: sends
+    m.add(LLMResponse(text="x", model="m", provider="cerebras", prompt_tokens=80, completion_tokens=30))
+    assert m.snapshot()["total_tokens"] == 110 and m.calls == 1
+    with pytest.raises(LLMError, match="token budget reached"):
+        m.check("cerebras")
+    TokenMeter(cap=0).check("cerebras")  # 0 = unlimited

@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from datetime import datetime
 
 from sqlmodel import Session, select
@@ -21,6 +22,7 @@ from finsight.config import WTT_MODEL
 from finsight.llm import LLMError, agenerate, get_provider
 from finsight.models import Document, WalkTheTalkResult
 from finsight.retrieval import index as ix
+from finsight.verification import disk_cache
 from finsight.verification.claims import EXTRACT_PROMPT, Claim, candidate_sentences, extract_claims, last_extraction
 from finsight.verification.evidence import (
     actuals_documents,
@@ -30,7 +32,7 @@ from finsight.verification.evidence import (
     is_directional,
     period_documents,
 )
-from finsight.verification.verdict import confidence, judge_claim
+from finsight.verification.verdict import VERIFY_PROMPT, Verdict, confidence, judge_claim
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +82,23 @@ def overall_score(verdicts: list[str]) -> float | None:
 
 
 async def verify(
-    session: Session, claims_document_id: int, actuals_document_id: int, *, model: str | None = None
+    session: Session,
+    claims_document_id: int,
+    actuals_document_id: int,
+    *,
+    model: str | None = None,
+    select_claims: Callable[[list[Claim]], list[Claim]] | None = None,
+    narrative: bool = True,
+    store: bool = True,
 ) -> WalkTheTalkResult | None:
+    """Extract claims from one call and judge each against a later period.
+
+    The keyword switches exist for evaluation and leave the app's behaviour unchanged by default:
+    ``select_claims`` narrows the extracted claims before any verdict is requested (the eval
+    judges only the claims that match a labelled one; each verdict is independent, so their
+    verdicts are the same as in a full run), ``narrative=False`` skips the summary call, and
+    ``store=False`` returns the result without replacing the saved one.
+    """
     claims_doc = session.get(Document, claims_document_id)
     actuals_doc = session.get(Document, actuals_document_id)
     if not claims_doc or not actuals_doc:
@@ -97,17 +114,27 @@ async def verify(
     logger.info("WTT v2: %d candidate sentences from %d chunks", len(cands), len(chunks))
     key = (claims_document_id, model, hash(EXTRACT_PROMPT), claims_doc.chunk_count, str(claims_doc.ingested_at))
     claims = _claims_cache.get(key)
+    prov = get_provider()
+    dkey = disk_cache.key("claims", cands, model or prov.default_model, prov.name, EXTRACT_PROMPT)
+    if claims is None and (cached := disk_cache.get("claims", dkey)) is not None:
+        claims = [Claim(**c) for c in cached]
+        _claims_cache[key] = claims
     last_run.update(extraction_batches=0, extraction_failed=0, verdict_errors=0, claims_from_cache=claims is not None)
     if claims is None:
         claims = await extract_claims(cands, model=model, parallel=parallel)
         last_run.update(extraction_batches=last_extraction["batches"], extraction_failed=last_extraction["failed"])
         if claims and not last_extraction["failed"]:
             _claims_cache[key] = claims
+            disk_cache.put("claims", dkey, [c.to_dict() for c in claims])
     else:
         logger.info("WTT v2: claims for document %d served from cache", claims_document_id)
     logger.info("WTT v2: %d claims extracted", len(claims))
     if not claims:
         return None
+    n_extracted = len(claims)
+    if select_claims is not None:
+        claims = select_claims(claims)
+        logger.info("WTT v2: judging %d of %d claims (selected)", len(claims), n_extracted)
 
     # Stage 2 — evidence from all documents of the actuals period, then a verdict per claim
     doc_ids = actuals_documents(session, actuals_doc)
@@ -121,8 +148,22 @@ async def verify(
         seen = {e["id"] for e in evidence}
         evidence += [e for e in find_components(session, claim, doc_ids) if e["id"] not in seen]
         baseline = find_baseline(session, claim, baseline_ids) if is_directional(claim) else None
+        vkey = disk_cache.key(
+            "verdict",
+            claim.to_dict(),
+            evidence,
+            baseline,
+            latest,
+            model or prov.default_model,
+            prov.name,
+            VERIFY_PROMPT,
+        )
+        if (cached := disk_cache.get("verdict", vkey)) is not None:
+            return claim, Verdict(**cached), evidence
         async with sem:
             v = await judge_claim(claim, evidence, model=model, latest_reported=latest, baseline=baseline)
+        if v.method != "llm-error" and not str(v.explanation or "").startswith("LLM error"):
+            disk_cache.put("verdict", vkey, v.to_dict())
         return claim, v, evidence
 
     results = await asyncio.gather(*(one(c) for c in claims))
@@ -154,8 +195,20 @@ async def verify(
     score = overall_score(verdicts)
     counts = {k: verdicts.count(k) for k in ("MET", "PARTIAL", "MISSED", "UNVERIFIABLE")}
 
-    narrative = await _narrative(rows, score, counts, model)
+    summary = await _narrative(rows, score, counts, model) if narrative else ""
+    last_run["claims_extracted"] = n_extracted
 
+    result = WalkTheTalkResult(
+        claims_document_id=claims_document_id,
+        actuals_document_id=actuals_document_id,
+        symbol=claims_doc.symbol,
+        overall_score=score if score is not None else 0.0,
+        claims_json=json.dumps(rows, ensure_ascii=False),
+        narrative_summary=summary,
+        computed_at=datetime.utcnow(),
+    )
+    if not store:
+        return result
     for old in session.exec(
         select(WalkTheTalkResult).where(
             WalkTheTalkResult.claims_document_id == claims_document_id,
@@ -163,15 +216,6 @@ async def verify(
         )
     ).all():
         session.delete(old)
-    result = WalkTheTalkResult(
-        claims_document_id=claims_document_id,
-        actuals_document_id=actuals_document_id,
-        symbol=claims_doc.symbol,
-        overall_score=score if score is not None else 0.0,
-        claims_json=json.dumps(rows, ensure_ascii=False),
-        narrative_summary=narrative,
-        computed_at=datetime.utcnow(),
-    )
     session.add(result)
     session.commit()
     session.refresh(result)

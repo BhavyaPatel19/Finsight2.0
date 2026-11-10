@@ -16,7 +16,7 @@ import time
 import httpx
 
 from finsight.llm._retry import apost_with_retry, post_with_retry
-from finsight.llm.base import LLMError, LLMProvider, LLMResponse
+from finsight.llm.base import METER, LLMError, LLMProvider, LLMResponse
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +128,7 @@ class GroqProvider(LLMProvider):
     ) -> LLMResponse:
         if not self.api_key:
             raise LLMError(f"{self.key_env} is not set")
+        METER.check(self.name)
         started = time.perf_counter()
         with httpx.Client(timeout=timeout or self.default_timeout, transport=self._transport) as client:
             r = post_with_retry(
@@ -136,7 +137,9 @@ class GroqProvider(LLMProvider):
                 headers=self._headers(),
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
-        return self._parse(r.json(), started)
+        resp = self._parse(r.json(), started)
+        METER.add(resp)
+        return resp
 
     async def agenerate(
         self,
@@ -152,6 +155,7 @@ class GroqProvider(LLMProvider):
     ) -> LLMResponse:
         if not self.api_key:
             raise LLMError(f"{self.key_env} is not set")
+        METER.check(self.name)
         started = time.perf_counter()
         async with httpx.AsyncClient(
             timeout=timeout or self.default_timeout, transport=self._async_transport
@@ -162,7 +166,9 @@ class GroqProvider(LLMProvider):
                 headers=self._headers(),
                 json=self._payload(prompt, model, max_tokens, temperature, json_mode, system, think),
             )
-        return self._parse(r.json(), started)
+        resp = self._parse(r.json(), started)
+        METER.add(resp)
+        return resp
 
     def available_models(self) -> list[dict]:
         if not self.api_key:

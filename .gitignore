@@ -56,3 +56,6 @@ npm-debug.log*
 
 # fine-tuned weights (large; publish to the Hub instead)
 /models/
+
+# Walk-the-Talk eval cache (LLM claims and verdicts)
+eval/.cache/
