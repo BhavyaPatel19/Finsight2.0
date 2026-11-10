@@ -74,10 +74,14 @@ def similarity(a: str, b: str) -> float:
     return words
 
 
-def match_claims(gold: list[dict], system: list[dict]) -> list[dict]:
-    """Greedy best-match of each gold claim to an unused system claim."""
+def greedy_match(gold: list[dict], system: list[dict]) -> list[tuple[dict, int | None, float]]:
+    """Greedy best-match of each gold claim to an unused system claim, by claim text only.
+
+    Returns (gold claim, index of its system claim or None, similarity). Scoring and the
+    --labelled-only claim selection both use this, so they always agree on which claims match.
+    """
     used: set[int] = set()
-    out = []
+    out: list[tuple[dict, int | None, float]] = []
     for g in gold:
         best, best_i = 0.0, None
         for i, s in enumerate(system):
@@ -88,6 +92,17 @@ def match_claims(gold: list[dict], system: list[dict]) -> list[dict]:
                 best, best_i = sim, i
         if best_i is not None and best >= MATCH_THRESHOLD:
             used.add(best_i)
+            out.append((g, best_i, best))
+        else:
+            out.append((g, None, best))
+    return out
+
+
+def match_claims(gold: list[dict], system: list[dict]) -> list[dict]:
+    """Each gold claim with its matched system claim's verdict (see greedy_match)."""
+    out = []
+    for g, best_i, best in greedy_match(gold, system):
+        if best_i is not None:
             sys_claim = system[best_i]
             out.append(
                 {
@@ -222,13 +237,31 @@ def evidence_only(session, gold: list[dict], id_by_key: dict[str, int]) -> dict:
     }
 
 
-async def run_pair(session, claims_id: int, actuals_id: int, engine: str = "v1") -> tuple[list[dict], dict]:
+async def run_pair(
+    session, claims_id: int, actuals_id: int, engine: str = "v1", gold: list[dict] | None = None
+) -> tuple[list[dict], dict]:
+    """Run Walk-the-Talk on one pair. With ``gold`` (v2 only), judge just the extracted claims
+    that match a labelled claim; verdicts are per-claim, so theirs equal a full run's."""
     from finsight.models import Document
 
     if engine == "v2":
         from finsight.verification import pipeline, verify
 
-        result = await verify(session, claims_id, actuals_id)
+        select = None
+        if gold is not None:
+
+            def select(claims):
+                picked = {i for _, i, _ in greedy_match(gold, [c.to_dict() for c in claims]) if i is not None}
+                return [c for i, c in enumerate(claims) if i in picked]
+
+        result = await verify(
+            session,
+            claims_id,
+            actuals_id,
+            select_claims=select,
+            narrative=gold is None,
+            store=gold is None,
+        )
         stats = dict(pipeline.last_run)
     else:
         from finsight.credisentiment.pipeline import process_for_credisentiment
@@ -254,6 +287,19 @@ def main() -> None:
     )
     ap.add_argument("--gold", type=Path, default=GOLD, help="labelled claims (default: the Infosys set)")
     ap.add_argument(
+        "--labelled-only",
+        action="store_true",
+        help="v2: judge only extracted claims that match a labelled one (same metrics, ~5-10x fewer tokens); "
+        "skips the narrative and does not overwrite saved results",
+    )
+    ap.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=None,
+        help="cache extracted claims and verdicts on disk so a stopped run resumes "
+        "(default with --labelled-only: eval/.cache/wtt)",
+    )
+    ap.add_argument(
         "--manifest",
         type=Path,
         default=None,
@@ -265,13 +311,19 @@ def main() -> None:
         help="no LLM: candidate coverage and evidence hit@8 for the labelled claims (seconds)",
     )
     args = ap.parse_args()
+    if args.labelled_only and args.engine != "v2":
+        ap.error("--labelled-only needs --engine v2")
+    if args.cache_dir or args.labelled_only:
+        os.environ["WTT_DISK_CACHE"] = str(args.cache_dir or ROOT / "eval" / ".cache" / "wtt")
 
     os.environ.setdefault("SECRET_KEY", "eval")
     from sqlmodel import Session
 
     from eval.retrieval import doc_key_by_id, git_sha
+    from finsight.config import WTT_MODEL
     from finsight.database.session import engine
     from finsight.llm import get_provider
+    from finsight.llm.base import METER
 
     gold = [json.loads(line) for line in args.gold.read_text().splitlines() if line.strip()]
     pairs = sorted({(g["claims_doc"], g["actuals_doc"]) for g in gold})
@@ -299,7 +351,9 @@ def main() -> None:
         return
 
     provider = get_provider()
-    print(f"{len(gold)} labelled claims across {len(pairs)} pairs; model {provider.default_model} via {provider.name}")
+    print(
+        f"{len(gold)} labelled claims across {len(pairs)} pairs; model {WTT_MODEL or provider.default_model} via {provider.name}"
+    )
 
     rows, system_counts, pair_meta = [], {}, {}
     with Session(engine) as session:
@@ -310,14 +364,21 @@ def main() -> None:
         for claims_key, actuals_key in pairs:
             label = f"{claims_key} → {actuals_key}"
             print(f"  running {label} …", flush=True)
-            system, meta = asyncio.run(
-                run_pair(session, id_by_key[claims_key], id_by_key[actuals_key], engine=args.engine)
-            )
-            system_counts[label] = len(system)
-            pair_meta[label] = meta
             subset = [g for g in gold if (g["claims_doc"], g["actuals_doc"]) == (claims_key, actuals_key)]
+            system, meta = asyncio.run(
+                run_pair(
+                    session,
+                    id_by_key[claims_key],
+                    id_by_key[actuals_key],
+                    engine=args.engine,
+                    gold=subset if args.labelled_only else None,
+                )
+            )
+            system_counts[label] = meta.get("claims_extracted", len(system)) if args.labelled_only else len(system)
+            pair_meta[label] = meta
             matched = match_claims(subset, system)
             rows.extend(matched)
+            print(f"    tokens so far: {METER.total:,} in {METER.calls} calls", flush=True)
             for r in matched:
                 flag = "✓" if r["matched"] and r["system"] == r["human"] else ("✗" if r["matched"] else "–")
                 print(
@@ -333,10 +394,12 @@ def main() -> None:
         "tag": args.tag,
         "gold": str(args.gold.relative_to(ROOT)) if args.gold.is_relative_to(ROOT) else str(args.gold),
         "provider": provider.name,
-        "model": provider.default_model,
+        "model": WTT_MODEL or provider.default_model,  # the model Walk-the-Talk actually ran
         "engine": args.engine,
+        "mode": "labelled-only" if args.labelled_only else "full",
         "summary": summary,
         "pairs": pair_meta,
+        "usage": METER.snapshot(),
         "rows": rows,
     }
     RESULTS.mkdir(parents=True, exist_ok=True)
@@ -349,6 +412,11 @@ def main() -> None:
         lo, hi = ci["verdict_accuracy"]
         print(f"verdict accuracy {s['verdict_accuracy']:.2f} (95 % CI {lo:.2f}–{hi:.2f}, n={s['matched']})")
     print("confusion (human → system):", json.dumps(s["confusion"]))
+    u = METER.snapshot()
+    print(
+        f"usage: {u['total_tokens']:,} tokens ({u['prompt_tokens']:,} in / "
+        f"{u['completion_tokens']:,} out) in {u['calls']} calls"
+    )
     print(f"wrote eval/results/wtt_{name}.json")
 
 

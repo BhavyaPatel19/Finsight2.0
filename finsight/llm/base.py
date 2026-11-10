@@ -9,6 +9,8 @@ directly, so swapping hosted ↔ local is a config change, not a code change.
 from __future__ import annotations
 
 import abc
+import os
+import threading
 from dataclasses import dataclass
 
 
@@ -30,6 +32,51 @@ class LLMResponse:
         if self.prompt_tokens is None or self.completion_tokens is None:
             return None
         return self.prompt_tokens + self.completion_tokens
+
+
+class TokenMeter:
+    """Process-wide count of hosted-API tokens, with an optional hard cap.
+
+    ``check()`` runs before every request and refuses to send once the cap is reached, so a
+    paid run can never spend more than ``cap`` tokens plus whatever requests are already in
+    flight. ``cap=0`` means no limit.
+    """
+
+    def __init__(self, cap: int = 0) -> None:
+        self.cap = cap
+        self.prompt = 0
+        self.completion = 0
+        self.calls = 0
+        self._lock = threading.Lock()
+
+    @property
+    def total(self) -> int:
+        return self.prompt + self.completion
+
+    def check(self, provider: str) -> None:
+        if self.cap and self.total >= self.cap:
+            raise LLMError(
+                f"token budget reached: {self.total:,} of LLM_MAX_TOTAL_TOKENS={self.cap:,} "
+                f"used; not sending more requests to {provider}"
+            )
+
+    def add(self, resp: LLMResponse) -> None:
+        with self._lock:
+            self.calls += 1
+            self.prompt += resp.prompt_tokens or 0
+            self.completion += resp.completion_tokens or 0
+
+    def snapshot(self) -> dict[str, int]:
+        return {
+            "calls": self.calls,
+            "prompt_tokens": self.prompt,
+            "completion_tokens": self.completion,
+            "total_tokens": self.total,
+            "cap": self.cap,
+        }
+
+
+METER = TokenMeter(int(os.getenv("LLM_MAX_TOTAL_TOKENS", "0") or 0))
 
 
 class LLMProvider(abc.ABC):

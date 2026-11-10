@@ -1,6 +1,6 @@
 """Claim matching and summary for the Walk-the-Talk eval (no LLM)."""
 
-from eval.wtt import match_claims, similarity, summarise
+from eval.wtt import greedy_match, match_claims, similarity, summarise
 
 
 def test_similarity_ignores_stopwords_and_brackets():
@@ -74,3 +74,35 @@ def test_abstention_metrics():
     s = summarise(rows, {"p": 4})
     assert s["abstained"] == 2 and s["abstain_recall"] == 0.5 and s["abstain_precision"] == 0.5
     assert s["verdict_accuracy"] == 0.5 and s["verdict_accuracy_on_answered"] == 1.0
+
+
+def test_labelled_only_selection_scores_like_a_full_run():
+    # --labelled-only judges just the system claims greedy_match picks. Scoring on that subset
+    # must give exactly the rows a full run gives, including decoys that compete for a match.
+    gold = [
+        {"id": "g1", "claim": "Capex of 15,000 crore in FY25", "human_verdict": "MET", "category": "capex"},
+        {
+            "id": "g2",
+            "claim": "EBITDA margin to improve to 12% next year",
+            "human_verdict": "MISSED",
+            "category": "margin",
+        },
+        {
+            "id": "g3",
+            "claim": "Launch the new plant in Odisha by March",
+            "human_verdict": "PARTIAL",
+            "category": "capacity",
+        },
+    ]
+    system = [
+        {"claim": "Dividend policy unchanged", "verdict": "MET"},
+        {"claim": "Capex of about 15,000 crore planned in FY25", "verdict": "MET"},
+        {"claim": "EBITDA margin should improve towards 12% next year", "verdict": "PARTIAL"},
+        {"claim": "Capex for FY25 at 15,000 crore", "verdict": "MISSED"},  # decoy for g1
+        {"claim": "Hiring to continue", "verdict": "MET"},
+    ]
+    full = match_claims(gold, system)
+    picked = sorted(i for _, i, _ in greedy_match(gold, system) if i is not None)
+    subset = [system[i] for i in picked]
+    assert match_claims(gold, subset) == full
+    assert len(subset) < len(system)

@@ -834,3 +834,23 @@ class TestConfidence:
             [{"id": "e1", "kind": "row"}],
         )
         assert level == "high" and any("table row" in r for r in reasons) and any("p. 3" in r for r in reasons)
+
+
+class TestDiskCache:
+    def test_off_unless_configured(self, monkeypatch):
+        from finsight.verification import disk_cache
+
+        monkeypatch.delenv("WTT_DISK_CACHE", raising=False)
+        disk_cache.put("verdict", "k", {"a": 1})
+        assert disk_cache.get("verdict", "k") is None
+
+    def test_round_trip_and_key_changes_with_inputs(self, monkeypatch, tmp_path):
+        from finsight.verification import disk_cache
+
+        monkeypatch.setenv("WTT_DISK_CACHE", str(tmp_path))
+        k = disk_cache.key("verdict", {"claim": "x"}, "gpt-oss-120b", "prompt v1")
+        assert k != disk_cache.key("verdict", {"claim": "x"}, "gpt-oss-120b", "prompt v2")
+        assert k != disk_cache.key("verdict", {"claim": "x"}, "qwen-3.8-27b", "prompt v1")
+        disk_cache.put("verdict", k, {"verdict": "MET"})
+        assert disk_cache.get("verdict", k) == {"verdict": "MET"}
+        assert not list(tmp_path.rglob("*.tmp"))
