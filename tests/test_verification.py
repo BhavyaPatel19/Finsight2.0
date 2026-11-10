@@ -854,3 +854,30 @@ class TestDiskCache:
         disk_cache.put("verdict", k, {"verdict": "MET"})
         assert disk_cache.get("verdict", k) == {"verdict": "MET"}
         assert not list(tmp_path.rglob("*.tmp"))
+
+
+def test_evidence_query_keeps_apostrophe_years():
+    # "FY'25" names the period; stripping its digits left "FY'" and lost the fact-sheet row.
+    from finsight.verification.claims import Claim
+    from finsight.verification.evidence import evidence_query
+
+    q = evidence_query(Claim("c", "The total payout for FY'25 will be Rs. 43.", "q", "dividend", None, None, None, ""))
+    assert "FY'25" in q and "43" not in q
+    q = evidence_query(
+        Claim("c", "Tax rate for the financial year’26 to be 29% to 30%.", "q", "tax", None, None, None, "")
+    )
+    assert "year’26" in q and "29" not in q
+
+
+def test_candidate_pool_floor(monkeypatch):
+    from finsight.retrieval import index as ix
+    from finsight.verification import evidence as ev
+
+    monkeypatch.delenv("WTT_EVIDENCE_POOL_MIN", raising=False)
+    monkeypatch.setattr(ix, "all_chunks", lambda: [{"metadata": {"document_id": 1}}] * 300)
+    assert ev.candidate_pool([1]) == 51  # 48 + 300/100
+    monkeypatch.setattr(ix, "all_chunks", lambda: [{"metadata": {"document_id": 1}}] * 10_000)
+    assert ev.candidate_pool([1]) == 96  # capped
+    monkeypatch.setenv("WTT_EVIDENCE_POOL_MIN", "24")
+    monkeypatch.setattr(ix, "all_chunks", lambda: [])
+    assert ev.candidate_pool([1]) == 24
