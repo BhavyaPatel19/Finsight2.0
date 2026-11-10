@@ -153,3 +153,32 @@ class TestJudge:
         monkeypatch.setattr(judge, "generate", boom)
         assert judge.judge_correctness("q", "ref", "ans")["grade"] == "unknown"
         assert judge.judge_faithfulness("x", ["y"])["score"] is None
+
+
+class TestNumberParsingFixes:
+    def test_fiscal_labels_and_years_are_not_figures(self):
+        assert numbers("21.1%, an improvement of 50 basis points over FY24") == {"21.1%", "50"}
+        assert numbers("From 0%-3% in April 2025 to 1%-3% in July 2025") == {"0%", "3%", "1%"}
+        assert numbers("15,000 in FY25; over 20,000 planned for FY'26") == {"15000", "20000"}
+
+    def test_one_digit_percentages_count(self):
+        assert numbers("Changed to 1.5% to 3% growth") == {"1.5%", "3%"}
+
+    def test_space_before_percent(self):
+        assert number_recall("109% of net profit", "free cash flow was 109 % of net profit") == 1.0
+
+    def test_same_amount_at_another_scale(self):
+        assert number_recall("$19.3 bn", "revenue of $19,277 million") == 1.0
+        assert number_recall("$19.3 bn", "revenue of $19,377 million") == 0.0
+        assert number_recall("$1,428 million", "gross profit of $1.43 bn") == 0.0  # coarser than the reference
+
+
+class TestRequiredRecall:
+    def test_scores_only_what_the_question_asks(self):
+        from eval.generation import required_recall
+
+        item = {"answer": "$1,428 million (vs $1,345 million a year earlier).", "required": ["$1,428 million"]}
+        assert required_recall(item, "Gross profit was $1,428 million.") == 1.0
+        assert number_recall(item["answer"], "Gross profit was $1,428 million.") == 0.5
+        assert required_recall({"answer": "Fell 3.5% due to seasonality.", "required": []}, "anything") is None
+        assert required_recall({"answer": "21.1%"}, "It was 21.1%.") == 1.0

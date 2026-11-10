@@ -1,8 +1,9 @@
 """
-Check that every claim and evidence quote in a gold file is verbatim in its source PDF page
-(eval/gold/LABELLING.md §5). Whitespace and typographic quotes are normalised; nothing else is.
+Check that every quote in a gold file is verbatim in its source PDF page: claim and evidence
+quotes in a Walk-the-Talk set (eval/gold/LABELLING.md §5), evidence in a RAG question set. Whitespace and typographic quotes are normalised; nothing else is.
 
     uv run python -m eval.gold.check_quotes eval/gold/wtt_claims_multi.jsonl
+    uv run python -m eval.gold.check_quotes eval/gold/retrieval_multi.jsonl
 
 Exits non-zero if any quote is missing, so it can gate a commit.
 """
@@ -48,6 +49,14 @@ def check(path: Path) -> list[str]:
         if not line.strip():
             continue
         row = json.loads(line)
+        if "question" in row:  # RAG question set (retrieval*.jsonl): docs -> {pages, evidence}
+            for doc, d in (row.get("docs") or {}).items():
+                for q in d["evidence"]:
+                    if not any(found(q, page(doc, pg)) for pg in d["pages"]):
+                        errors.append(f"{row['id']}: evidence not on {doc} p{d['pages']}: {q[:60]}…")
+            if row["answerable"] and not row.get("docs"):
+                errors.append(f"{row['id']}: answerable question needs evidence")
+            continue
         # `quote` holds the verbatim sentence when `claim` restates one part of a two-part sentence
         if not found(row.get("quote") or row["claim"], page(row["claims_doc"], row["claim_page"])):
             errors.append(f"{row['id']}: claim not on {row['claims_doc']} p{row['claim_page']}")
@@ -65,7 +74,7 @@ def main() -> None:
     n = sum(1 for line in path.read_text().splitlines() if line.strip())
     for e in errors:
         print("FAIL", e)
-    print(f"{n} labels, {len(errors)} problems")
+    print(f"{n} rows, {len(errors)} problems")
     sys.exit(1 if errors else 0)
 
 
