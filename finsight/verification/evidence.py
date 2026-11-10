@@ -6,6 +6,7 @@ sheet), not just the one the user picked.
 
 from __future__ import annotations
 
+import os
 import re
 
 from sqlmodel import Session, select
@@ -100,9 +101,9 @@ _GUIDANCE_WORDS = re.compile(
     re.I,
 )
 # A target figure standing on its own ("0% to 3%", "$15 per ton", "1.7 million"); identifiers that
-# mix letters and digits (BF#4, 4Q, FY26, 2H, EAF) are kept — they are what the outcome sentence
+# mix letters and digits (BF#4, 4Q, FY26, FY'26, 2H, EAF) are kept — they are what the outcome sentence
 # will be found by.
-_NUMBERS = re.compile(r"(?<![A-Za-z#\d])[-–]?[\$£€₹]?\d[\d,]*(\.\d+)?\s*(%|bps|bn|mn|crore|x)?(?![A-Za-z])", re.I)
+_NUMBERS = re.compile(r"(?<![A-Za-z#\d'’])[-–]?[\$£€₹]?\d[\d,]*(\.\d+)?\s*(%|bps|bn|mn|crore|x)?(?![A-Za-z])", re.I)
 
 
 def evidence_query(claim: Claim) -> str:
@@ -116,13 +117,16 @@ def evidence_query(claim: Claim) -> str:
 
 
 def candidate_pool(document_ids: list[int]) -> int:
-    """How many fused candidates to rerank: 24 for a period of short filings, more when the
+    """How many fused candidates to rerank: 48 for a period of short filings, more when the
     period includes a long report (6,800 chunks for a 550-page annual report), where the
-    outcome sentence sits deeper in the fused list."""
+    outcome sentence sits deeper in the fused list. The floor was 24 until a dev sweep found
+    a Tata Steel outcome (t10) fused at rank 25-48 that the reranker then put in the top 8;
+    48, 96 and 160 scored the same on both dev sets (WTT_EVIDENCE_POOL_MIN overrides it)."""
     from finsight.retrieval import index as ix
 
     n = sum(1 for c in ix.all_chunks() if c["metadata"].get("document_id") in set(document_ids))
-    return int(min(96, max(24, 24 + n / 100)))
+    floor = int(os.getenv("WTT_EVIDENCE_POOL_MIN", "48"))
+    return int(min(max(96, floor), max(floor, floor + n / 100)))
 
 
 _OUTCOME = re.compile(
