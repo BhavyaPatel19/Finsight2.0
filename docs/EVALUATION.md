@@ -25,7 +25,8 @@ Cross-document questions count as a hit when any one gold document is retrieved;
 Runs `answer_question()` (hybrid_rerank, top-8, strict grounding prompt) on every gold question.
 
 Deterministic, no judge:
-- **number recall** — share of the reference answer's numeric tokens present in the answer (units normalised: `$4,730 million` ≡ `4730mn`). It cannot equate `$19,277 million` with `$19.3 bn`; the judge can.
+- **number recall** — share of the reference answer's numeric tokens present in the answer (units normalised: `$4,730 million` ≡ `4730mn`; the same amount at another scale matches once rounded to the reference's precision, so `$19,277 million` answers `$19.3 bn`). Fiscal labels and years (`FY25`, `Q4`, `2025`) are not figures; one-digit percentages are (`0%–3%`).
+- **number recall, required** — the same over only the numbers the question asks for (each gold item's `required` list; the whole reference when absent, none for "why" questions). A reference often adds context the question did not ask for ("vs $1,345 million a year earlier"); the plain metric marks a correct one-figure answer down for leaving it out. Re-scored without new model calls, the v2.1 `gpt-oss-120b` run reads 0.762 on the old parser, 0.804 with the parser fixed and 0.958 on required numbers. Its remaining misses: a final dividend given for the total (r028), reported growth given where the reference uses constant currency (r009), and a reported margin where the reference leads with the adjusted one (r064).
 - **abstention** — unanswerable questions answered with the prompt's abstain string; **false abstention** — answerable questions that abstained.
 - **citations** — answers containing a `[… Page N]` citation, and whether every cited page belongs to a retrieved chunk.
 

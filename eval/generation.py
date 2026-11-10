@@ -8,6 +8,7 @@ questions and score the answers.
 
 Deterministic (no judge):
     number_recall     share of the reference answer's numbers present in the answer
+    number_recall_required   the same, over only the numbers the question asks for (`required`)
     abstain           unanswerable questions answered "Not found in the selected documents."
     false_abstain     answerable questions wrongly answered "Not found…"
     cited             answer contains at least one [… Page N] citation
@@ -33,34 +34,82 @@ RESULTS = ROOT / "eval" / "results"
 
 ABSTAIN_RE = re.compile(r"not found in the selected documents", re.I)
 CITATION_RE = re.compile(r"\[[^\]]*?Page\s+(\d+)[^\]]*\]", re.I)
-NUM_RE = re.compile(r"\$?\d[\d,]*(?:\.\d+)?\s?(?:%|bn|mn|billion|million|crore)?", re.I)
+# A number not glued to letters or an apostrophe, so fiscal labels (FY25, FY'26, Q4) are not read as figures.
+NUM_RE = re.compile(r"(?<![A-Za-z'’\d.])\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:%|bn|mn|billion|million|crore))?", re.I)
+_YEAR = re.compile(r"^(19|20)\d\d$")
+_SCALE = {"bn": 1000.0, "mn": 1.0}
 
 
 def numbers(text: str) -> set[str]:
-    """Distinctive numeric tokens, normalised: '$4,730 million' -> '4730', '21.1%' -> '21.1%'."""
+    """Distinctive numeric tokens, normalised: '$4,730 million' -> '4730mn', '21.1%' -> '21.1%'.
+
+    Skipped: fiscal labels (FY25, Q4), bare years (2025), and one-digit numbers without a unit
+    ("3x"). One-digit percentages count: guidance like "0%-3%" is the answer.
+    """
     out = set()
     for tok in NUM_RE.findall(text):
-        t = tok.lower().replace("$", "").replace(",", "").strip()
-        t = re.sub(r"\s?(billion|bn)$", "bn", t)
-        t = re.sub(r"\s?(million|mn)$", "mn", t)
+        t = re.sub(r"\s+", "", tok.lower().replace("$", "").replace(",", ""))
+        t = re.sub(r"(billion|bn)$", "bn", t)
+        t = re.sub(r"(million|mn)$", "mn", t)
         core = re.sub(r"(%|bn|mn|crore)$", "", t)
-        if core.replace(".", "").isdigit() and len(core.replace(".", "")) >= 2:
+        if not core.replace(".", "").isdigit() or _YEAR.match(t):
+            continue
+        if len(core.replace(".", "")) >= 2 or t.endswith("%"):
             out.add(t)
     return out
+
+
+def _scaled(tok: str) -> tuple[float, int] | None:
+    """('19.3bn') -> (19300.0 in millions, 1 decimal place); None if the token has no money scale."""
+    m = re.fullmatch(r"([\d.]+)(bn|mn)", tok)
+    if not m:
+        return None
+    dec = len(m.group(1).split(".")[1]) if "." in m.group(1) else 0
+    return float(m.group(1)) * _SCALE[m.group(2)], dec
+
+
+def _same_amount(ref: str, ans_tokens: set[str]) -> bool:
+    """$19,277 million answers a reference of $19.3 bn: equal once rounded to the reference's precision."""
+    r = _scaled(ref)
+    if r is None:
+        return False
+    r_val, dec = r
+    unit = _SCALE[ref[-2:]]
+    for a in ans_tokens:
+        s = _scaled(a)
+        if s and round(s[0] / unit, dec) == round(r_val / unit, dec):
+            return True
+    return False
 
 
 def number_recall(reference: str, answer: str) -> float | None:
     ref = numbers(reference)
     if not ref:
         return None
-    ans_text = answer.lower().replace(",", "")
+    ans_text = re.sub(r"(\d)\s+%", r"\1%", answer.lower().replace(",", ""))
     ans = numbers(answer)
     hit = 0
     for r in ref:
         core = re.sub(r"(%|bn|mn|crore)$", "", r)
-        if r in ans or core in ans or re.search(rf"(?<![\d.]){re.escape(core)}(?![\d])", ans_text):
+        if (
+            r in ans
+            or core in ans
+            or re.search(rf"(?<![\d.]){re.escape(core)}(?![\d])", ans_text)
+            or _same_amount(r, ans)
+        ):
             hit += 1
     return hit / len(ref)
+
+
+def required_recall(item: dict, answer: str) -> float | None:
+    """Recall over the numbers the QUESTION asks for (the item's `required` list), not every number in
+    the reference: a reference that adds context ("vs $1,345 million a year earlier") to a question
+    that asks for one figure should not mark a correct one-figure answer down. Falls back to the whole
+    reference when the item lists no `required`; an empty list means no number is required."""
+    req = item.get("required")
+    if req is None:
+        return number_recall(item["answer"], answer)
+    return number_recall(" ; ".join(req), answer) if req else None
 
 
 def deterministic(item: dict, answer: str, sources: list[dict]) -> dict:
@@ -74,6 +123,7 @@ def deterministic(item: dict, answer: str, sources: list[dict]) -> dict:
     }
     if item["answerable"]:
         out["number_recall"] = number_recall(item["answer"], answer)
+        out["number_recall_required"] = required_recall(item, answer)
         out["false_abstain"] = abstained
     else:
         out["abstain_ok"] = abstained
@@ -175,6 +225,7 @@ def summarise(rows: list[dict]) -> dict:
     ans = [r for r in ok if r["answerable"]]
     unans = [r for r in ok if not r["answerable"]]
     nr = [r["number_recall"] for r in ans if r.get("number_recall") is not None]
+    nrr = [r["number_recall_required"] for r in ans if r.get("number_recall_required") is not None]
     faith = [r["faithfulness"]["score"] for r in ans if r.get("faithfulness", {}).get("score") is not None]
     grades = [r["correctness"]["grade"] for r in ans if r.get("correctness")]
     cited = [r for r in ans if not r["abstained"]]
@@ -184,6 +235,7 @@ def summarise(rows: list[dict]) -> dict:
         "answerable": len(ans),
         "unanswerable": len(unans),
         "number_recall": round(mean(nr), 4) if nr else None,
+        "number_recall_required": round(mean(nrr), 4) if nrr else None,
         "false_abstain_rate": round(mean([float(r["false_abstain"]) for r in ans]), 4) if ans else None,
         "abstain_rate_on_unanswerable": round(mean([float(r["abstain_ok"]) for r in unans]), 4) if unans else None,
         "cited_rate": round(mean([float(r["cited"]) for r in cited]), 4) if cited else None,
@@ -244,6 +296,9 @@ def write_markdown(report: dict, path: Path) -> None:
         f"| number recall (reference numbers present) | {s['number_recall']:.3f} |"
         if s["number_recall"] is not None
         else "| number recall | – |",
+        f"| number recall, numbers the question asks for | {s['number_recall_required']:.3f} |"
+        if s.get("number_recall_required") is not None
+        else "| number recall, required | – |",
         f"| abstains on unanswerable | {s['abstain_rate_on_unanswerable']:.1%} |"
         if s["abstain_rate_on_unanswerable"] is not None
         else "| abstains on unanswerable | – |",
