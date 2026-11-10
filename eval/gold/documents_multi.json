@@ -1,5 +1,5 @@
 {
-  "_about": "Held-out evaluation corpus 2: the official earnings-call transcripts of Larsen & Toubro, Bajaj Finance and UltraTech Cement, downloaded from each company's own investor-relations file host (public, no login). Quarters are those whose transcripts the companies still serve. Files are downloaded at seed time and are not committed; SHA-256 pins the versions the gold sets were written against.",
+  "_about": "Held-out evaluation corpus 2: the official earnings-call transcripts of Larsen & Toubro, Bajaj Finance, UltraTech Cement and InterGlobe Aviation (IndiGo), downloaded from each company's own investor-relations file host, or for IndiGo from its Regulation 30 filings on BSE (public, no login). Quarters are those whose transcripts the companies still serve. Files are downloaded at seed time and are not committed; SHA-256 pins the versions the gold sets were written against.",
   "documents": [
     {
       "key": "LT_concall_Q1FY25",
@@ -67,6 +67,19 @@
       "sha256": "805806ac8cb6667ab3951a3b0ef725aaf58dc8d7c38f55119144ded70556c6a1"
     },
     {
+      "key": "LT_concall_Q2FY26",
+      "symbol": "LT",
+      "company_name": "Larsen & Toubro Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q2",
+      "period_end": "2025-09-30",
+      "title": "Q2 FY26 earnings call transcript",
+      "url": "https://investors.larsentoubro.com/upload/Analysttrans/FY2026AnalysttransL&T%20Q2FY26%20Earnings%20Call%20Transcript%20.pdf",
+      "file": "external/LT/LT_concall_Q2FY26.pdf",
+      "sha256": "9aa4e4695cbbfb1efd9da148c008ef9c8e5f08b86d242a24ad745c700ea75154"
+    },
+    {
       "key": "LT_concall_Q3FY26",
       "symbol": "LT",
       "company_name": "Larsen & Toubro Ltd",
@@ -78,6 +91,19 @@
       "url": "https://investors.larsentoubro.com/upload/Analysttrans/FY2026AnalysttransL&T%20Transcript%20Q3FY26.pdf",
       "file": "external/LT/LT_concall_Q3FY26.pdf",
       "sha256": "5c41476d62a6080ba6687cb9518261eab5e7f4d5f6318c68121cf8bfc021b30a"
+    },
+    {
+      "key": "LT_concall_Q4FY26",
+      "symbol": "LT",
+      "company_name": "Larsen & Toubro Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q4",
+      "period_end": "2026-03-31",
+      "title": "Q4 FY26 earnings call transcript",
+      "url": "https://investors.larsentoubro.com/upload/Analysttrans/FY2026AnalysttransL&T%20Q4%20FY26%20Earnings%20Call%20Transcript.pdf",
+      "file": "external/LT/LT_concall_Q4FY26.pdf",
+      "sha256": "baaa3c37771436175b78cfa51934bfe4942673e8679f97ab68cbc018e92d4073"
     },
     {
       "key": "LT_concall_Q2FY27",
@@ -145,6 +171,32 @@
       "sha256": "8b9992dd5b49bef31a2304dfadacb1c927f8436832ec2ba94f7498d930ee4ed3"
     },
     {
+      "key": "BAJFINANCE_concall_Q3FY26",
+      "symbol": "BAJFINANCE",
+      "company_name": "Bajaj Finance Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q3",
+      "period_end": "2025-12-31",
+      "title": "Q3 FY26 earnings call transcript",
+      "url": "https://cms-assets.bajajfinserv.in/is/content/bajajfinance/bajaj-finance-q3-fy26-earnings-conference-call-transcript?scl=1&fmt=pdf",
+      "file": "external/BAJFINANCE/BAJFINANCE_concall_Q3FY26.pdf",
+      "sha256": "3c094185a313c3680614bee32e6aaf3a62b43b0cc1334a2cb93ccc716fdeabc2"
+    },
+    {
+      "key": "BAJFINANCE_concall_Q4FY26",
+      "symbol": "BAJFINANCE",
+      "company_name": "Bajaj Finance Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q4",
+      "period_end": "2026-03-31",
+      "title": "Q4 FY26 earnings call transcript",
+      "url": "https://cms-assets.bajajfinserv.in/is/content/bajajfinance/bajaj-finance-q4-fy26-earnings-conference-call-transcript?scl=1&fmt=pdf",
+      "file": "external/BAJFINANCE/BAJFINANCE_concall_Q4FY26.pdf",
+      "sha256": "c81904ae3ec5086f1f0a2bdf31bfd41ab7dacd48bf885a65f2c5d658979e078a"
+    },
+    {
       "key": "ULTRACEMCO_concall_Q2FY25",
       "symbol": "ULTRACEMCO",
       "company_name": "UltraTech Cement Ltd",
@@ -197,6 +249,19 @@
       "sha256": "c8692e3279145f064694b9c321ef21441a0f55868234ddfffb693cba8df54024"
     },
     {
+      "key": "ULTRACEMCO_concall_Q3FY26",
+      "symbol": "ULTRACEMCO",
+      "company_name": "UltraTech Cement Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q3",
+      "period_end": "2025-12-31",
+      "title": "Q3 FY26 earnings call transcript",
+      "url": "https://www.ultratechcement.com/content/dam/ultratechcementwebsite/pdf/financials/earnings-call/ultratech-cement-limited-earnings-call-transcript-q3-fy26.pdf",
+      "file": "external/ULTRACEMCO/ULTRACEMCO_concall_Q3FY26.pdf",
+      "sha256": "c6985110f893d0cbccb0852ba998fcd656cbf91af5a375c7972d1f59de8b0b1e"
+    },
+    {
       "key": "ULTRACEMCO_concall_Q4FY26",
       "symbol": "ULTRACEMCO",
       "company_name": "UltraTech Cement Ltd",
@@ -208,6 +273,97 @@
       "url": "https://www.ultratechcement.com/content/dam/ultratechcementwebsite/pdf/financials/earnings-call/ultratech-cement-limited-earnings-call-transcript-q4fy26.pdf",
       "file": "external/ULTRACEMCO/ULTRACEMCO_concall_Q4FY26.pdf",
       "sha256": "6af0409649c6cddba62ea583be6ac343b7b69922cab1e6a5cc2e40a3a932bd2d"
+    },
+    {
+      "key": "INDIGO_concall_Q1FY25",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q1",
+      "period_end": "2024-06-30",
+      "title": "Q1 FY25 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/5d5ac585-55e6-4c87-ba87-c45576468901.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q1FY25.pdf",
+      "sha256": "9b396289224eb4cd527befe21defd9b9457e2df3e7ce7f550a957371d6a5c1a9"
+    },
+    {
+      "key": "INDIGO_concall_Q2FY25",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q2",
+      "period_end": "2024-09-30",
+      "title": "Q2 FY25 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/4259e7ce-076e-4ced-88be-65a816a4500b.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q2FY25.pdf",
+      "sha256": "26a78daa2cdde14f35d520d08d6e5a191f1357800ed418ac639be2f557df6625"
+    },
+    {
+      "key": "INDIGO_concall_Q3FY25",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q3",
+      "period_end": "2024-12-31",
+      "title": "Q3 FY25 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/6359796a-1293-4065-860a-5fa2636fbd57.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q3FY25.pdf",
+      "sha256": "2aec4db5d37424b71671cea192df5e158d46d6f214ebb64219f607e3cfc6c3ae"
+    },
+    {
+      "key": "INDIGO_concall_Q4FY25",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY25",
+      "fiscal_quarter": "Q4",
+      "period_end": "2025-03-31",
+      "title": "Q4 FY25 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/54dceb3b-c8ef-41dd-a512-c7cd3c74741d.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q4FY25.pdf",
+      "sha256": "73905c151e7803ea74fe4e72b0d08220b071db3f239f25337371f4a2746eeaf7"
+    },
+    {
+      "key": "INDIGO_concall_Q2FY26",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q2",
+      "period_end": "2025-09-30",
+      "title": "Q2 FY26 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/bac76f1e-a0ac-44b6-baf0-15732ddf5c77.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q2FY26.pdf",
+      "sha256": "d4bf4b0238d7ca56538a76c783c0387a1aca7b7d1cf3dbdf4b2f2b2948af1c58"
+    },
+    {
+      "key": "INDIGO_concall_Q3FY26",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY26",
+      "fiscal_quarter": "Q3",
+      "period_end": "2025-12-31",
+      "title": "Q3 FY26 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/9931ec83-f523-4b86-b53f-b1f3a7ceb958.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q3FY26.pdf",
+      "sha256": "73c17a77d9ae30abc9631a5fd89f9112dce4f7054fd53f48782a1c4e8504b960"
+    },
+    {
+      "key": "INDIGO_concall_Q2FY27",
+      "symbol": "INDIGO",
+      "company_name": "InterGlobe Aviation Ltd",
+      "doc_type": "concall",
+      "fiscal_year": "FY27",
+      "fiscal_quarter": "Q2",
+      "period_end": "2026-09-30",
+      "title": "Q2 FY27 earnings call transcript (BSE filing)",
+      "url": "https://www.bseindia.com/xml-data/corpfiling/AttachLive/b25e1dd6-770a-4a6a-92c9-becd48554bb5.pdf",
+      "file": "external/INDIGO/INDIGO_concall_Q2FY27.pdf",
+      "sha256": "be7f600881a6873544f97e2f644e80aef460e11ffd90d24c7068d29a5d84e5cf"
     }
   ]
 }
