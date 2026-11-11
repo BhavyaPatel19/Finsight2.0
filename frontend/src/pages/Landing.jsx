@@ -304,30 +304,30 @@ const MARKET_SCRAPER = [
 
 const TECH_STACK = [
   { category: 'Backend', techs: [
-    { name: 'FastAPI', color: '#009688', logo: '/tech-logos/fastapi.svg', desc: 'High-performance async Python web framework for building APIs.' },
-    { name: 'SQLite', color: '#003B57', logo: '/tech-logos/sqlite.png', desc: 'Lightweight embedded relational database for local persistence.' },
-    { name: 'SQLModel', color: '#e91e63', logo: '/tech-logos/sqlmodel.svg', desc: 'Pydantic + SQLAlchemy ORM for type-safe database models.' },
-    { name: 'ChromaDB', color: '#FFD54F', logo: '/tech-logos/chromadb.png', desc: 'Open-source vector database for semantic document embeddings.' },
-    { name: 'APScheduler', color: '#7E57C2', logo: '/tech-logos/apscheduler.png', desc: 'Background job scheduler for periodic document fetches.' },
+    { name: 'FastAPI', color: '#009688', logo: `${import.meta.env.BASE_URL}tech-logos/fastapi.svg`, desc: 'High-performance async Python web framework for building APIs.' },
+    { name: 'SQLite', color: '#003B57', logo: `${import.meta.env.BASE_URL}tech-logos/sqlite.png`, desc: 'Lightweight embedded relational database for local persistence.' },
+    { name: 'SQLModel', color: '#e91e63', logo: `${import.meta.env.BASE_URL}tech-logos/sqlmodel.svg`, desc: 'Pydantic + SQLAlchemy ORM for type-safe database models.' },
+    { name: 'ChromaDB', color: '#FFD54F', logo: `${import.meta.env.BASE_URL}tech-logos/chromadb.png`, desc: 'Open-source vector database for semantic document embeddings.' },
+    { name: 'APScheduler', color: '#7E57C2', logo: `${import.meta.env.BASE_URL}tech-logos/apscheduler.png`, desc: 'Background job scheduler for periodic document fetches.' },
   ]},
   { category: 'AI / ML', techs: [
     { name: 'Llama 3', color: '#7B1FA2', desc: 'Meta\'s open-source LLM, served locally via Ollama for RAG.' },
-    { name: 'FinBERT', color: '#FF7043', logo: '/tech-logos/finbert.png', desc: 'Finance-domain BERT model for sentiment analysis on earnings calls.' },
-    { name: 'Sentence Transformers', color: '#FFB300', logo: '/tech-logos/sentence-transformers.svg', desc: 'Transformer models for generating semantic text embeddings.' },
-    { name: 'Groq', color: '#F55036', logo: '/tech-logos/groq.png', desc: 'Ultra-fast cloud LLM inference for market insights and digests.' },
+    { name: 'FinBERT', color: '#FF7043', logo: `${import.meta.env.BASE_URL}tech-logos/finbert.png`, desc: 'Finance-domain BERT model for sentiment analysis on earnings calls.' },
+    { name: 'Sentence Transformers', color: '#FFB300', logo: `${import.meta.env.BASE_URL}tech-logos/sentence-transformers.svg`, desc: 'Transformer models for generating semantic text embeddings.' },
+    { name: 'Groq', color: '#F55036', logo: `${import.meta.env.BASE_URL}tech-logos/groq.png`, desc: 'Ultra-fast cloud LLM inference for market insights and digests.' },
   ]},
   { category: 'Frontend', techs: [
-    { name: 'React 18', color: '#61DAFB', logo: '/tech-logos/react.png', desc: 'Component-based UI library with concurrent rendering features.' },
-    { name: 'Vite', color: '#646CFF', logo: '/tech-logos/vite.png', desc: 'Next-gen frontend build tool with instant HMR and fast bundling.' },
-    { name: 'Framer Motion', color: '#FF0055', logo: '/tech-logos/framer-motion.webp', desc: 'Production-ready animation library for fluid UI transitions.' },
-    { name: 'Recharts', color: '#22B5BF', logo: '/tech-logos/recharts.jpeg', desc: 'Composable charting library built on React and D3 primitives.' },
-    { name: 'Lucide', color: '#F56565', logo: '/tech-logos/lucide.png', desc: 'Beautiful open-source icon set with tree-shakeable React components.' },
+    { name: 'React 18', color: '#61DAFB', logo: `${import.meta.env.BASE_URL}tech-logos/react.png`, desc: 'Component-based UI library with concurrent rendering features.' },
+    { name: 'Vite', color: '#646CFF', logo: `${import.meta.env.BASE_URL}tech-logos/vite.png`, desc: 'Next-gen frontend build tool with instant HMR and fast bundling.' },
+    { name: 'Framer Motion', color: '#FF0055', logo: `${import.meta.env.BASE_URL}tech-logos/framer-motion.webp`, desc: 'Production-ready animation library for fluid UI transitions.' },
+    { name: 'Recharts', color: '#22B5BF', logo: `${import.meta.env.BASE_URL}tech-logos/recharts.jpeg`, desc: 'Composable charting library built on React and D3 primitives.' },
+    { name: 'Lucide', color: '#F56565', logo: `${import.meta.env.BASE_URL}tech-logos/lucide.png`, desc: 'Beautiful open-source icon set with tree-shakeable React components.' },
   ]},
   { category: 'Integration', techs: [
-    { name: 'Zerodha Kite', color: '#387ED1', logo: '/tech-logos/zerodha.jpg', desc: 'India\'s largest broker API for live quotes, holdings, and OAuth.' },
-    { name: 'Screener.in', color: '#4CAF50', logo: '/tech-logos/screener.png', desc: 'Financial data source for company documents and annual reports.' },
-    { name: 'BSE Filings', color: '#FF9800', logo: '/tech-logos/bse.png', desc: 'Bombay Stock Exchange corporate filing scraper integration.' },
-    { name: 'OAuth 2.0', color: '#1565C0', logo: '/tech-logos/oauth.png', desc: 'Secure token-based authentication for Zerodha broker access.' },
+    { name: 'Zerodha Kite', color: '#387ED1', logo: `${import.meta.env.BASE_URL}tech-logos/zerodha.jpg`, desc: 'India\'s largest broker API for live quotes, holdings, and OAuth.' },
+    { name: 'Screener.in', color: '#4CAF50', logo: `${import.meta.env.BASE_URL}tech-logos/screener.png`, desc: 'Financial data source for company documents and annual reports.' },
+    { name: 'BSE Filings', color: '#FF9800', logo: `${import.meta.env.BASE_URL}tech-logos/bse.png`, desc: 'Bombay Stock Exchange corporate filing scraper integration.' },
+    { name: 'OAuth 2.0', color: '#1565C0', logo: `${import.meta.env.BASE_URL}tech-logos/oauth.png`, desc: 'Secure token-based authentication for Zerodha broker access.' },
   ]},
 ]
 
@@ -506,7 +506,7 @@ export default function Landing() {
           {/* Large hero mockup */}
           <Reveal scale delay={0.2}>
             <MockupFrame
-              src="/screenshots/dashboard.jpeg"
+              src={`${import.meta.env.BASE_URL}screenshots/dashboard.jpeg`}
               alt="FinSight Dashboard — Portfolio overview with Zerodha integration"
               caption="Dashboard — Real-time portfolio overview with Zerodha integration"
               size="large"
@@ -517,7 +517,7 @@ export default function Landing() {
           <div className="landing-mockup-row">
             <Reveal scale delay={0.1}>
               <MockupFrame
-                src="/screenshots/market.jpeg"
+                src={`${import.meta.env.BASE_URL}screenshots/market.jpeg`}
                 alt="Live Market — Watchlist, charts, fundamentals, AI insights"
                 caption="Live Market & AI Insights"
                 size="small"
@@ -525,7 +525,7 @@ export default function Landing() {
             </Reveal>
             <Reveal scale delay={0.2}>
               <MockupFrame
-                src="/screenshots/chat.jpeg"
+                src={`${import.meta.env.BASE_URL}screenshots/chat.jpeg`}
                 alt="RAG Chat — Ask questions about financial documents"
                 caption="RAG-Powered Document Chat"
                 size="small"
@@ -533,7 +533,7 @@ export default function Landing() {
             </Reveal>
             <Reveal scale delay={0.3}>
               <MockupFrame
-                src="/screenshots/credisentiment.jpeg"
+                src={`${import.meta.env.BASE_URL}screenshots/credisentiment.jpeg`}
                 alt="CrediSentiment — Walking the Talk credibility analysis"
                 caption="Credibility & Sentiment Analysis"
                 size="small"

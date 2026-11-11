@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ragApi, llmApi } from '../api/client'
+import { MODE, demoQuestions } from '../api/demo'
 import {
   Send, Bot, FileText, CheckCircle, Loader,
   ChevronDown, ChevronRight, Navigation, Brain, AlertCircle, Trash2,
@@ -62,6 +63,8 @@ export default function Chat() {
   // Model selection — list comes from the active provider (Groq or Ollama)
   const [models, setModels] = useState(FALLBACK_MODELS)
   const [model, setModel] = useState('')
+  const [suggestions, setSuggestions] = useState([])
+  useEffect(() => { demoQuestions().then(setSuggestions) }, [])
 
   // Load available documents + models on mount
   useEffect(() => {
@@ -104,6 +107,8 @@ export default function Chat() {
     try {
       const r = await ragApi.availableDocuments()
       setDocuments(r.data)
+      // Recorded demo: start with every indexed filing selected, so a question works at once.
+      if (MODE === 'demo') setSelectedIds(new Set(r.data.filter(d => d.status === 'indexed').map(d => d.id)))
     } catch {
       setDocuments([])
     } finally {
@@ -349,6 +354,18 @@ export default function Chat() {
                     <Send size={16} />
                   </button>
                 </div>
+
+                {/* Recorded demo: the questions that have real recorded answers */}
+                {suggestions.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 640 }}>
+                    {suggestions.map(q => (
+                      <button key={q} type="button" className="btn" onClick={() => setInput(q)}
+                        style={{ fontSize: 12, padding: '6px 12px', borderRadius: 16, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-secondary)' }}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Model selector in empty state */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

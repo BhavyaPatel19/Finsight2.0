@@ -1,8 +1,10 @@
 import axios from 'axios'
+import { installMode } from './demo'
 
 const API_BASE = '/api'
 
 const client = axios.create({ baseURL: API_BASE })
+installMode(client) // live API, record mode, or recorded demo (see ./demo.js)
 
 // Attach JWT on every request
 client.interceptors.request.use((config) => {
