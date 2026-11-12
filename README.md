@@ -192,7 +192,7 @@ finsight/{auth,ingestion,credisentiment,watchlist,portfolio,zerodha}/   app modu
 eval/                   gold sets · retrieval / generation / wtt harnesses · judge · results + HISTORY.md
 scripts/                seed_demo.py (download + index) · render_pdfs.py
 docs/                   PIPELINE_AUDIT.md · REDESIGN.md · EVALUATION.md · MODEL_CARD_claim_detector.md · adr/
-tests/                  225 tests; models and LLMs stubbed, runs in ~11 s
+tests/                  290 tests; models and LLMs stubbed, runs in ~11 s
 ```
 
 ---
